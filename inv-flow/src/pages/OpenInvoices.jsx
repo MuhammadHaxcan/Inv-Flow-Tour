@@ -41,27 +41,6 @@ const OpenInvoices = () => {
             ]
         },
         {
-            id: 2,
-            number: 'INV-2024-0154',
-            date: '2024-03-17',
-            customer: 'XYZ Ltd',
-            persons: 2,
-            driver: 'Ali Raza',
-            total: 8000,
-            paid: 8000,
-            status: 'paid',
-            services: [
-                { id: 1, service: 'Hourly Rental', rate: 3000 },
-                { id: 2, service: 'City Tour', rate: 5000 }
-            ],
-            expenses: [
-                { id: 1, type: 'Fuel', amount: 400, date: '2024-03-17' }
-            ],
-            payments: [
-                { id: 1, amount: 8000, date: '2024-03-17', method: 'Bank Account - HBL', reference: 'TRX-452' }
-            ]
-        },
-        {
             id: 3,
             number: 'INV-2024-0155',
             date: '2024-03-18',
@@ -86,10 +65,10 @@ const OpenInvoices = () => {
     ]);
 
     const accounts = [
-        { name: 'Cash Account', type: 'cash' },
-        { name: 'Bank Account - HBL', type: 'bank' },
-        { name: 'Bank Account - MCB', type: 'bank' },
-        { name: 'Credit Card', type: 'bank' }
+        { name: 'Cash Account', accountType: 'cash', type: 'cash' },
+        { name: 'Bank Account - HBL', accountType: 'bank', type: 'bank' },
+        { name: 'Bank Account - MCB', accountType: 'bank', type: 'bank' },
+        { name: 'Credit Card', accountType: 'bank', type: 'bank' }
     ];
 
     const expenseTypes = ['Fuel', 'Tolls', 'Parking', 'Tickets', 'Maintenance'];
@@ -148,20 +127,45 @@ const OpenInvoices = () => {
         setShowDriverModal(true);
     };
 
+    // Calculate VAT based on payment method
+    const calculateVAT = (payment, accounts) => {
+        const account = accounts.find(acc => acc.name === payment.method);
+        // Apply 5% VAT if it's a bank account, 0 if it's cash
+        return account?.accountType === 'cash' ? 0 : payment.amount * 0.05;
+    };
+
+    // Calculate total VAT for an invoice
+    const calculateTotalVAT = (invoice, accounts) => {
+        return invoice.payments.reduce((sum, payment) => sum + calculateVAT(payment, accounts), 0);
+    };
+
+    // Format amount to AED
+    const formatCurrency = (amount) => {
+        return `AED ${parseFloat(amount || 0).toFixed(2)}`;
+    };
+
+    // Update the handleAddPayment function to include VAT calculation
     const handleAddPayment = (amount, method, date, reference, notes) => {
         if (!currentInvoice) return;
+        const parsedAmount = parseFloat(amount);
+        
+        // Find account to determine if VAT applies
+        const account = accounts.find(acc => acc.name === method);
+        const vatAmount = account?.accountType === 'cash' ? 0 : parsedAmount * 0.05;
+        
         const updatedInvoices = invoices.map(inv => {
             if (inv.id === currentInvoice.id) {
                 const newPayment = {
                     id: Date.now(),
-                    amount: parseFloat(amount),
+                    amount: parsedAmount,
                     date,
                     method,
                     reference,
-                    notes
+                    notes,
+                    vat: vatAmount
                 };
 
-                const newPaid = inv.paid + parseFloat(amount);
+                const newPaid = inv.paid + parsedAmount;
                 let newStatus = 'unpaid';
                 if (newPaid >= inv.total) newStatus = 'paid';
                 else if (newPaid > 0) newStatus = 'partial';
@@ -170,13 +174,17 @@ const OpenInvoices = () => {
                     ...inv,
                     payments: [...inv.payments, newPayment],
                     paid: newPaid,
+                    vat: (inv.vat || 0) + vatAmount,
                     status: newStatus
                 };
             }
             return inv;
         });
 
-        setInvoices(updatedInvoices);
+        // Filter out paid invoices
+        const filteredInvoices = updatedInvoices.filter(inv => inv.status !== 'paid');
+        
+        setInvoices(filteredInvoices);
         setShowPaymentModal(false);
     };
 
@@ -249,13 +257,27 @@ const OpenInvoices = () => {
         setShowDriverModal(false);
     };
 
+    // Add totals calculation for the table footer
+    const calculateTotals = () => {
+        if (!invoices.length) return { outstanding: 0, total: 0 };
+        
+        return invoices.reduce((acc, invoice) => {
+            acc.total += invoice.total;
+            acc.outstanding += (invoice.total - invoice.paid);
+            return acc;
+        }, { outstanding: 0, total: 0 });
+    };
+
+    // Add this before the return statement
+    const totals = calculateTotals();
+
     return (
         <>
             <div className="content-wrapper py-4 px-4">
                 <div className="card shadow">
                     <div className="card-header bg-light py-3">
                         <div className="d-flex justify-content-between align-items-center">
-                            <h3 className="h5 fw-bold text-primary mb-0">Open Invoices</h3>
+                            <h3 className="h5 fw-bold text-primary mb-0">Open Invoices</h3> 
                             <p className="text-muted small mb-0">
                                 Manage your pending invoices, record payments and track expenses
                             </p>
@@ -275,7 +297,7 @@ const OpenInvoices = () => {
                                 <tbody>
                                     {invoices.length === 0 ? (
                                         <tr>
-                                            <td colSpan="4" className="text-center py-5 text-muted">
+                                            <td colSpan="4" className="text-center py-4 text-muted">
                                                 No invoices found
                                             </td>
                                         </tr>
@@ -398,7 +420,7 @@ const OpenInvoices = () => {
                                                                                 className="btn btn-sm btn-primary d-flex align-items-center gap-1"
                                                                             >
                                                                                 <Truck size={14} />
-                                                                                Assign Driver
+                                                                                {invoice.driver ? 'Change Driver' : 'Assign Driver'}
                                                                             </button>
                                                                         </div>
                                                                     </div>
@@ -473,6 +495,14 @@ const OpenInvoices = () => {
                                         ))
                                     )}
                                 </tbody>
+                                <tfoot className="table-light fw-bold">
+                                    <tr>
+                                        <td colSpan="3" className="px-4 py-3 text-end">Total:</td>
+                                        <td className="px-4 py-3 text-end">
+                                            {formatCurrency(totals.outstanding)} / {formatCurrency(totals.total)}
+                                        </td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>

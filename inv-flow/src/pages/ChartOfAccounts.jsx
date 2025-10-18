@@ -25,8 +25,8 @@ const ChartOfAccounts = () => {
     ]);
 
     const [bankAccounts, setBankAccounts] = useState([
-        { id: 1, name: 'Cash Account', accountNumber: 'N/A', details: 'Cash on hand' },
-        { id: 2, name: 'Bank Account - HBL', accountNumber: '1234567890', details: 'Current Account' }
+        { id: 1, name: 'Cash Account', accountNumber: 'N/A', accountType: 'cash', details: 'Cash on hand' },
+        { id: 2, name: 'Bank Account - HBL', accountNumber: '1234567890', accountType: 'bank', details: 'Current Account' }
     ]);
 
     // Modal state
@@ -204,6 +204,18 @@ const ChartOfAccounts = () => {
                                     className="form-control"
                                     required
                                 />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label">Account Type</label>
+                                <select
+                                    value={formData.accountType || 'bank'}
+                                    onChange={(e) => setFormData({ ...formData, accountType: e.target.value })}
+                                    className="form-select"
+                                    required
+                                >
+                                    <option value="bank">Bank Account (5% VAT applies)</option>
+                                    <option value="cash">Cash Account (No VAT)</option>
+                                </select>
                             </div>
                             <div className="mb-3">
                                 <label className="form-label">Account Number</label>
