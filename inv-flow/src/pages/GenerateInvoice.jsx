@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, User, DollarSign, Receipt, Truck, Edit2, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
 import CustomerModal from '../components/CustomerModal';
@@ -19,12 +19,12 @@ const GenerateInvoice = () => {
 
     const [selectedCustomer, setSelectedCustomer] = useState('');
     const [assignedDriver, setAssignedDriver] = useState('');
-    const [serviceDate, setServiceDate] = useState('');
+    const [serviceDate, setServiceDate] = useState(new Date().toISOString().split('T')[0]); // Today's date as default
     const [accommodation, setAccommodation] = useState('');
     const [services, setServices] = useState([{ service: '', rate: '' }]);
 
     // Add this effect to keep currentInvoice updated
-    React.useEffect(() => {
+    useEffect(() => {
         const invoice = {
             customer: selectedCustomer,
             driver: assignedDriver,
@@ -133,87 +133,106 @@ const GenerateInvoice = () => {
 
     return (
         <>
-            <div className="bg-white border-b shadow-sm w-100 px-0">
-                <div className="container-fluid py-3">
-                    <h2 className="display-12 fw-bold text-primary">Generate Invoice</h2>
-                    <div className="d-flex flex-wrap gap-3 text-muted mt-1">
-                        <p className="mb-0">Invoice #INV-2024-0156</p>
-                        <span>•</span>
-                        <p className="mb-0">Invoice Date: {invoiceDate}</p>
-                        <span>•</span>
-                        <p className="mb-0">Created by: Admin User</p>
-                    </div>
-                </div>
-            </div>
-
-            <div className="container-fluid py-3">
+            <div className="content-wrapper py-3 px-4">
                 <div className="card shadow">
-                    <div className="card-body p-4">
+                    <div className="card-header bg-light py-2">
+                        <div className="d-flex flex-wrap gap-3 mb-0">
+                            <h3 className="h6 fw-bold text-primary mb-0 d-flex align-items-center">Generate Invoice</h3>
+                            <span className="text-muted small">•</span>
+                            <p className="text-muted small mb-0">Invoice #INV-2024-0156</p>
+                            <span className="text-muted small">•</span>
+                            <p className="text-muted small mb-0">Invoice Date: {invoiceDate}</p>
+                            <span className="text-muted small">•</span>
+                            <p className="text-muted small mb-0">Created by: Admin User</p>
+                        </div>
+                    </div>
+                    <div className="card-body p-3">
                         <form>
-                            {/* Customer Section */}
-                            <div className="mb-4">
-                                <label className="form-label fw-bold">Customer Information</label>
-                                <div className="d-flex gap-2">
-                                    <select
-                                        value={selectedCustomer}
-                                        onChange={(e) => setSelectedCustomer(e.target.value)}
-                                        className="form-select flex-grow-1"
-                                    >
-                                        <option value="">Select Customer</option>
-                                        {customers.map((customer) => (
-                                            <option key={customer.id} value={customer.name}>{customer.name}</option>
-                                        ))}
-                                    </select>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowCustomerModal(true)}
-                                        className="btn btn-dark d-flex align-items-center gap-2"
-                                    >
-                                        <Plus size={18} />
-                                        Add New
-                                    </button>
-                                </div>
-
-                                {assignedDriver && (
-                                    <div className="mt-3 p-3 bg-light border rounded d-flex align-items-center justify-content-between">
-                                        <div className="d-flex align-items-center gap-2">
-                                            <User size={18} className="text-secondary" />
-                                            <span className="fw-medium">
-                                                Driver: {assignedDriver}
-                                            </span>
-                                        </div>
+                            {/* First row - Customer and Service Date */}
+                            <div className="row mb-3">
+                                <div className="col-md-6">
+                                    <label className="form-label small fw-medium">Customer Information</label>
+                                    <div className="d-flex gap-2">
+                                        <select
+                                            value={selectedCustomer}
+                                            onChange={(e) => setSelectedCustomer(e.target.value)}
+                                            className="form-select form-select-sm flex-grow-1"
+                                        >
+                                            <option value="">Select Customer</option>
+                                            {customers.map((customer) => (
+                                                <option key={customer.id} value={customer.name}>{customer.name}</option>
+                                            ))}
+                                        </select>
                                         <button
                                             type="button"
-                                            onClick={() => setShowDriverModal(true)}
-                                            className="btn btn-sm btn-outline-secondary"
+                                            onClick={() => setShowCustomerModal(true)}
+                                            className="btn btn-sm btn-dark px-2"
+                                            title="Add New Customer"
                                         >
-                                            <Edit2 size={16} />
+                                            <Plus size={16} />
                                         </button>
                                     </div>
-                                )}
+                                </div>
+                                
+                                <div className="col-md-6">
+                                    <label className="form-label small fw-medium">Service Date</label>
+                                    <input
+                                        type="date"
+                                        value={serviceDate}
+                                        onChange={(e) => setServiceDate(e.target.value)}
+                                        className="form-control form-control-sm"
+                                    />
+                                </div>
                             </div>
 
-                            <div className="mb-4">
-                                <label className="form-label fw-bold">Person Accommodation</label>
-                                <input
-                                    type="number"
-                                    value={accommodation}
-                                    onChange={(e) => setAccommodation(e.target.value)}
-                                    placeholder="Number of persons"
-                                    className="form-control"
-                                    min="1"
-                                />
+                            {/* Driver and Accommodation - Fix alignment */}
+                            <div className="row mb-3">
+                                <div className="col-md-6">
+                                    <label className="form-label small fw-medium">Driver</label>
+                                    <div>
+                                        {assignedDriver ? (
+                                            <div className="p-2 bg-light border rounded d-flex align-items-center justify-content-between">
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <User size={16} className="text-secondary" />
+                                                    <span className="small">
+                                                        {assignedDriver}
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowDriverModal(true)}
+                                                    className="btn btn-sm btn-outline-secondary py-0 px-1"
+                                                >
+                                                    <Edit2 size={14} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowDriverModal(true)}
+                                                className="btn btn-sm btn-outline-dark d-flex align-items-center gap-1"
+                                            >
+                                                <Truck size={16} />
+                                                Assign Driver
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                <div className="col-md-6">
+                                    <label className="form-label small fw-medium">Person Accommodation</label>
+                                    <input
+                                        type="number"
+                                        value={accommodation}
+                                        onChange={(e) => setAccommodation(e.target.value)}
+                                        placeholder="Number of persons"
+                                        className="form-control form-control-sm"
+                                        min="1"
+                                    />
+                                </div>
                             </div>
 
-                            <div className="mb-4">
-                                <label className="form-label fw-bold">Service Date</label>
-                                <input
-                                    type="date"
-                                    value={serviceDate}
-                                    onChange={(e) => setServiceDate(e.target.value)}
-                                    className="form-control"
-                                />
-                            </div>
+                            {/* Services Section - Remains the same */}
 
                             <div className="mb-4">
                                 <div className="d-flex justify-content-between align-items-center mb-2">
@@ -345,6 +364,7 @@ const GenerateInvoice = () => {
                 show={showCustomerModal}
                 onClose={() => setShowCustomerModal(false)}
                 onSave={handleAddCustomer}
+                initialData={{}} // Add this line
             />
 
             {/* Driver Modal */}

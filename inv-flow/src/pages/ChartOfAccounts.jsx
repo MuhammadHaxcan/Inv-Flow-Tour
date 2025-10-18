@@ -247,19 +247,18 @@ const ChartOfAccounts = () => {
 
     return (
         <>
-            <div className="bg-white border-b shadow-sm w-100 px-0">
-                <div className="container-fluid py-3">
-                    <h2 className="display-12 fw-bold text-primary">Chart of Accounts</h2>
-                    <p className="text-muted mt-1 mb-0">
-                        Manage your customers, drivers, expenses, and bank accounts
-                    </p>
-                </div>
-            </div>
-
-            <div className="container-fluid py-3">
+            <div className="content-wrapper py-4 px-4">
                 <div className="card shadow">
-                    {/* Category Tabs */}
-                    <div className="card-header p-0">
+                    <div className="card-header bg-light py-3">
+                        <div className="d-flex justify-content-between align-items-center">
+                            <h3 className="h5 fw-bold text-primary mb-0">Chart of Accounts</h3>
+                            <p className="text-muted small mb-0">
+                                Manage your customers, drivers, expenses, and bank accounts
+                            </p>
+                        </div>
+                    </div>  
+                    {/* Category Tabs - Update the styling */}
+                    <div className="card-header p-0 border-0">
                         <ul className="nav nav-tabs card-header-tabs">
                             {categories.map(cat => {
                                 const Icon = cat.icon;
@@ -267,11 +266,17 @@ const ChartOfAccounts = () => {
                                     <li className="nav-item" key={cat.id}>
                                         <button
                                             onClick={() => setActiveCategory(cat.id)}
-                                            className={`nav-link d-flex align-items-center gap-2 px-4 py-3 ${
-                                                activeCategory === cat.id ? 'active fw-medium' : 'text-secondary'
+                                            className={`nav-link d-flex align-items-center gap-2 px-3 py-2 ${
+                                                activeCategory === cat.id ? 'active' : 'text-secondary'
                                             }`}
+                                            style={{ 
+                                                fontSize: '0.85rem', 
+                                                fontWeight: activeCategory === cat.id ? '500' : '400',
+                                                transition: 'none', // Prevent animation
+                                                transform: 'none' // Prevent scaling
+                                            }}
                                         >
-                                            <Icon size={20} />
+                                            <Icon size={16} />
                                             {cat.label}
                                         </button>
                                     </li>

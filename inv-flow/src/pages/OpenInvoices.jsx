@@ -251,17 +251,16 @@ const OpenInvoices = () => {
 
     return (
         <>
-            <div className="bg-white border-b shadow-sm w-100 px-0">
-                <div className="container-fluid py-3">
-                    <h2 className="display-12 fw-bold text-primary">Open Invoices</h2>
-                    <p className="text-muted mt-1 mb-0">
-                        Manage your pending invoices, record payments and track expenses
-                    </p>
-                </div>
-            </div>
-
-            <div className="container-fluid py-3">
+            <div className="content-wrapper py-4 px-4">
                 <div className="card shadow">
+                    <div className="card-header bg-light py-3">
+                        <div className="d-flex justify-content-between align-items-center">
+                            <h3 className="h5 fw-bold text-primary mb-0">Open Invoices</h3>
+                            <p className="text-muted small mb-0">
+                                Manage your pending invoices, record payments and track expenses
+                            </p>
+                        </div>
+                    </div>
                     <div className="card-body p-0">
                         <div className="table-responsive">
                             <table className="table table-hover mb-0">
