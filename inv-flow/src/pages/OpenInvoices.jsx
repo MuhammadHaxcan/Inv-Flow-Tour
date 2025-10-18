@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import PaymentForm from '../components/PaymentForm';
 import ExpenseForm from '../components/ExpenseForm';
 import ServiceForm from '../components/ServiceForm';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const OpenInvoices = () => {
     const [expandedInvoice, setExpandedInvoice] = useState(null);
@@ -104,11 +105,11 @@ const OpenInvoices = () => {
     };
 
     const getStatusColor = (status) => {
-        switch (status) {
-            case 'paid': return 'bg-green-100 text-green-800';
-            case 'partial': return 'bg-yellow-100 text-yellow-800';
-            case 'unpaid': return 'bg-red-100 text-red-800';
-            default: return 'bg-gray-100 text-gray-800';
+        switch (status) {                                                                           
+            case 'paid': return 'bg-success text-white';
+            case 'partial': return 'bg-warning text-dark';
+            case 'unpaid': return 'bg-danger text-white';
+            default: return 'bg-secondary text-white';
         }
     };
 
@@ -249,40 +250,32 @@ const OpenInvoices = () => {
 
     return (
         <>
-            <div className="bg-white border-b">
-                <div className="max-w-7xl mx-auto px-6 py-4">
-                    <h2 className="text-2xl font-bold text-gray-900">Open Invoices</h2>
-                    <p className="text-sm text-gray-500 mt-1">
+            <div className="bg-white border-b shadow-sm">
+                <div className="container py-4">
+                    <h2 className="display-6 fw-bold text-primary">Open Invoices</h2>
+                    <p className="text-muted mt-2">
                         Manage your pending invoices, record payments and track expenses
                     </p>
                 </div>
             </div>
 
-            <div className="min-h-screen bg-gray-50">
-                <div className="max-w-7xl mx-auto px-6 py-8">
-                    <div className="bg-white shadow-sm">
-                        <div className="overflow-hidden">
-                            <table className="min-w-full">
-                                <thead className="bg-gray-50 border-b border-gray-200">
+            <div className="container py-5">
+                <div className="card shadow">
+                    <div className="card-body p-0">
+                        <div className="table-responsive">
+                            <table className="table table-hover mb-0">
+                                <thead className="table-light">
                                     <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Invoice Details
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Customer
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Driver
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Outstanding
-                                        </th>
+                                        <th className="px-4 py-3">Invoice Details</th>
+                                        <th className="px-4 py-3">Customer</th>
+                                        <th className="px-4 py-3">Driver</th>
+                                        <th className="px-4 py-3 text-end">Outstanding</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-200">
+                                <tbody>
                                     {invoices.length === 0 ? (
                                         <tr>
-                                            <td colSpan="4" className="px-6 py-10 text-center text-sm text-gray-500">
+                                            <td colSpan="4" className="text-center py-5 text-muted">
                                                 No invoices found
                                             </td>
                                         </tr>
@@ -290,50 +283,51 @@ const OpenInvoices = () => {
                                         invoices.map(invoice => (
                                             <React.Fragment key={invoice.id}>
                                                 <tr
-                                                    className={`${expandedInvoice === invoice.id ? 'bg-gray-50' : 'hover:bg-gray-50'} cursor-pointer`}
+                                                    className={`${expandedInvoice === invoice.id ? 'table-active' : ''} cursor-pointer`}
                                                     onClick={() => toggleExpand(invoice.id)}
+                                                    style={{ cursor: 'pointer' }}
                                                 >
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center">
+                                                    <td className="px-4 py-3">
+                                                        <div className="d-flex align-items-center">
                                                             {expandedInvoice === invoice.id ?
-                                                                <ChevronUp size={18} className="text-gray-400 mr-2" /> :
-                                                                <ChevronDown size={18} className="text-gray-400 mr-2" />
+                                                                <ChevronUp size={18} className="text-secondary me-2" /> :
+                                                                <ChevronDown size={18} className="text-secondary me-2" />
                                                             }
                                                             <div>
-                                                                <div className="font-medium text-gray-900">{invoice.number}</div>
-                                                                <div className="text-sm text-gray-500">{new Date(invoice.date).toLocaleDateString()}</div>
+                                                                <div className="fw-bold">{invoice.number}</div>
+                                                                <div className="text-muted small">{new Date(invoice.date).toLocaleDateString()}</div>
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="text-sm font-medium text-gray-900">{invoice.customer}</div>
-                                                        <div className="text-sm text-gray-500">{invoice.persons} persons</div>
+                                                    <td className="px-4 py-3">
+                                                        <div className="fw-medium">{invoice.customer}</div>
+                                                        <div className="text-muted small">{invoice.persons} persons</div>
                                                     </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="text-sm text-gray-900">
+                                                    <td className="px-4 py-3">
+                                                        <div>
                                                             {invoice.driver || (
-                                                                <span className="text-orange-500">Not assigned</span>
+                                                                <span className="text-warning">Not assigned</span>
                                                             )}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <div className="text-sm font-medium text-gray-900">
+                                                    <td className="px-4 py-3 text-end">
+                                                        <div className="fw-bold">
                                                             AED {(invoice.total - invoice.paid).toFixed(2)}
                                                         </div>
-                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
+                                                        <span className={`badge ${getStatusColor(invoice.status)} rounded-pill`}>
                                                             {getStatusText(invoice.status)}
                                                         </span>
                                                     </td>
                                                 </tr>
                                                 {expandedInvoice === invoice.id && (
                                                     <tr>
-                                                        <td colSpan="4" className="px-6 py-4 bg-gray-50">
-                                                            <div className="border border-gray-200 rounded-md overflow-hidden">
+                                                        <td colSpan="4" className="p-0 border-0">
+                                                            <div className="card m-3">
                                                                 {/* Invoice summary */}
-                                                                <div className="px-4 py-3 bg-gray-100">
-                                                                    <div className="flex justify-between items-center">
-                                                                        <h3 className="text-sm font-medium text-gray-700">Invoice Details</h3>
-                                                                        <div className="text-sm text-gray-500">
+                                                                <div className="card-header bg-light py-3">
+                                                                    <div className="d-flex justify-content-between align-items-center">
+                                                                        <h5 className="card-title mb-0 fw-bold">Invoice Details</h5>
+                                                                        <div className="text-muted">
                                                                             Total: AED {invoice.total.toFixed(2)} |
                                                                             Paid: AED {invoice.paid.toFixed(2)} |
                                                                             Balance: AED {(invoice.total - invoice.paid).toFixed(2)}
@@ -342,130 +336,135 @@ const OpenInvoices = () => {
                                                                 </div>
 
                                                                 {/* Services */}
-                                                                <div className="px-4 py-3 border-t border-gray-200">
-                                                                    <div className="flex justify-between items-center mb-2">
-                                                                        <h4 className="text-sm font-medium text-gray-700">Services</h4>
-                                                                        <div className="flex items-center gap-2">
+                                                                <div className="card-body border-bottom py-3">
+                                                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                                                        <h6 className="fw-bold mb-0">Services</h6>
+                                                                        <div className="d-flex gap-2">
                                                                             <button
                                                                                 onClick={(e) => openServiceModal(invoice, e)}
-                                                                                className="text-xs bg-gray-800 hover:bg-gray-700 text-white px-2 py-1 rounded flex items-center gap-1"
+                                                                                className="btn btn-sm btn-dark d-flex align-items-center gap-1"
                                                                             >
                                                                                 <Plus size={14} />
                                                                                 Add Service
                                                                             </button>
                                                                             <button
                                                                                 onClick={(e) => openPaymentModal(invoice, e)}
-                                                                                className="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded flex items-center gap-1"
+                                                                                className="btn btn-sm btn-success d-flex align-items-center gap-1"
                                                                             >
                                                                                 <DollarSign size={14} />
                                                                                 Add Payment
                                                                             </button>
                                                                         </div>
                                                                     </div>
-                                                                    <table className="min-w-full divide-y divide-gray-200">
-                                                                        <thead className="bg-gray-50">
-                                                                            <tr>
-                                                                                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                                                                                <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody className="bg-white divide-y divide-gray-200">
-                                                                            {invoice.services.map(service => (
-                                                                                <tr key={service.id}>
-                                                                                    <td className="px-3 py-2 text-sm text-gray-900">{service.service}</td>
-                                                                                    <td className="px-3 py-2 text-sm text-gray-900 text-right">AED {service.rate.toFixed(2)}</td>
-                                                                                </tr>
-                                                                            ))}
-                                                                            {invoice.services.length === 0 && (
+                                                                    <div className="table-responsive">
+                                                                        <table className="table table-sm table-striped">
+                                                                            <thead>
                                                                                 <tr>
-                                                                                    <td colSpan="2" className="px-3 py-2 text-sm text-gray-500 text-center">No services added</td>
+                                                                                    <th>Service</th>
+                                                                                    <th className="text-end">Amount</th>
                                                                                 </tr>
-                                                                            )}
-                                                                        </tbody>
-                                                                    </table>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                {invoice.services.map(service => (
+                                                                                    <tr key={service.id}>
+                                                                                        <td>{service.service}</td>
+                                                                                        <td className="text-end">AED {service.rate.toFixed(2)}</td>
+                                                                                    </tr>
+                                                                                ))}
+                                                                                {invoice.services.length === 0 && (
+                                                                                    <tr>
+                                                                                        <td colSpan="2" className="text-center text-muted">No services added</td>
+                                                                                    </tr>
+                                                                                )}
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
                                                                 </div>
 
                                                                 {/* Expenses */}
-                                                                <div className="px-4 py-3 border-t border-gray-200">
-                                                                    <div className="flex justify-between items-center mb-2">
-                                                                        <h4 className="text-sm font-medium text-gray-700">Expenses</h4>
-                                                                        <div className="flex items-center gap-2">
+                                                                <div className="card-body border-bottom py-3">
+                                                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                                                        <h6 className="fw-bold mb-0">Expenses</h6>
+                                                                        <div className="d-flex gap-2">
                                                                             <button
                                                                                 onClick={(e) => openExpenseModal(invoice, e)}
-                                                                                className="text-xs bg-gray-800 hover:bg-gray-700 text-white px-2 py-1 rounded flex items-center gap-1"
+                                                                                className="btn btn-sm btn-dark d-flex align-items-center gap-1"
                                                                             >
                                                                                 <Plus size={14} />
                                                                                 Add Expense
                                                                             </button>
                                                                             <button
                                                                                 onClick={(e) => openDriverModal(invoice, e)}
-                                                                                className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded flex items-center gap-1"
+                                                                                className="btn btn-sm btn-primary d-flex align-items-center gap-1"
                                                                             >
                                                                                 <Truck size={14} />
                                                                                 Assign Driver
                                                                             </button>
                                                                         </div>
                                                                     </div>
-                                                                    <table className="min-w-full divide-y divide-gray-200">
-                                                                        <thead className="bg-gray-50">
-                                                                            <tr>
-                                                                                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                                                                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                                                                <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody className="bg-white divide-y divide-gray-200">
-                                                                            {invoice.expenses.map(exp => (
-                                                                                <tr key={exp.id}>
-                                                                                    <td className="px-3 py-2 text-sm text-gray-900">{exp.type}</td>
-                                                                                    <td className="px-3 py-2 text-sm text-gray-500">{exp.date}</td>
-                                                                                    <td className="px-3 py-2 text-sm text-gray-900 text-right">AED {exp.amount.toFixed(2)}</td>
-                                                                                </tr>
-                                                                            ))}
-                                                                            {invoice.expenses.length === 0 && (
+                                                                    <div className="table-responsive">
+                                                                        <table className="table table-sm table-striped">
+                                                                            <thead>
                                                                                 <tr>
-                                                                                    <td colSpan="3" className="px-3 py-2 text-sm text-gray-500 text-center">No expenses added</td>
+                                                                                    <th>Type</th>
+                                                                                    <th>Date</th>
+                                                                                    <th className="text-end">Amount</th>
                                                                                 </tr>
-                                                                            )}
-                                                                        </tbody>
-                                                                    </table>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                {invoice.expenses.map(exp => (
+                                                                                    <tr key={exp.id}>
+                                                                                        <td>{exp.type}</td>
+                                                                                        <td>{exp.date}</td>
+                                                                                        <td className="text-end">AED {exp.amount.toFixed(2)}</td>
+                                                                                    </tr>
+                                                                                ))}
+                                                                                {invoice.expenses.length === 0 && (
+                                                                                    <tr>
+                                                                                        <td colSpan="3" className="text-center text-muted">No expenses added</td>
+                                                                                    </tr>
+                                                                                )}
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
                                                                 </div>
 
                                                                 {/* Payments */}
-                                                                <div className="px-4 py-3 border-t border-gray-200">
-                                                                    <div className="flex justify-between items-center mb-2">
-                                                                        <h4 className="text-sm font-medium text-gray-700">Payments</h4>
-                                                                        <div className="text-sm text-gray-500">
+                                                                <div className="card-body py-3">
+                                                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                                                        <h6 className="fw-bold mb-0">Payments</h6>
+                                                                        <div className="text-muted">
                                                                             {invoice.payments.length} payments recorded
                                                                         </div>
                                                                     </div>
-                                                                    <table className="min-w-full divide-y divide-gray-200">
-                                                                        <thead className="bg-gray-50">
-                                                                            <tr>
-                                                                                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                                                                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
-                                                                                <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                                                                                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody className="bg-white divide-y divide-gray-200">
-                                                                            {invoice.payments.map(p => (
-                                                                                <tr key={p.id}>
-                                                                                    <td className="px-3 py-2 text-sm text-gray-900">{p.date}</td>
-                                                                                    <td className="px-3 py-2 text-sm text-gray-900">{p.method}</td>
-                                                                                    <td className="px-3 py-2 text-sm text-gray-900 text-right">AED {p.amount.toFixed(2)}</td>
-                                                                                    <td className="px-3 py-2 text-sm text-gray-500">{p.reference}</td>
-                                                                                </tr>
-                                                                            ))}
-                                                                            {invoice.payments.length === 0 && (
+                                                                    <div className="table-responsive">
+                                                                        <table className="table table-sm table-striped">
+                                                                            <thead>
                                                                                 <tr>
-                                                                                    <td colSpan="4" className="px-3 py-2 text-sm text-gray-500 text-center">No payments recorded</td>
+                                                                                    <th>Date</th>
+                                                                                    <th>Method</th>
+                                                                                    <th className="text-end">Amount</th>
+                                                                                    <th>Reference</th>
                                                                                 </tr>
-                                                                            )}
-                                                                        </tbody>
-                                                                    </table>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                {invoice.payments.map(p => (
+                                                                                    <tr key={p.id}>
+                                                                                        <td>{p.date}</td>
+                                                                                        <td>{p.method}</td>
+                                                                                        <td className="text-end">AED {p.amount.toFixed(2)}</td>
+                                                                                        <td>{p.reference}</td>
+                                                                                    </tr>
+                                                                                ))}
+                                                                                {invoice.payments.length === 0 && (
+                                                                                    <tr>
+                                                                                        <td colSpan="4" className="text-center text-muted">No payments recorded</td>
+                                                                                    </tr>
+                                                                                )}
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
                                                                 </div>
-
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -512,32 +511,30 @@ const OpenInvoices = () => {
 
             {/* Driver Modal */}
             <Modal show={showDriverModal} onClose={() => setShowDriverModal(false)} title="Assign Driver">
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Select Driver</label>
-                        <select
-                            value={assignedDriver}
-                            onChange={(e) => setAssignedDriver(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent"
-                        >
-                            <option value="">Choose a driver</option>
-                            {drivers.map((driver) => (
-                                <option key={driver.id} value={driver.name}>{driver.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="flex gap-3 pt-2">
-                        <button
-                            onClick={handleAssignDriver}
-                            className="flex-1 px-4 py-2 bg-gray-800 text-white hover:bg-gray-700 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-                            disabled={!assignedDriver}
-                        >
-                            Assign Driver
-                        </button>
-                        <button onClick={() => setShowDriverModal(false)} className="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium">
-                            Cancel
-                        </button>
-                    </div>
+                <div className="mb-3">
+                    <label className="form-label">Select Driver</label>
+                    <select
+                        value={assignedDriver}
+                        onChange={(e) => setAssignedDriver(e.target.value)}
+                        className="form-select"
+                    >
+                        <option value="">Choose a driver</option>
+                        {drivers.map((driver) => (
+                            <option key={driver.id} value={driver.name}>{driver.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="d-flex gap-2">
+                    <button
+                        onClick={handleAssignDriver}
+                        className="btn btn-primary flex-grow-1"
+                        disabled={!assignedDriver}
+                    >
+                        Assign Driver
+                    </button>
+                    <button onClick={() => setShowDriverModal(false)} className="btn btn-outline-secondary">
+                        Cancel
+                    </button>
                 </div>
             </Modal>
         </>
