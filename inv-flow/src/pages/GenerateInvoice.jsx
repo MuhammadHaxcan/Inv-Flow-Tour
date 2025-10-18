@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, User, DollarSign, Receipt, Truck, Edit2, Trash2 } from 'lucide-react';
+import { Plus, User, DollarSign, Receipt, Truck, Edit2, Trash2, Calendar } from 'lucide-react';
 import Modal from '../components/Modal';
 import CustomerModal from '../components/CustomerModal';
 import ServiceForm from '../components/ServiceForm';
@@ -11,18 +11,30 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 const GenerateInvoice = () => {
     // Invoice state
     const [showDriverModal, setShowDriverModal] = useState(false);
-    const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showExpenseModal, setShowExpenseModal] = useState(false);
     const [showCustomerModal, setShowCustomerModal] = useState(false);
     const [showServiceModal, setShowServiceModal] = useState(false);
     const [currentInvoice, setCurrentInvoice] = useState(null);
 
+    // Get today's date in a consistent format
+    const today = new Date();
+    const formattedToday = today.toISOString().split('T')[0]; // YYYY-MM-DD format for date inputs
+
+    // Format for display (this is used in the invoice date display)
+    const displayDate = today.toLocaleString('en-AE', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
+
+    // Update the service date state to use the same date as the invoice
+    const [serviceDate, setServiceDate] = useState(formattedToday);
     const [selectedCustomer, setSelectedCustomer] = useState('');
     const [assignedDriver, setAssignedDriver] = useState('');
-    const [serviceDate, setServiceDate] = useState(new Date().toISOString().split('T')[0]); // Today's date as default
     const [accommodation, setAccommodation] = useState('');
     const [services, setServices] = useState([{ service: '', rate: '' }]);
-
+    const [expenses, setExpenses] = useState([]);
+    
     // Add this effect to keep currentInvoice updated
     useEffect(() => {
         const invoice = {
@@ -31,10 +43,11 @@ const GenerateInvoice = () => {
             serviceDate,
             accommodation,
             services,
-            total: calculateTotal()
+            expenses,
+            total: calculateInvoiceTotal()
         };
         setCurrentInvoice(invoice);
-    }, [selectedCustomer, assignedDriver, serviceDate, accommodation, services]);
+    }, [selectedCustomer, assignedDriver, serviceDate, accommodation, services, expenses]);
 
     // Data
     const [customers, setCustomers] = useState([
@@ -54,22 +67,7 @@ const GenerateInvoice = () => {
         { name: 'Outstation', rate: 12000 }
     ];
 
-    const accounts = [
-        { name: 'Cash Account', type: 'cash' },
-        { name: 'Bank Account - HBL', type: 'bank' },
-        { name: 'Bank Account - MCB', type: 'bank' },
-        { name: 'Credit Card', type: 'bank' }
-    ];
-
     const expenseTypes = ['Fuel', 'Tolls', 'Parking', 'Tickets', 'Maintenance'];
-
-    const invoiceDate = new Date().toLocaleString('en-AE', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
 
     const addService = () => {
         setServices([...services, { service: '', rate: '' }]);
@@ -94,16 +92,36 @@ const GenerateInvoice = () => {
         setServices(newServices);
     };
 
+    const addExpense = () => {
+        openExpenseModal();
+    };
+
+    const removeExpense = (index) => {
+        const newExpenses = expenses.filter((_, i) => i !== index);
+        setExpenses(newExpenses);
+    };
+
+    // Update the calculation functions
     const calculateSubtotal = () => {
         return services.reduce((sum, s) => sum + (parseFloat(s.rate) || 0), 0);
     };
 
+    const calculateExpensesTotal = () => {
+        return expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+    };
+
     const calculateVAT = () => {
+        // In a real implementation, this would calculate VAT based on payment method
+        // For now returning 0 as VAT is handled at payment time
         return 0;
     };
 
-    const calculateTotal = () => {
+    const calculateInvoiceTotal = () => {
         return calculateSubtotal() + calculateVAT();
+    };
+
+    const calculateNetAmount = () => {
+        return calculateInvoiceTotal() - calculateExpensesTotal();
     };
 
     const handleAddCustomer = (formData) => {
@@ -113,16 +131,20 @@ const GenerateInvoice = () => {
         setShowCustomerModal(false);
     };
 
-    const handleAddPayment = (amount, method, date, reference, notes) => {
-        console.log('Payment added:', { amount, method, date, reference, notes });
-        // Add payment to invoice logic here
-        setShowPaymentModal(false);
+    const handleAddExpense = (type, amount, date, description) => {
+        const newExpense = {
+            id: Date.now(),
+            type,
+            amount: parseFloat(amount),
+            date,
+            description
+        };
+        setExpenses([...expenses, newExpense]);
+        setShowExpenseModal(false);
     };
 
-    const handleAddExpense = (type, amount, date, description) => {
-        console.log('Expense added:', { type, amount, date, description });
-        // Add expense to invoice logic here                
-        setShowExpenseModal(false);
+    const openExpenseModal = () => {
+        setShowExpenseModal(true);
     };
 
     const handleAddService = (service, rate) => {
@@ -131,19 +153,49 @@ const GenerateInvoice = () => {
         setShowServiceModal(false);
     };
 
+    const formatCurrency = (amount) => {
+        return `AED ${parseFloat(amount || 0).toFixed(2)}`;
+    };
+
     return (
         <>
-            <div className="content-wrapper py-3 px-4">
+            <div className="content-wrapper">
                 <div className="card shadow">
                     <div className="card-header bg-light py-2">
-                        <div className="d-flex flex-wrap gap-3 mb-0">
-                            <h3 className="h6 fw-bold text-primary mb-0 d-flex align-items-center">Generate Invoice</h3>
-                            <span className="text-muted small">•</span>
-                            <p className="text-muted small mb-0">Invoice #INV-2024-0156</p>
-                            <span className="text-muted small">•</span>
-                            <p className="text-muted small mb-0">Invoice Date: {invoiceDate}</p>
-                            <span className="text-muted small">•</span>
-                            <p className="text-muted small mb-0">Created by: Admin User</p>
+                        <div className="d-flex justify-content-between align-items-center">
+                            <h3 className="h5 fw-bold text-primary mb-0">Generate Invoice</h3>
+                            <div className="d-flex align-items-center gap-3">
+                                <div className="form-group mb-0">
+                                    <label className="small text-muted mb-1">Invoice Number</label>
+                                    <input 
+                                        type="text" 
+                                        value="INV-2024-0156" 
+                                        className="form-control form-control-sm bg-light" 
+                                        disabled 
+                                        style={{ minWidth: "150px" }}
+                                    />
+                                </div>
+                                <div className="form-group mb-0">
+                                    <label className="small text-muted mb-1">Invoice Date</label>
+                                    <input 
+                                        type="text" 
+                                        value={displayDate} 
+                                        className="form-control form-control-sm bg-light" 
+                                        disabled
+                                        style={{ minWidth: "150px" }}
+                                    />
+                                </div>
+                                <div className="form-group mb-0">
+                                    <label className="small text-muted mb-1">Created By</label>
+                                    <input 
+                                        type="text" 
+                                        value="Admin User" 
+                                        className="form-control form-control-sm bg-light" 
+                                        disabled
+                                        style={{ minWidth: "120px" }}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div className="card-body p-3">
@@ -176,16 +228,33 @@ const GenerateInvoice = () => {
                                 
                                 <div className="col-md-6">
                                     <label className="form-label small fw-medium">Service Date</label>
-                                    <input
-                                        type="date"
-                                        value={serviceDate}
-                                        onChange={(e) => setServiceDate(e.target.value)}
-                                        className="form-control form-control-sm"
-                                    />
+                                    <div className="position-relative">
+                                        <input
+                                            type="date"
+                                            value={serviceDate}
+                                            onChange={(e) => setServiceDate(e.target.value)}
+                                            onClick={(e) => e.target.showPicker()} // Add click handler
+                                            onKeyDown={(e) => {
+                                                if (e.key === ' ') { // Handle spacebar
+                                                    e.preventDefault();
+                                                    e.target.showPicker();
+                                                }
+                                            }}
+                                            className="form-control form-control-sm date-input"
+                                            style={{ 
+                                                paddingRight: "2rem",
+                                                cursor: "pointer" // Add pointer cursor
+                                            }}
+                                        />
+                                        <Calendar 
+                                            size={16} 
+                                            className="position-absolute end-0 top-50 translate-middle-y me-2 text-muted pointer-events-none"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Driver and Accommodation - Fix alignment */}
+                            {/* Driver and Accommodation */}
                             <div className="row mb-3">
                                 <div className="col-md-6">
                                     <label className="form-label small fw-medium">Driver</label>
@@ -232,8 +301,7 @@ const GenerateInvoice = () => {
                                 </div>
                             </div>
 
-                            {/* Services Section - Remains the same */}
-
+                            {/* Services Section */}
                             <div className="mb-4">
                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                     <label className="form-label fw-bold mb-0">Services</label>
@@ -298,59 +366,110 @@ const GenerateInvoice = () => {
                                 </div>
                             </div>
 
-                            <div className="card bg-light mb-4">
-                                <div className="card-body">
-                                    <div className="d-flex justify-content-between mb-2">
-                                        <span className="text-muted">Subtotal:</span>
-                                        <span className="fw-medium">AED {calculateSubtotal().toFixed(2)}</span>
-                                    </div>
-                                    <div className="d-flex justify-content-between pt-2 border-top">
-                                        <span className="fw-bold fs-5">Total Amount:</span>
-                                        <span className="fw-bold fs-5">AED {calculateTotal().toFixed(2)}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="d-flex gap-2 mb-4">
-                                <button type="button" className="btn btn-primary flex-grow-1 py-2">
-                                    Save Invoice
-                                </button>
-                                <button type="button" className="btn btn-outline-secondary py-2">
-                                    Cancel
-                                </button>
-                            </div>
-
-                            <div className="pt-4 border-top">
-                                <div className="row g-3">
-                                    <div className="col-12 col-md-4">
+                            {/* New layout: Expenses on left, Total and buttons on right */}
+                            <div className="row">
+                                {/* Left side: Expenses */}
+                                <div className="col-md-6 mb-4">
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <label className="form-label fw-bold mb-0">Expenses</label>
                                         <button
                                             type="button"
-                                            onClick={() => setShowDriverModal(true)}
-                                            className="btn btn-dark w-100 d-flex align-items-center justify-content-center gap-2 py-2"
+                                            onClick={addExpense}
+                                            className="btn btn-sm btn-outline-dark d-flex align-items-center gap-1"
                                         >
-                                            <Truck size={20} />
-                                            Assign Driver
-                                        </button>
-                                    </div>
-                                    <div className="col-12 col-md-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPaymentModal(true)}
-                                            className="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2 py-2"
-                                        >
-                                            <DollarSign size={20} />
-                                            Record Payment
-                                        </button>
-                                    </div>
-                                    <div className="col-12 col-md-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowExpenseModal(true)}
-                                            className="btn btn-info w-100 d-flex align-items-center justify-content-center gap-2 py-2 text-white"
-                                        >
-                                            <Receipt size={20} />
+                                            <Plus size={16} />
                                             Add Expense
                                         </button>
+                                    </div>
+                                    <div className="table-responsive border rounded">
+                                        <table className="table table-hover mb-0">
+                                            <thead className="table-light">
+                                                <tr>
+                                                    <th className="px-3 py-2">Type</th>
+                                                    <th className="px-3 py-2">Date</th>
+                                                    <th className="px-3 py-2">Amount</th>
+                                                    <th className="px-3 py-2 text-center" style={{ width: "60px" }}></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {expenses.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="4" className="text-center py-3 text-muted">
+                                                            No expenses added
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    expenses.map((expense, index) => (
+                                                        <tr key={expense.id}>
+                                                            <td className="px-3 py-2">{expense.type}</td>
+                                                            <td className="px-3 py-2">{expense.date}</td>
+                                                            <td className="px-3 py-2">{formatCurrency(expense.amount)}</td>
+                                                            <td className="px-3 py-2 text-center">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeExpense(index)}
+                                                                    className="btn btn-sm btn-outline-danger"
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                            {expenses.length > 0 && (
+                                                <tfoot className="table-light">
+                                                    <tr>
+                                                        <td colSpan="2" className="text-end fw-bold">Total Expenses:</td>
+                                                        <td colSpan="2" className="fw-bold">{formatCurrency(calculateExpensesTotal())}</td>
+                                                    </tr>
+                                                </tfoot>
+                                            )}
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                {/* Right side: Total and buttons */}
+                                <div className="col-md-6 mb-4">
+                                    <div className="card bg-light h-100">
+                                        <div className="card-body d-flex flex-column">
+                                            <div className="mb-4 flex-grow-1">
+                                                <div className="d-flex justify-content-between mb-2">
+                                                    <span className="text-muted">Subtotal:</span>
+                                                    <span className="fw-medium">{formatCurrency(calculateSubtotal())}</span>
+                                                </div>
+                                                <div className="d-flex justify-content-between mb-2">
+                                                    <span className="text-muted">VAT:</span>
+                                                    <span className="fw-medium">{formatCurrency(calculateVAT())}</span>
+                                                </div>
+                                                <div className="d-flex justify-content-between pt-2 border-top mb-3">
+                                                    <span className="fw-bold">Invoice Total:</span>
+                                                    <span className="fw-bold">{formatCurrency(calculateInvoiceTotal())}</span>
+                                                </div>
+                                                
+                                                {expenses.length > 0 && (
+                                                    <>
+                                                        <div className="d-flex justify-content-between mb-2">
+                                                            <span className="text-muted">Total Expenses:</span>
+                                                            <span className="fw-medium text-danger">- {formatCurrency(calculateExpensesTotal())}</span>
+                                                        </div>
+                                                        <div className="d-flex justify-content-between pt-2 border-top">
+                                                            <span className="fw-bold">Net Amount:</span>
+                                                            <span className="fw-bold">{formatCurrency(calculateNetAmount())}</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                            
+                                            <div className="d-flex gap-2">
+                                                <button type="button" className="btn btn-primary flex-grow-1 py-2">
+                                                    Save Invoice
+                                                </button>
+                                                <button type="button" className="btn btn-outline-secondary py-2">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -364,7 +483,7 @@ const GenerateInvoice = () => {
                 show={showCustomerModal}
                 onClose={() => setShowCustomerModal(false)}
                 onSave={handleAddCustomer}
-                initialData={{}} // Add this line
+                initialData={{}}
             />
 
             {/* Driver Modal */}
@@ -386,17 +505,7 @@ const GenerateInvoice = () => {
                     onSave={(service, rate) => handleAddService(service, rate)}
                     onCancel={() => setShowServiceModal(false)}
                     invoice={currentInvoice}
-                />
-            </Modal>
-
-            {/* Payment Modal */}
-            <Modal show={showPaymentModal} onClose={() => setShowPaymentModal(false)} title="Record Payment">
-                <PaymentForm
-                    accounts={accounts}
-                    onSave={(amount, method, date, reference, notes) => handleAddPayment(amount, method, date, reference, notes)}
-                    onCancel={() => setShowPaymentModal(false)}
-                    invoice={currentInvoice}
-                />
+                />      
             </Modal>
 
             {/* Expense Modal */}

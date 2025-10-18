@@ -1,10 +1,11 @@
-import { Routes, Route, NavLink } from 'react-router-dom'
-import { FileText, Building2, FileCheck2, CheckCircle } from 'lucide-react'
+import { Routes, Route, NavLink, Navigate } from 'react-router-dom'
+import { FileText, Building2, FileCheck2, CheckCircle, CreditCard } from 'lucide-react'
 import './App.css'
 import GenerateInvoice from './pages/GenerateInvoice'
 import ChartOfAccounts from './pages/ChartOfAccounts'
 import OpenInvoices from './pages/OpenInvoices'
 import ClosedInvoices from './pages/ClosedInvoices'
+import BankTransactions from './pages/BankTransactions'
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
@@ -18,7 +19,7 @@ function App() {
                             <h1 className="h3 fw-bold mb-0 text-primary me-5">Inv-Flow</h1>
                             <div className="d-flex">
                                 <NavLink
-                                    to="/"
+                                    to="/generateinvoice"
                                     className={({ isActive }) =>
                                         `px-4 py-2 text-decoration-none d-flex align-items-center gap-2 ${isActive
                                             ? 'text-primary border-bottom border-2 border-primary'
@@ -54,6 +55,18 @@ function App() {
                                     Closed Invoices
                                 </NavLink>
                                 <NavLink
+                                    to="/bank-transactions"
+                                    className={({ isActive }) =>
+                                        `px-4 py-2 text-decoration-none d-flex align-items-center gap-2 ${isActive
+                                            ? 'text-primary border-bottom border-2 border-primary'
+                                            : 'text-secondary'
+                                        }`
+                                    }
+                                >
+                                    <CreditCard size={18} />
+                                    Bank Transactions
+                                </NavLink>
+                                <NavLink
                                     to="/accounts"
                                     className={({ isActive }) =>
                                         `px-4 py-2 text-decoration-none d-flex align-items-center gap-2 ${isActive
@@ -74,9 +87,11 @@ function App() {
             {/* Page Content */}
             <div className="flex-grow-1">
                 <Routes>
-                    <Route path="/" element={<GenerateInvoice />} />
+                    <Route path="/" element={<Navigate to="/generateinvoice" replace />} />
+                    <Route path="/generateinvoice" element={<GenerateInvoice />} />
                     <Route path="/open-invoices" element={<OpenInvoices />} />
                     <Route path="/closed-invoices" element={<ClosedInvoices />} />
+                    <Route path="/bank-transactions" element={<BankTransactions />} />
                     <Route path="/accounts" element={<ChartOfAccounts />} />
                 </Routes>
             </div>

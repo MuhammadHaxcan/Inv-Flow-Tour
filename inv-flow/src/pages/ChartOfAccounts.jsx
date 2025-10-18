@@ -259,7 +259,7 @@ const ChartOfAccounts = () => {
 
     return (
         <>
-            <div className="content-wrapper py-4 px-4">
+            <div className="content-wrapper">
                 <div className="card shadow">
                     <div className="card-header bg-light py-3">
                         <div className="d-flex justify-content-between align-items-center">

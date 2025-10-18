@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Plus, DollarSign, Truck, Receipt, Edit2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { ChevronDown, ChevronUp, Plus, DollarSign, Truck, Receipt, Edit2, Printer } from 'lucide-react';
 import Modal from '../components/Modal';
 import PaymentForm from '../components/PaymentForm';
 import ExpenseForm from '../components/ExpenseForm';
 import ServiceForm from '../components/ServiceForm';
 import DriverModal from '../components/DriverModal';
+import PrintableInvoice from '../components/PrintableInvoice';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const OpenInvoices = () => {
@@ -13,9 +14,11 @@ const OpenInvoices = () => {
     const [showExpenseModal, setShowExpenseModal] = useState(false);
     const [showServiceModal, setShowServiceModal] = useState(false);
     const [showDriverModal, setShowDriverModal] = useState(false);
+    const [showPrintModal, setShowPrintModal] = useState(false);
 
     const [currentInvoice, setCurrentInvoice] = useState(null);
     const [assignedDriver, setAssignedDriver] = useState('');
+    const printableInvoiceRef = useRef(null);
 
     const [invoices, setInvoices] = useState([
         {
@@ -125,6 +128,12 @@ const OpenInvoices = () => {
         setCurrentInvoice(invoice);
         setAssignedDriver(invoice.driver || '');
         setShowDriverModal(true);
+    };
+
+    const openPrintModal = (invoice, e) => {
+        e && e.stopPropagation();
+        setCurrentInvoice(invoice);
+        setShowPrintModal(true);
     };
 
     // Calculate VAT based on payment method
@@ -257,6 +266,21 @@ const OpenInvoices = () => {
         setShowDriverModal(false);
     };
 
+    // Print invoice handler
+    const handlePrintInvoice = () => {
+        const printContent = document.getElementById('printable-invoice');
+        const originalContents = document.body.innerHTML;
+        
+        document.body.innerHTML = printContent.innerHTML;
+        
+        window.print();
+        
+        document.body.innerHTML = originalContents;
+        
+        // Reload the page to restore all React event listeners
+        window.location.reload();
+    };
+
     // Add totals calculation for the table footer
     const calculateTotals = () => {
         if (!invoices.length) return { outstanding: 0, total: 0 };
@@ -273,9 +297,9 @@ const OpenInvoices = () => {
 
     return (
         <>
-            <div className="content-wrapper py-4 px-4">
+            <div className="content-wrapper">
                 <div className="card shadow">
-                    <div className="card-header bg-light py-3">
+                    <div className="card-header bg-light py-2">
                         <div className="d-flex justify-content-between align-items-center">
                             <h3 className="h5 fw-bold text-primary mb-0">Open Invoices</h3> 
                             <p className="text-muted small mb-0">
@@ -375,6 +399,13 @@ const OpenInvoices = () => {
                                                                             >
                                                                                 <DollarSign size={14} />
                                                                                 Add Payment
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={(e) => openPrintModal(invoice, e)}
+                                                                                className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                                                                            >
+                                                                                <Printer size={14} />
+                                                                                Print Voucher
                                                                             </button>
                                                                         </div>
                                                                     </div>
@@ -547,6 +578,33 @@ const OpenInvoices = () => {
                 drivers={drivers}
                 currentDriver={assignedDriver}
             />
+
+            {/* Print Modal */}
+            <Modal 
+                show={showPrintModal} 
+                onClose={() => setShowPrintModal(false)} 
+                title="Print Invoice Voucher"
+                size="lg"
+            >
+                <div className="mb-3">
+                    <PrintableInvoice invoice={currentInvoice} ref={printableInvoiceRef} />
+                </div>
+                <div className="d-flex justify-content-end">
+                    <button 
+                        onClick={handlePrintInvoice}
+                        className="btn btn-primary me-2"
+                    >
+                        <Printer size={16} className="me-2" />
+                        Print
+                    </button>
+                    <button 
+                        onClick={() => setShowPrintModal(false)}
+                        className="btn btn-secondary"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </Modal>
         </>
     );
 };
