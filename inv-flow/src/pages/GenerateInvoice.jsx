@@ -5,6 +5,7 @@ import CustomerModal from '../components/CustomerModal';
 import ServiceForm from '../components/ServiceForm';
 import PaymentForm from '../components/PaymentForm';
 import ExpenseForm from '../components/ExpenseForm';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const GenerateInvoice = () => {
     // Invoice state
@@ -119,7 +120,7 @@ const GenerateInvoice = () => {
 
     const handleAddExpense = (type, amount, date, description) => {
         console.log('Expense added:', { type, amount, date, description });
-        // Add expense to invoice logic here
+        // Add expense to invoice logic here                
         setShowExpenseModal(false);
     };
 
@@ -131,34 +132,31 @@ const GenerateInvoice = () => {
 
     return (
         <>
-            <div className="bg-white border-b">
-                <div className="max-w-7xl mx-auto px-6 py-4">
-                    <h2 className="text-2xl font-bold text-gray-900">Generate Invoice</h2>
-                    <div className="flex items-center gap-4 mt-1">
-                        <p className="text-sm text-gray-500">Invoice #INV-2024-0156</p>
-                        <span className="text-gray-300">•</span>
-                        <p className="text-sm text-gray-500">Invoice Date: {invoiceDate}</p>
-                        <span className="text-gray-300">•</span>
-                        <p className="text-sm text-gray-500">Created by: Admin User</p>
+            <div className="bg-white border-b shadow-sm">
+                <div className="container py-4">
+                    <h2 className="display-6 fw-bold text-primary">Generate Invoice</h2>
+                    <div className="d-flex flex-wrap gap-3 text-muted mt-2">
+                        <p className="mb-0">Invoice #INV-2024-0156</p>
+                        <span>•</span>
+                        <p className="mb-0">Invoice Date: {invoiceDate}</p>
+                        <span>•</span>
+                        <p className="mb-0">Created by: Admin User</p>
                     </div>
                 </div>
             </div>
 
-            <div className="min-h-screen bg-gray-50">
-                <div className="max-w-7xl mx-auto px-6 py-8">
-                    <div className="bg-white shadow-sm">
-                        <div className="p-6 space-y-6">
-
+            <div className="container py-5">
+                <div className="card shadow">
+                    <div className="card-body p-4">
+                        <form>
                             {/* Customer Section */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Customer Information
-                                </label>
-                                <div className="flex gap-3">
+                            <div className="mb-4">
+                                <label className="form-label fw-bold">Customer Information</label>
+                                <div className="d-flex gap-2">
                                     <select
                                         value={selectedCustomer}
                                         onChange={(e) => setSelectedCustomer(e.target.value)}
-                                        className="flex-1 px-4 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                                        className="form-select flex-grow-1"
                                     >
                                         <option value="">Select Customer</option>
                                         {customers.map((customer) => (
@@ -166,8 +164,9 @@ const GenerateInvoice = () => {
                                         ))}
                                     </select>
                                     <button
+                                        type="button"
                                         onClick={() => setShowCustomerModal(true)}
-                                        className="px-4 py-2 bg-gray-800 text-white hover:bg-gray-700 flex items-center gap-2"
+                                        className="btn btn-dark d-flex align-items-center gap-2"
                                     >
                                         <Plus size={18} />
                                         Add New
@@ -175,16 +174,17 @@ const GenerateInvoice = () => {
                                 </div>
 
                                 {assignedDriver && (
-                                    <div className="mt-3 p-3 bg-gray-50 border border-gray-300 flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <User size={18} className="text-gray-600" />
-                                            <span className="text-sm font-medium text-gray-900">
+                                    <div className="mt-3 p-3 bg-light border rounded d-flex align-items-center justify-content-between">
+                                        <div className="d-flex align-items-center gap-2">
+                                            <User size={18} className="text-secondary" />
+                                            <span className="fw-medium">
                                                 Driver: {assignedDriver}
                                             </span>
                                         </div>
                                         <button
+                                            type="button"
                                             onClick={() => setShowDriverModal(true)}
-                                            className="text-gray-600 hover:text-gray-900"
+                                            className="btn btn-sm btn-outline-secondary"
                                         >
                                             <Edit2 size={16} />
                                         </button>
@@ -192,63 +192,58 @@ const GenerateInvoice = () => {
                                 )}
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Person Accommodation
-                                </label>
+                            <div className="mb-4">
+                                <label className="form-label fw-bold">Person Accommodation</label>
                                 <input
                                     type="number"
                                     value={accommodation}
                                     onChange={(e) => setAccommodation(e.target.value)}
                                     placeholder="Number of persons"
-                                    className="w-full px-4 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                                    className="form-control"
                                     min="1"
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Service Date
-                                </label>
+                            <div className="mb-4">
+                                <label className="form-label fw-bold">Service Date</label>
                                 <input
                                     type="date"
                                     value={serviceDate}
                                     onChange={(e) => setServiceDate(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                                    className="form-control"
                                 />
                             </div>
 
-                            <div>
-                                <div className="flex items-center justify-between mb-3">
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Services
-                                    </label>
+                            <div className="mb-4">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <label className="form-label fw-bold mb-0">Services</label>
                                     <button
+                                        type="button"
                                         onClick={addService}
-                                        className="text-gray-700 hover:text-gray-900 flex items-center gap-1 text-sm font-medium"
+                                        className="btn btn-sm btn-outline-dark d-flex align-items-center gap-1"
                                     >
                                         <Plus size={16} />
                                         Add Service
                                     </button>
                                 </div>
 
-                                <div className="border border-gray-200 overflow-hidden">
-                                    <table className="w-full">
-                                        <thead className="bg-gray-50">
+                                <div className="table-responsive border rounded">
+                                    <table className="table table-hover mb-0">
+                                        <thead className="table-light">
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rate (AED)</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-16"></th>
+                                                <th className="px-3 py-2">Service</th>
+                                                <th className="px-3 py-2">Rate (AED)</th>
+                                                <th className="px-3 py-2 text-center" style={{ width: "60px" }}></th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-200">
+                                        <tbody>
                                             {services.map((service, index) => (
                                                 <tr key={index}>
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-3 py-2">
                                                         <select
                                                             value={service.service}
                                                             onChange={(e) => updateService(index, 'service', e.target.value)}
-                                                            className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                                                            className="form-select"
                                                         >
                                                             <option value="">Select Service</option>
                                                             {servicesList.map((s, i) => (
@@ -256,22 +251,23 @@ const GenerateInvoice = () => {
                                                             ))}
                                                         </select>
                                                     </td>
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-3 py-2">
                                                         <input
                                                             type="number"
                                                             value={service.rate}
                                                             onChange={(e) => updateService(index, 'rate', e.target.value)}
-                                                            className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                                                            className="form-control"
                                                             placeholder="0"
                                                         />
                                                     </td>
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-3 py-2 text-center">
                                                         {services.length > 1 && (
                                                             <button
+                                                                type="button"
                                                                 onClick={() => removeService(index)}
-                                                                className="text-gray-500 hover:text-gray-900"
+                                                                className="btn btn-sm btn-outline-danger"
                                                             >
-                                                                <Trash2 size={18} />
+                                                                <Trash2 size={16} />
                                                             </button>
                                                         )}
                                                     </td>
@@ -282,50 +278,63 @@ const GenerateInvoice = () => {
                                 </div>
                             </div>
 
-                            <div className="bg-gray-50 p-4 space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">Subtotal:</span>
-                                    <span className="font-medium">AED {calculateSubtotal().toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
-                                    <span>Total Amount:</span>
-                                    <span>AED {calculateTotal().toFixed(2)}</span>
+                            <div className="card bg-light mb-4">
+                                <div className="card-body">
+                                    <div className="d-flex justify-content-between mb-2">
+                                        <span className="text-muted">Subtotal:</span>
+                                        <span className="fw-medium">AED {calculateSubtotal().toFixed(2)}</span>
+                                    </div>
+                                    <div className="d-flex justify-content-between pt-2 border-top">
+                                        <span className="fw-bold fs-5">Total Amount:</span>
+                                        <span className="fw-bold fs-5">AED {calculateTotal().toFixed(2)}</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex gap-3 pt-4">
-                                <button className="flex-1 px-6 py-3 bg-gray-800 text-white hover:bg-gray-700 font-medium">
+                            <div className="d-flex gap-2 mb-4">
+                                <button type="button" className="btn btn-primary flex-grow-1 py-2">
                                     Save Invoice
                                 </button>
-                                <button className="px-6 py-3 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium">
+                                <button type="button" className="btn btn-outline-secondary py-2">
                                     Cancel
                                 </button>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-6 border-t">
-                                <button
-                                    onClick={() => setShowDriverModal(true)}
-                                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-700 text-white hover:bg-gray-600 font-medium"
-                                >
-                                    <Truck size={20} />
-                                    Assign Driver
-                                </button>
-                                <button
-                                    onClick={() => setShowPaymentModal(true)}
-                                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-700 text-white hover:bg-gray-600 font-medium"
-                                >
-                                    <DollarSign size={20} />
-                                    Record Payment
-                                </button>
-                                <button
-                                    onClick={() => setShowExpenseModal(true)}
-                                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-700 text-white hover:bg-gray-600 font-medium"
-                                >
-                                    <Receipt size={20} />
-                                    Add Expense
-                                </button>
+                            <div className="pt-4 border-top">
+                                <div className="row g-3">
+                                    <div className="col-12 col-md-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowDriverModal(true)}
+                                            className="btn btn-dark w-100 d-flex align-items-center justify-content-center gap-2 py-2"
+                                        >
+                                            <Truck size={20} />
+                                            Assign Driver
+                                        </button>
+                                    </div>
+                                    <div className="col-12 col-md-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPaymentModal(true)}
+                                            className="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2 py-2"
+                                        >
+                                            <DollarSign size={20} />
+                                            Record Payment
+                                        </button>
+                                    </div>
+                                    <div className="col-12 col-md-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowExpenseModal(true)}
+                                            className="btn btn-info w-100 d-flex align-items-center justify-content-center gap-2 py-2 text-white"
+                                        >
+                                            <Receipt size={20} />
+                                            Add Expense
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -339,40 +348,43 @@ const GenerateInvoice = () => {
 
             {/* Driver Modal */}
             <Modal show={showDriverModal} onClose={() => setShowDriverModal(false)} title="Assign Driver">
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Select Driver</label>
-                        <select
-                            value={assignedDriver}
-                            onChange={(e) => setAssignedDriver(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent"
-                        >
-                            <option value="">Choose a driver</option>
-                            {drivers.map((driver) => (
-                                <option key={driver.id} value={driver.name}>{driver.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Assignment Date</label>
-                        <input type="date" className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent" />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                        <textarea className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent" rows="3" placeholder="Add any special instructions"></textarea>
-                    </div>
-                    <div className="flex gap-3 pt-2">
-                        <button
-                            onClick={() => assignedDriver && setShowDriverModal(false)}
-                            className="flex-1 px-4 py-2 bg-gray-800 text-white hover:bg-gray-700 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-                            disabled={!assignedDriver}
-                        >
-                            Assign Driver
-                        </button>
-                        <button onClick={() => setShowDriverModal(false)} className="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium">
-                            Cancel
-                        </button>
-                    </div>
+                <div className="mb-3">
+                    <label className="form-label">Select Driver</label>
+                    <select
+                        value={assignedDriver}
+                        onChange={(e) => setAssignedDriver(e.target.value)}
+                        className="form-select"
+                    >
+                        <option value="">Choose a driver</option>
+                        {drivers.map((driver) => (
+                            <option key={driver.id} value={driver.name}>{driver.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="mb-3">
+                    <label className="form-label">Assignment Date</label>
+                    <input type="date" className="form-control" />
+                </div>
+                <div className="mb-3">
+                    <label className="form-label">Notes</label>
+                    <textarea className="form-control" rows="3" placeholder="Add any special instructions"></textarea>
+                </div>
+                <div className="d-flex gap-2">
+                    <button
+                        type="button"
+                        onClick={() => assignedDriver && setShowDriverModal(false)}
+                        className="btn btn-primary flex-grow-1"
+                        disabled={!assignedDriver}
+                    >
+                        Assign Driver
+                    </button>
+                    <button 
+                        type="button"
+                        onClick={() => setShowDriverModal(false)} 
+                        className="btn btn-outline-secondary"
+                    >
+                        Cancel
+                    </button>
                 </div>
             </Modal>
 

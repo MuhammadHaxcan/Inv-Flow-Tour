@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const ServiceForm = ({ servicesList, onSave, onCancel, invoice }) => {
     const [service, setService] = useState('');
@@ -25,13 +26,13 @@ const ServiceForm = ({ servicesList, onSave, onCancel, invoice }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
+        <form onSubmit={handleSubmit}>
+            <div className="mb-3">
+                <label className="form-label">Service</label>
                 <select 
                     value={service} 
                     onChange={(e) => handleServiceChange(e.target.value)} 
-                    className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                    className="form-select"
                 >
                     <option value="">Select Service</option>
                     {servicesList.map((s, i) => (
@@ -39,27 +40,27 @@ const ServiceForm = ({ servicesList, onSave, onCancel, invoice }) => {
                     ))}
                 </select>
             </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Rate (AED)</label>
+            <div className="mb-3">
+                <label className="form-label">Rate (AED)</label>
                 <input 
                     type="number" 
                     value={rate} 
                     onChange={(e) => setRate(e.target.value)} 
-                    className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent" 
+                    className="form-control" 
                     placeholder="0" 
                 />
             </div>
-            <div className="flex gap-3 pt-2">
+            <div className="d-flex gap-2">
                 <button 
                     type="submit" 
-                    className="flex-1 px-4 py-2 bg-gray-800 text-white hover:bg-gray-700 font-medium"
+                    className="btn btn-primary flex-grow-1"
                 >
                     Add Service
                 </button>
                 <button 
                     type="button" 
                     onClick={onCancel} 
-                    className="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium"
+                    className="btn btn-outline-secondary"
                 >
                     Cancel
                 </button>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Truck, Receipt, CreditCard, Plus, Edit2, Trash2 } from 'lucide-react';
 import CustomerModal from '../components/CustomerModal';
 import Modal from '../components/Modal';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const ChartOfAccounts = () => {
     const [activeCategory, setActiveCategory] = useState('customer');
@@ -141,26 +142,26 @@ const ChartOfAccounts = () => {
                 onClose={() => { setShowAddModal(false); setEditingItem(null); }}
                 title={editingItem ? `Edit ${activeCategory}` : `Add ${activeCategory}`}
             >
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit}>
                     {activeCategory === 'driver' && (
                         <>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Driver Name</label>
+                            <div className="mb-3">
+                                <label className="form-label">Driver Name</label>
                                 <input
                                     type="text"
                                     value={formData.name || ''}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                                    className="form-control"
                                     required
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                            <div className="mb-3">
+                                <label className="form-label">Phone</label>
                                 <input
                                     type="tel"
                                     value={formData.phone || ''}
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                                    className="form-control"
                                     required
                                 />
                             </div>
@@ -169,23 +170,23 @@ const ChartOfAccounts = () => {
 
                     {activeCategory === 'expense' && (
                         <>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Expense Name</label>
+                            <div className="mb-3">
+                                <label className="form-label">Expense Name</label>
                                 <input
                                     type="text"
                                     value={formData.name || ''}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                                    className="form-control"
                                     required
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Default Value (AED)</label>
+                            <div className="mb-3">
+                                <label className="form-label">Default Value (AED)</label>
                                 <input
                                     type="number"
                                     value={formData.defaultValue || ''}
                                     onChange={(e) => setFormData({ ...formData, defaultValue: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                                    className="form-control"
                                     required
                                 />
                             </div>
@@ -194,32 +195,32 @@ const ChartOfAccounts = () => {
 
                     {activeCategory === 'bank' && (
                         <>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+                            <div className="mb-3">
+                                <label className="form-label">Account Name</label>
                                 <input
                                     type="text"
                                     value={formData.name || ''}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                                    className="form-control"
                                     required
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                            <div className="mb-3">
+                                <label className="form-label">Account Number</label>
                                 <input
                                     type="text"
                                     value={formData.accountNumber || ''}
                                     onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                                    className="form-control"
                                     required
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Account Details</label>
+                            <div className="mb-3">
+                                <label className="form-label">Account Details</label>
                                 <textarea
                                     value={formData.details || ''}
                                     onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 focus:ring-1 focus:ring-gray-400 focus:border-transparent"
+                                    className="form-control"
                                     rows="3"
                                     required
                                 />
@@ -227,14 +228,14 @@ const ChartOfAccounts = () => {
                         </>
                     )}
 
-                    <div className="flex gap-3 pt-2">
-                        <button type="submit" className="flex-1 px-4 py-2 bg-gray-800 text-white hover:bg-gray-700 font-medium">
+                    <div className="d-flex gap-2">
+                        <button type="submit" className="btn btn-primary flex-grow-1">
                             {editingItem ? 'Update' : 'Add'}
                         </button>
                         <button
                             type="button"
                             onClick={() => { setShowAddModal(false); setEditingItem(null); }}
-                            className="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium"
+                            className="btn btn-outline-secondary"
                         >
                             Cancel
                         </button>
@@ -245,40 +246,49 @@ const ChartOfAccounts = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-7xl mx-auto px-6 py-8">
-                <div className="bg-white shadow-sm">
+        <>
+            <div className="bg-white border-b shadow-sm">
+                <div className="container py-4">
+                    <h2 className="display-6 fw-bold text-primary">Chart of Accounts</h2>
+                    <p className="text-muted mt-2">
+                        Manage your customers, drivers, expenses, and bank accounts
+                    </p>
+                </div>
+            </div>
+
+            <div className="container py-5">
+                <div className="card shadow">
                     {/* Category Tabs */}
-                    <div className="border-b border-gray-200">
-                        <div className="flex">
+                    <div className="card-header p-0">
+                        <ul className="nav nav-tabs card-header-tabs">
                             {categories.map(cat => {
                                 const Icon = cat.icon;
                                 return (
-                                    <button
-                                        key={cat.id}
-                                        onClick={() => setActiveCategory(cat.id)}
-                                        className={`flex items-center gap-2 px-6 py-4 font-medium border-b-2 transition-colors ${activeCategory === cat.id
-                                            ? 'border-gray-800 text-gray-900'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    <li className="nav-item" key={cat.id}>
+                                        <button
+                                            onClick={() => setActiveCategory(cat.id)}
+                                            className={`nav-link d-flex align-items-center gap-2 px-4 py-3 ${
+                                                activeCategory === cat.id ? 'active fw-medium' : 'text-secondary'
                                             }`}
-                                    >
-                                        <Icon size={20} />
-                                        {cat.label}
-                                    </button>
+                                        >
+                                            <Icon size={20} />
+                                            {cat.label}
+                                        </button>
+                                    </li>
                                 );
                             })}
-                        </div>
+                        </ul>
                     </div>
 
                     {/* Content */}
-                    <div className="p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900">
+                    <div className="card-body p-4">
+                        <div className="d-flex justify-content-between align-items-center mb-4">
+                            <h3 className="h4 mb-0">
                                 {categories.find(c => c.id === activeCategory)?.label} Accounts
-                            </h2>
+                            </h3>
                             <button
                                 onClick={handleAddNew}
-                                className="px-4 py-2 bg-gray-800 text-white hover:bg-gray-700 flex items-center gap-2"
+                                className="btn btn-primary d-flex align-items-center gap-2"
                             >
                                 <Plus size={18} />
                                 Add New
@@ -286,68 +296,66 @@ const ChartOfAccounts = () => {
                         </div>
 
                         {/* Table */}
-                        <div className="border border-gray-200">
-                            <table className="w-full">
-                                <thead className="bg-gray-50">
+                        <div className="table-responsive">
+                            <table className="table table-hover table-striped">
+                                <thead>
                                     <tr>
                                         {columns.map((col, i) => (
-                                            <th key={i} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                                {col}
-                                            </th>
+                                            <th key={i} scope="col">{col}</th>
                                         ))}
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-24">
-                                            Actions
-                                        </th>
+                                        <th scope="col" className="text-center" style={{ width: '100px' }}>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-200">
+                                <tbody>
                                     {data.length === 0 ? (
                                         <tr>
-                                            <td colSpan={columns.length + 1} className="px-4 py-8 text-center text-gray-500">
+                                            <td colSpan={columns.length + 1} className="text-center py-4 text-muted">
                                                 No records found. Click "Add New" to create one.
                                             </td>
                                         </tr>
                                     ) : (
                                         data.map((item) => (
-                                            <tr key={item.id} className="hover:bg-gray-50">
+                                            <tr key={item.id}>
                                                 {activeCategory === 'customer' && (
                                                     <>
-                                                        <td className="px-4 py-3">{item.name}</td>
-                                                        <td className="px-4 py-3">{item.phone}</td>
-                                                        <td className="px-4 py-3">{item.email}</td>
-                                                        <td className="px-4 py-3">{item.origin}</td>
+                                                        <td>{item.name}</td>
+                                                        <td>{item.phone}</td>
+                                                        <td>{item.email}</td>
+                                                        <td>{item.origin}</td>
                                                     </>
                                                 )}
                                                 {activeCategory === 'driver' && (
                                                     <>
-                                                        <td className="px-4 py-3">{item.name}</td>
-                                                        <td className="px-4 py-3">{item.phone}</td>
+                                                        <td>{item.name}</td>
+                                                        <td>{item.phone}</td>
                                                     </>
                                                 )}
                                                 {activeCategory === 'expense' && (
                                                     <>
-                                                        <td className="px-4 py-3">{item.name}</td>
-                                                        <td className="px-4 py-3">AED {item.defaultValue}</td>
+                                                        <td>{item.name}</td>
+                                                        <td>AED {item.defaultValue}</td>
                                                     </>
                                                 )}
                                                 {activeCategory === 'bank' && (
                                                     <>
-                                                        <td className="px-4 py-3">{item.name}</td>
-                                                        <td className="px-4 py-3">{item.accountNumber}</td>
-                                                        <td className="px-4 py-3">{item.details}</td>
+                                                        <td>{item.name}</td>
+                                                        <td>{item.accountNumber}</td>
+                                                        <td>{item.details}</td>
                                                     </>
                                                 )}
-                                                <td className="px-4 py-3">
-                                                    <div className="flex gap-2">
+                                                <td>
+                                                    <div className="d-flex justify-content-center gap-2">
                                                         <button
                                                             onClick={() => handleEdit(item)}
-                                                            className="text-gray-600 hover:text-gray-900"
+                                                            className="btn btn-sm btn-outline-primary"
+                                                            title="Edit"
                                                         >
                                                             <Edit2 size={16} />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDelete(item.id)}
-                                                            className="text-gray-600 hover:text-gray-900"
+                                                            className="btn btn-sm btn-outline-danger"
+                                                            title="Delete"
                                                         >
                                                             <Trash2 size={16} />
                                                         </button>
@@ -362,6 +370,7 @@ const ChartOfAccounts = () => {
                     </div>
                 </div>
             </div>
+            
             <CustomerModal
                 show={showCustomerModal}
                 onClose={() => { setShowCustomerModal(false); setEditingItem(null); }}
@@ -369,7 +378,7 @@ const ChartOfAccounts = () => {
                 initialData={editingItem || {}}
             />
             <AddEditModal />
-        </div>
+        </>
     );
 };
 
