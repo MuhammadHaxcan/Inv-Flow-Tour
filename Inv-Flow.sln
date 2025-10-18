@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36518.9 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "inv-flow", "Inv-Flow\inv-flow.esproj", "{394416D6-E2FD-DD2B-17ED-3CB65374D06C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{394416D6-E2FD-DD2B-17ED-3CB65374D06C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{394416D6-E2FD-DD2B-17ED-3CB65374D06C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{394416D6-E2FD-DD2B-17ED-3CB65374D06C}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{394416D6-E2FD-DD2B-17ED-3CB65374D06C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{394416D6-E2FD-DD2B-17ED-3CB65374D06C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{394416D6-E2FD-DD2B-17ED-3CB65374D06C}.Release|Any CPU.Deploy.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0A245078-2DD7-4B51-869E-863F110B2A44}
+	EndGlobalSection
+EndGlobal
