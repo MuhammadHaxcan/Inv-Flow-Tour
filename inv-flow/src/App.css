@@ -1,7 +1,44 @@
+/* Reset all margins, paddings and widths */
 #root {
-  max-width: 1280px;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+  width: 100% !important;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Remove unnecessary padding from card */
+.card {
+  padding: 0;
+}
+
+/* Container adjustments */
+.container-fluid {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Reduce some spacings */
+.py-5 {
+  padding-top: 2rem !important;
+  padding-bottom: 2rem !important;
+}
+
+/* Make modals use more screen space */
+.modal-xl {
+  max-width: 95% !important;
+}   
+
+/* Base styles for the app */
+#root {
   margin: 0 auto;
-  padding: 2rem;
+  padding: 4rem;
   text-align: center;
 }
 

@@ -65,7 +65,7 @@ const ChartOfAccounts = () => {
             setShowAddModal(true);
         }
     };
-
+        
     const handleSaveCustomer = (formData) => {
         if (editingItem) {
             // Update existing customer
@@ -247,16 +247,16 @@ const ChartOfAccounts = () => {
 
     return (
         <>
-            <div className="bg-white border-b shadow-sm">
-                <div className="container py-4">
-                    <h2 className="display-6 fw-bold text-primary">Chart of Accounts</h2>
-                    <p className="text-muted mt-2">
+            <div className="bg-white border-b shadow-sm w-100 px-0">
+                <div className="container-fluid py-3">
+                    <h2 className="display-12 fw-bold text-primary">Chart of Accounts</h2>
+                    <p className="text-muted mt-1 mb-0">
                         Manage your customers, drivers, expenses, and bank accounts
                     </p>
                 </div>
             </div>
 
-            <div className="container py-5">
+            <div className="container-fluid py-3">
                 <div className="card shadow">
                     {/* Category Tabs */}
                     <div className="card-header p-0">

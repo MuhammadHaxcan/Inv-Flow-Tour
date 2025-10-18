@@ -5,6 +5,7 @@ import CustomerModal from '../components/CustomerModal';
 import ServiceForm from '../components/ServiceForm';
 import PaymentForm from '../components/PaymentForm';
 import ExpenseForm from '../components/ExpenseForm';
+import DriverModal from '../components/DriverModal';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const GenerateInvoice = () => {
@@ -132,10 +133,10 @@ const GenerateInvoice = () => {
 
     return (
         <>
-            <div className="bg-white border-b shadow-sm">
-                <div className="container py-4">
-                    <h2 className="display-6 fw-bold text-primary">Generate Invoice</h2>
-                    <div className="d-flex flex-wrap gap-3 text-muted mt-2">
+            <div className="bg-white border-b shadow-sm w-100 px-0">
+                <div className="container-fluid py-3">
+                    <h2 className="display-12 fw-bold text-primary">Generate Invoice</h2>
+                    <div className="d-flex flex-wrap gap-3 text-muted mt-1">
                         <p className="mb-0">Invoice #INV-2024-0156</p>
                         <span>•</span>
                         <p className="mb-0">Invoice Date: {invoiceDate}</p>
@@ -145,7 +146,7 @@ const GenerateInvoice = () => {
                 </div>
             </div>
 
-            <div className="container py-5">
+            <div className="container-fluid py-3">
                 <div className="card shadow">
                     <div className="card-body p-4">
                         <form>
@@ -347,46 +348,16 @@ const GenerateInvoice = () => {
             />
 
             {/* Driver Modal */}
-            <Modal show={showDriverModal} onClose={() => setShowDriverModal(false)} title="Assign Driver">
-                <div className="mb-3">
-                    <label className="form-label">Select Driver</label>
-                    <select
-                        value={assignedDriver}
-                        onChange={(e) => setAssignedDriver(e.target.value)}
-                        className="form-select"
-                    >
-                        <option value="">Choose a driver</option>
-                        {drivers.map((driver) => (
-                            <option key={driver.id} value={driver.name}>{driver.name}</option>
-                        ))}
-                    </select>
-                </div>
-                <div className="mb-3">
-                    <label className="form-label">Assignment Date</label>
-                    <input type="date" className="form-control" />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label">Notes</label>
-                    <textarea className="form-control" rows="3" placeholder="Add any special instructions"></textarea>
-                </div>
-                <div className="d-flex gap-2">
-                    <button
-                        type="button"
-                        onClick={() => assignedDriver && setShowDriverModal(false)}
-                        className="btn btn-primary flex-grow-1"
-                        disabled={!assignedDriver}
-                    >
-                        Assign Driver
-                    </button>
-                    <button 
-                        type="button"
-                        onClick={() => setShowDriverModal(false)} 
-                        className="btn btn-outline-secondary"
-                    >
-                        Cancel
-                    </button>
-                </div>
-            </Modal>
+            <DriverModal 
+                show={showDriverModal} 
+                onClose={() => setShowDriverModal(false)} 
+                onSave={(driver, date, notes) => {
+                    setAssignedDriver(driver);
+                    setShowDriverModal(false);
+                }}
+                drivers={drivers}
+                currentDriver={assignedDriver}
+            />
 
             {/* Service Modal */}
             <Modal show={showServiceModal} onClose={() => setShowServiceModal(false)} title="Add Service">

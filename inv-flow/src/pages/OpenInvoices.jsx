@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import PaymentForm from '../components/PaymentForm';
 import ExpenseForm from '../components/ExpenseForm';
 import ServiceForm from '../components/ServiceForm';
+import DriverModal from '../components/DriverModal';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const OpenInvoices = () => {
@@ -250,16 +251,16 @@ const OpenInvoices = () => {
 
     return (
         <>
-            <div className="bg-white border-b shadow-sm">
-                <div className="container py-4">
-                    <h2 className="display-6 fw-bold text-primary">Open Invoices</h2>
-                    <p className="text-muted mt-2">
+            <div className="bg-white border-b shadow-sm w-100 px-0">
+                <div className="container-fluid py-3">
+                    <h2 className="display-12 fw-bold text-primary">Open Invoices</h2>
+                    <p className="text-muted mt-1 mb-0">
                         Manage your pending invoices, record payments and track expenses
                     </p>
                 </div>
             </div>
 
-            <div className="container py-5">
+            <div className="container-fluid py-3">
                 <div className="card shadow">
                     <div className="card-body p-0">
                         <div className="table-responsive">
@@ -510,33 +511,13 @@ const OpenInvoices = () => {
             </Modal>
 
             {/* Driver Modal */}
-            <Modal show={showDriverModal} onClose={() => setShowDriverModal(false)} title="Assign Driver">
-                <div className="mb-3">
-                    <label className="form-label">Select Driver</label>
-                    <select
-                        value={assignedDriver}
-                        onChange={(e) => setAssignedDriver(e.target.value)}
-                        className="form-select"
-                    >
-                        <option value="">Choose a driver</option>
-                        {drivers.map((driver) => (
-                            <option key={driver.id} value={driver.name}>{driver.name}</option>
-                        ))}
-                    </select>
-                </div>
-                <div className="d-flex gap-2">
-                    <button
-                        onClick={handleAssignDriver}
-                        className="btn btn-primary flex-grow-1"
-                        disabled={!assignedDriver}
-                    >
-                        Assign Driver
-                    </button>
-                    <button onClick={() => setShowDriverModal(false)} className="btn btn-outline-secondary">
-                        Cancel
-                    </button>
-                </div>
-            </Modal>
+            <DriverModal 
+                show={showDriverModal} 
+                onClose={() => setShowDriverModal(false)} 
+                onSave={(driver) => handleAssignDriver()}
+                drivers={drivers}
+                currentDriver={assignedDriver}
+            />
         </>
     );
 };

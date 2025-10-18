@@ -4,23 +4,24 @@ import './App.css'
 import GenerateInvoice from './pages/GenerateInvoice'
 import ChartOfAccounts from './pages/ChartOfAccounts'
 import OpenInvoices from './pages/OpenInvoices'
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            {/* Navbar */}
-            <nav className="bg-white border-b border-gray-200 sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="flex items-center justify-between h-16">
-                        <div className="flex items-center gap-8">
-                            <h1 className="text-xl font-bold text-gray-900">Inv-Flow</h1>
-                            <div className="flex gap-1">
+        <div className="min-vh-100 bg-light d-flex flex-column">
+            {/* Full-width Navbar without padding */}
+            <nav className="bg-white border-bottom shadow-sm w-100">
+                <div className="px-4">
+                    <div className="d-flex align-items-center justify-content-between py-3">
+                        <div className="d-flex align-items-center">
+                            <h1 className="h3 fw-bold mb-0 text-primary me-5">Inv-Flow</h1>
+                            <div className="d-flex">
                                 <NavLink
                                     to="/"
                                     className={({ isActive }) =>
-                                        `px-4 py-2 font-medium flex items-center gap-2 ${isActive
-                                            ? 'text-gray-900 border-b-2 border-gray-900'
-                                            : 'text-gray-500 hover:text-gray-700'
+                                        `px-4 py-2 text-decoration-none d-flex align-items-center gap-2 ${isActive
+                                            ? 'text-primary border-bottom border-2 border-primary'
+                                            : 'text-secondary'
                                         }`
                                     }
                                 >
@@ -30,9 +31,9 @@ function App() {
                                 <NavLink
                                     to="/open-invoices"
                                     className={({ isActive }) =>
-                                        `px-4 py-2 font-medium flex items-center gap-2 ${isActive
-                                            ? 'text-gray-900 border-b-2 border-gray-900'
-                                            : 'text-gray-500 hover:text-gray-700'
+                                        `px-4 py-2 text-decoration-none d-flex align-items-center gap-2 ${isActive
+                                            ? 'text-primary border-bottom border-2 border-primary'
+                                            : 'text-secondary'
                                         }`
                                     }
                                 >
@@ -42,9 +43,9 @@ function App() {
                                 <NavLink
                                     to="/accounts"
                                     className={({ isActive }) =>
-                                        `px-4 py-2 font-medium flex items-center gap-2 ${isActive
-                                            ? 'text-gray-900 border-b-2 border-gray-900'
-                                            : 'text-gray-500 hover:text-gray-700'
+                                        `px-4 py-2 text-decoration-none d-flex align-items-center gap-2 ${isActive
+                                            ? 'text-primary border-bottom border-2 border-primary'
+                                            : 'text-secondary'
                                         }`
                                     }
                                 >
@@ -58,7 +59,7 @@ function App() {
             </nav>
 
             {/* Page Content */}
-            <div className="flex-1">
+            <div className="flex-grow-1">
                 <Routes>
                     <Route path="/" element={<GenerateInvoice />} />
                     <Route path="/open-invoices" element={<OpenInvoices />} />
