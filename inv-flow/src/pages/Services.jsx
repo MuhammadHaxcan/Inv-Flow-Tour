@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
-import Modal from '../components/Modal';
+import { Plus, Edit, Trash2, Info } from 'lucide-react';
+import ServiceModal from '../components/ServiceModal';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Services = () => {
@@ -8,11 +8,6 @@ const Services = () => {
     const [services, setServices] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentService, setCurrentService] = useState(null);
-    const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        charge: ''
-    });
 
     // Sample data - normally would come from API
     useEffect(() => {
@@ -54,40 +49,15 @@ const Services = () => {
         return `AED ${parseFloat(amount || 0).toFixed(2)}`;
     };
 
-    // Calculate VAT included amount (5% VAT)
-    const calculateVatIncluded = (amount) => {
-        const vat = parseFloat(amount) * 0.05;
-        return parseFloat(amount) + vat;
-    };
-
-    // Handle form input changes
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({
-            ...formData,
-            [name]: value
-        });
-    };
-
     // Open modal for adding new service
     const handleAddService = () => {
         setCurrentService(null);
-        setFormData({
-            name: '',
-            description: '',
-            charge: ''
-        });
         setIsModalOpen(true);
     };
 
     // Open modal for editing existing service
     const handleEditService = (service) => {
         setCurrentService(service);
-        setFormData({
-            name: service.name,
-            description: service.description,
-            charge: service.charge.toString()
-        });
         setIsModalOpen(true);
     };
 
@@ -99,24 +69,17 @@ const Services = () => {
     };
 
     // Handle form submission
-    const handleSubmit = () => {
-        const charge = parseFloat(formData.charge);
-        
-        if (!formData.name || !charge || isNaN(charge)) {
-            alert('Please enter a valid service name and charge');
-            return;
-        }
-
+    const handleSaveService = (serviceData) => {
         if (currentService) {
             // Updating existing service
             const updatedServices = services.map(service => 
                 service.id === currentService.id 
                     ? { 
                         ...service, 
-                        name: formData.name, 
-                        description: formData.description, 
-                        charge: charge,
-                        vatIncluded: calculateVatIncluded(charge)
+                        name: serviceData.name, 
+                        description: serviceData.description, 
+                        charge: serviceData.charge,
+                        vatIncluded: serviceData.vatIncluded
                     } 
                     : service
             );
@@ -125,10 +88,10 @@ const Services = () => {
             // Adding new service
             const newService = {
                 id: services.length > 0 ? Math.max(...services.map(s => s.id)) + 1 : 1,
-                name: formData.name,
-                description: formData.description,
-                charge: charge,
-                vatIncluded: calculateVatIncluded(charge)
+                name: serviceData.name,
+                description: serviceData.description,
+                charge: serviceData.charge,
+                vatIncluded: serviceData.vatIncluded
             };
             setServices([...services, newService]);
         }
@@ -148,10 +111,16 @@ const Services = () => {
                                 onClick={handleAddService}
                             >
                                 <Plus size={16} />
-                                Add Service
+                                Add Service 
                             </button>
                         </div>
+                    </div>      
+                    
+                    <div className="alert alert-info mx-3 mt-3 d-flex align-items-center gap-2">
+                        <Info size={18} />
+                        <span>You can enter service prices either with or without VAT. The system will automatically calculate the other amount.</span>
                     </div>
+                    
                     <div className="card-body p-0">
                         <div className="table-responsive">
                             <table className="table table-hover mb-0">
@@ -159,8 +128,8 @@ const Services = () => {
                                     <tr>
                                         <th className="px-4 py-3">Service Name</th>
                                         <th className="px-4 py-3">Description</th>
-                                        <th className="px-4 py-3 text-end">Charge (Without VAT)</th>
                                         <th className="px-4 py-3 text-end">Charge (With VAT)</th>
+                                        <th className="px-4 py-3 text-end">Charge (Without VAT)</th>
                                         <th className="px-4 py-3 text-center">Actions</th>
                                     </tr>
                                 </thead>
@@ -176,8 +145,8 @@ const Services = () => {
                                             <tr key={service.id}>
                                                 <td className="px-4 py-3 fw-medium">{service.name}</td>
                                                 <td className="px-4 py-3">{service.description}</td>
-                                                <td className="px-4 py-3 text-end">{formatCurrency(service.charge)}</td>
-                                                <td className="px-4 py-3 text-end">{formatCurrency(service.vatIncluded)}</td>
+                                                <td className="px-4 py-3 text-end fw-medium">{formatCurrency(service.vatIncluded)}</td>
+                                                <td className="px-4 py-3 text-end text-muted">{formatCurrency(service.charge)}</td>
                                                 <td className="px-4 py-3">
                                                     <div className="d-flex justify-content-center gap-2">
                                                         <button 
@@ -205,58 +174,12 @@ const Services = () => {
             </div>
 
             {/* Service Modal */}
-            {isModalOpen && (
-                <Modal 
-                    title={currentService ? "Edit Service" : "Add New Service"}
-                    onClose={() => setIsModalOpen(false)}
-                    onSave={handleSubmit}
-                >
-                    <div className="mb-3">
-                        <label htmlFor="name" className="form-label">Service Name</label>
-                        <input 
-                            type="text" 
-                            className="form-control" 
-                            id="name" 
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            required
-                        />
-                    </div>
-                    <div className="mb-3">
-                        <label htmlFor="description" className="form-label">Description</label>
-                        <textarea 
-                            className="form-control" 
-                            id="description" 
-                            name="description"
-                            value={formData.description}
-                            onChange={handleInputChange}
-                            rows="3"
-                        ></textarea>
-                    </div>
-                    <div className="mb-3">
-                        <label htmlFor="charge" className="form-label">Service Charge (Without VAT)</label>
-                        <div className="input-group">
-                            <span className="input-group-text">AED</span>
-                            <input 
-                                type="number" 
-                                className="form-control" 
-                                id="charge" 
-                                name="charge"
-                                value={formData.charge}
-                                onChange={handleInputChange}
-                                required
-                            />
-                        </div>
-                    </div>
-                    {formData.charge && !isNaN(parseFloat(formData.charge)) && (
-                        <div className="alert alert-info d-flex justify-content-between align-items-center">
-                            <span>With 5% VAT:</span>
-                            <strong>{formatCurrency(calculateVatIncluded(formData.charge))}</strong>
-                        </div>
-                    )}
-                </Modal>
-            )}
+            <ServiceModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSave={handleSaveService}
+                service={currentService}
+            />
         </>
     );
 };
