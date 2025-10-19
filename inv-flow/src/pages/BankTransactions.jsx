@@ -281,44 +281,32 @@ const BankTransactions = () => {
                             </div>
                             
                             <div className="col-md-4">
-                                <label className="form-label small fw-medium">From Date</label>
-                                <div className="position-relative">
+                                <label className="form-label small fw-medium">From Date</label> 
+                                <div className="input-group input-group-sm">
                                     <input
                                         type="date"
                                         value={dateRange.startDate}
                                         onChange={(e) => setDateRange({...dateRange, startDate: e.target.value})}
-                                        className="form-control form-control-sm"
-                                        style={{ 
-                                            paddingRight: "2rem",
-                                            cursor: "pointer"
-                                        }}
-                                        onClick={(e) => e.target.showPicker()}
+                                        className="form-control"
                                     />
-                                    <Calendar 
-                                        size={16} 
-                                        className="position-absolute end-0 top-50 translate-middle-y me-2 text-muted pointer-events-none"
-                                    />
+                                    <span className="input-group-text">
+                                        <Calendar size={16} className="text-muted" />
+                                    </span>
                                 </div>
                             </div>
                             
                             <div className="col-md-4">
                                 <label className="form-label small fw-medium">To Date</label>
-                                <div className="position-relative">
+                                <div className="input-group input-group-sm">
                                     <input
                                         type="date"
                                         value={dateRange.endDate}
                                         onChange={(e) => setDateRange({...dateRange, endDate: e.target.value})}
-                                        className="form-control form-control-sm"
-                                        style={{ 
-                                            paddingRight: "2rem",
-                                            cursor: "pointer"
-                                        }}
-                                        onClick={(e) => e.target.showPicker()}
+                                        className="form-control"
                                     />
-                                    <Calendar 
-                                        size={16} 
-                                        className="position-absolute end-0 top-50 translate-middle-y me-2 text-muted pointer-events-none"
-                                    />
+                                    <span className="input-group-text">
+                                        <Calendar size={16} className="text-muted" />
+                                    </span>
                                 </div>
                             </div>
                         </div>

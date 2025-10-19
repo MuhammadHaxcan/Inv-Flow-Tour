@@ -323,12 +323,13 @@ const OpenInvoices = () => {
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
             <style>
                 @media print {
-                    body { padding: 15px; }
+                    body { padding: 15px; font-size: 11pt; }
                     @page { size: A4; margin: 7mm; }
                     .container { padding: 0 !important; max-width: 100%; }
                     .table { margin-bottom: 10px; }
-                    h5 { margin-bottom: 3px !important; font-size: 1rem !important; }
-                    p { margin-bottom: 2px !important; font-size: 0.9rem !important; }
+                    h5 { margin-bottom: 5px !important; font-size: 12pt !important; font-weight: bold; }
+                    p { margin-bottom: 3px !important; font-size: 11pt !important; }
+                    .table td, .table th { font-size: 11pt !important; }
                 }
             </style>
         </head>
@@ -337,33 +338,33 @@ const OpenInvoices = () => {
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
                         <h2 class="fw-bold text-primary mb-1">Invoice</h2>
-                        <p class="mb-0 text-muted small">INV-FLOW TRANSPORT LLC</p>
-                        <p class="mb-0 text-muted small">Dubai, UAE</p>
-                        <p class="mb-0 text-muted small">info@inv-flow.ae | +971-4-123-4567</p>
+                        <p class="mb-0 text-muted">INV-FLOW TRANSPORT LLC</p>
+                        <p class="mb-0 text-muted">Dubai, UAE</p>
+                        <p class="mb-0 text-muted">info@inv-flow.ae | +971-4-123-4567</p>
                     </div>
                     <div class="text-end">
                         <h3 class="fw-bold mb-1">${invoice.number}</h3>
-                        <p class="mb-0 small">Date: ${new Date(invoice.date).toLocaleDateString()}</p>
+                        <p class="mb-0">Date: ${new Date(invoice.date).toLocaleDateString()}</p>
                     </div>
                 </div>
                 
-                <!-- Improved Bill To and Driver section with reduced spacing -->
+                <!-- Improved Bill To and Driver section with normal font size -->
                 <div class="row g-0 mb-3 border-bottom pb-2">
                     <div class="col-6">
-                        <h5 class="fw-bold mb-1 small">Bill To:</h5>
+                        <h5 class="fw-bold mb-1">Bill To:</h5>
                         <p class="mb-1 fw-medium">${invoice.customer}</p>
-                        <p class="mb-0 text-muted small">Number of persons: ${invoice.persons}</p>
+                        <p class="mb-0 text-muted">Number of persons: ${invoice.persons}</p>
                     </div>
                     <div class="col-6 text-end">
-                        <h5 class="fw-bold mb-1 small">Driver:</h5>
+                        <h5 class="fw-bold mb-1">Driver:</h5>
                         <p class="mb-1">${invoice.driver || "Not assigned"}</p>
-                        ${getDriverContact(invoice)}
+                        ${getDriverContact(invoice).replace('small', '')}
                     </div>
                 </div>
                 
                 <div class="mb-3">
-                    <h5 class="fw-bold mb-2 small">Services</h5>
-                    <table class="table table-bordered table-sm">
+                    <h5 class="fw-bold mb-2">Services</h5>
+                    <table class="table table-bordered">
                         <thead class="table-light">
                             <tr>
                                 <th>Description</th>
@@ -381,23 +382,23 @@ const OpenInvoices = () => {
                 
                 <div class="row g-0 mb-3 mt-4 pt-4 border-top">
                     <div class="col-6">
-                        <h5 class="fw-bold mb-1 small">Payment Information:</h5>
-                        <p class="mb-0 small">Status: <span class="fw-medium">
+                        <h5 class="fw-bold mb-2">Payment Information:</h5>
+                        <p class="mb-0">Status: <span class="fw-medium">
                             ${invoice.status === 'paid' ? 'Paid' : invoice.status === 'partial' ? 'Partially Paid' : 'Unpaid'}
                         </span></p>
-                        <p class="mb-0 small">Amount Paid: AED ${invoice.paid.toFixed(2)}</p>
-                        <p class="mb-0 small">Balance Due: AED ${(invoice.total - invoice.paid).toFixed(2)}</p>
+                        <p class="mb-0">Amount Paid: AED ${invoice.paid.toFixed(2)}</p>
+                        <p class="mb-0">Balance Due: AED ${(invoice.total - invoice.paid).toFixed(2)}</p>
                     </div>
                     <div class="col-6 text-end">
                         <div class="mt-3">
                             <div class="border-top pt-2 w-50 ms-auto">
-                                <p class="mb-0 small">Authorized Signature</p>
+                                <p class="mb-0">Authorized Signature</p>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="text-center text-muted small">
+                <div class="text-center text-muted">
                     <p class="mb-0">Thank you for your business!</p>
                     <p class="mb-0">This is a computer-generated document and does not require a signature.</p>
                 </div>
