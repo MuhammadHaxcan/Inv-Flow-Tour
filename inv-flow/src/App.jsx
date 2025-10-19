@@ -1,11 +1,12 @@
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { FileText, Building2, FileCheck2, CheckCircle, CreditCard } from 'lucide-react'
+import { FileText, Building2, FileCheck2, CheckCircle, CreditCard, Tag } from 'lucide-react'
 import './App.css'
 import GenerateInvoice from './pages/GenerateInvoice'
 import ChartOfAccounts from './pages/ChartOfAccounts'
 import OpenInvoices from './pages/OpenInvoices'
 import ClosedInvoices from './pages/ClosedInvoices'
 import BankTransactions from './pages/BankTransactions'
+import Services from './pages/Services'
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
@@ -67,6 +68,18 @@ function App() {
                                     Bank Transactions
                                 </NavLink>
                                 <NavLink
+                                    to="/services"
+                                    className={({ isActive }) =>
+                                        `px-4 py-2 text-decoration-none d-flex align-items-center gap-2 ${isActive
+                                            ? 'text-primary border-bottom border-2 border-primary'
+                                            : 'text-secondary'
+                                        }`
+                                    }
+                                >
+                                    <Tag size={18} />
+                                    Services
+                                </NavLink>
+                                <NavLink
                                     to="/accounts"
                                     className={({ isActive }) =>
                                         `px-4 py-2 text-decoration-none d-flex align-items-center gap-2 ${isActive
@@ -92,6 +105,7 @@ function App() {
                     <Route path="/open-invoices" element={<OpenInvoices />} />
                     <Route path="/closed-invoices" element={<ClosedInvoices />} />
                     <Route path="/bank-transactions" element={<BankTransactions />} />
+                    <Route path="/services" element={<Services />} />
                     <Route path="/accounts" element={<ChartOfAccounts />} />
                 </Routes>
             </div>

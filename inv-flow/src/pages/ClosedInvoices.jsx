@@ -17,7 +17,7 @@ const ClosedInvoices = () => {
             total: 9500,
             paid: 9500,
             status: 'paid',
-            vat: 0,
+            vat: 475, // 5% of 9500
             services: [
                 { id: 1, service: 'Airport Transfer', rate: 4000 },
                 { id: 2, service: 'City Tour', rate: 5500 }
@@ -41,7 +41,7 @@ const ClosedInvoices = () => {
             total: 8000,
             paid: 8000,
             status: 'paid',
-            vat: 0,
+            vat: 400, // 5% of 8000
             services: [
                 { id: 1, service: 'Hourly Rental', rate: 3000 },
                 { id: 2, service: 'City Tour', rate: 5000 }
@@ -63,7 +63,7 @@ const ClosedInvoices = () => {
             total: 15000,
             paid: 15000,
             status: 'paid',
-            vat: 0,
+            vat: 750, // 5% of 15000
             services: [
                 { id: 1, service: 'Outstation', rate: 15000 }
             ],
@@ -95,21 +95,21 @@ const ClosedInvoices = () => {
         return expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
     };
 
-    // Calculate VAT for a payment based on its method
-    const calculateVAT = (payment) => {
-        const account = accounts.find(acc => acc.name === payment.method);
-        return account?.accountType === 'cash' ? 0 : payment.amount * 0.05;
+    // Calculate VAT as 5% of the invoice total
+    const calculateVAT = (invoice) => { 
+        return invoice.total * 0.05;
     };
 
-    // Calculate total VAT for an invoice
-    const calculateInvoiceVAT = (invoice) => {
-        return invoice.payments.reduce((sum, payment) => sum + calculateVAT(payment), 0);
+    // Calculate discounted service rate (95% of original rate)
+    const calculateDiscountedRate = (rate) => {
+        return rate * 0.95;
     };
 
-    // Calculate net amount (Total + VAT - Expenses)
+    // Calculate net amount (Total - VAT - Expenses)
     const calculateNetAmount = (invoice) => {
         const expensesTotal = calculateExpensesTotal(invoice.expenses);
-        return invoice.total + invoice.vat - expensesTotal;
+        const vatAmount = calculateVAT(invoice);
+        return invoice.total - vatAmount - expensesTotal;
     };
 
     // Format amount to AED
@@ -120,13 +120,13 @@ const ClosedInvoices = () => {
     // Calculate totals for footer row
     const calculateTotals = () => {
         return invoices.reduce((acc, invoice) => {
-            const invoiceVAT = calculateInvoiceVAT(invoice);
+            const vatAmount = calculateVAT(invoice);
             const expensesTotal = calculateExpensesTotal(invoice.expenses);
             
             acc.total += invoice.total;
-            acc.vat += invoiceVAT;
+            acc.vat += vatAmount;
             acc.expenses += expensesTotal;
-            acc.net += (invoice.total + invoiceVAT - expensesTotal);
+            acc.net += (invoice.total - vatAmount - expensesTotal);
             
             return acc;
         }, { total: 0, vat: 0, expenses: 0, net: 0 });
@@ -200,7 +200,7 @@ const ClosedInvoices = () => {
                                                         {formatCurrency(invoice.total)}
                                                     </td>
                                                     <td className="px-4 py-3 text-end">
-                                                        {formatCurrency(calculateInvoiceVAT(invoice))}
+                                                        {formatCurrency(calculateVAT(invoice))}
                                                     </td>
                                                     <td className="px-4 py-3 text-end">
                                                         {formatCurrency(calculateExpensesTotal(invoice.expenses))}
@@ -240,11 +240,19 @@ const ClosedInvoices = () => {
                                                                                 {invoice.services.map(service => (
                                                                                     <tr key={service.id}>
                                                                                         <td>{service.service}</td>
-                                                                                        <td className="text-end">{formatCurrency(service.rate)}</td>
+                                                                                        <td className="text-end">{formatCurrency(calculateDiscountedRate(service.rate))}</td>
                                                                                     </tr>
                                                                                 ))}
                                                                                 <tr className="table-light fw-medium">
-                                                                                    <td>Subtotal</td>
+                                                                                    <td>Service Total</td>
+                                                                                    <td className="text-end">{formatCurrency(invoice.total - calculateVAT(invoice))}</td>
+                                                                                </tr>
+                                                                                <tr>
+                                                                                    <td>VAT (5%)</td>
+                                                                                    <td className="text-end">{formatCurrency(calculateVAT(invoice))}</td>
+                                                                                </tr>
+                                                                                <tr className="table-light fw-bold">
+                                                                                    <td>Total Amount</td>
                                                                                     <td className="text-end">{formatCurrency(invoice.total)}</td>
                                                                                 </tr>
                                                                             </tbody>
@@ -333,8 +341,8 @@ const ClosedInvoices = () => {
                                                                                 <span className="fw-medium">{formatCurrency(invoice.total)}</span>
                                                                             </div>
                                                                             <div className="d-flex justify-content-between mb-2">
-                                                                                <span className="text-muted">VAT:</span>
-                                                                                <span>{formatCurrency(invoice.vat)}</span>
+                                                                                <span className="text-muted">VAT (5%):</span>
+                                                                                <span>{formatCurrency(calculateVAT(invoice))}</span>
                                                                             </div>
                                                                             <div className="d-flex justify-content-between mb-2">
                                                                                 <span className="text-muted">Expenses:</span>
