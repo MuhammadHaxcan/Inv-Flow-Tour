@@ -21,7 +21,8 @@ const OpenInvoices = () => {
         addInvoiceService,
         assignDriver,
         updateExpense,
-        removeExpense
+        removeExpense,
+        removeInvoiceService // Make sure this exists in DataContext
     } = useData();
 
     const [expandedInvoice, setExpandedInvoice] = useState(null);
@@ -30,10 +31,13 @@ const OpenInvoices = () => {
     const [showServiceModal, setShowServiceModal] = useState(false);
     const [showDriverModal, setShowDriverModal] = useState(false);
     const [showPrintModal, setShowPrintModal] = useState(false);
+    const [showDeleteServiceAlert, setShowDeleteServiceAlert] = useState(false);
 
     const [currentInvoice, setCurrentInvoice] = useState(null);
     const [driverToAssign, setDriverToAssign] = useState('');
     const [currentExpense, setCurrentExpense] = useState(null);
+    const [currentService, setCurrentService] = useState(null);
+    const [serviceToDelete, setServiceToDelete] = useState(null);
     const printableInvoiceRef = useRef(null);
 
     const toggleExpand = (id) => {
@@ -71,9 +75,10 @@ const OpenInvoices = () => {
         setShowExpenseModal(true);
     };
 
-    const openServiceModal = (invoice, e) => {
+    const openServiceModal = (invoice, service = null, e) => {
         e && e.stopPropagation();
         setCurrentInvoice(invoice);
+        setCurrentService(service);
         setShowServiceModal(true);
     };
 
@@ -158,25 +163,58 @@ const OpenInvoices = () => {
         }
     };
 
-    const handleAddService = (service, rate) => {
+    // Update this function to handle service updates correctly
+    const handleAddOrUpdateService = (service, rate) => {
         if (!currentInvoice) return;
 
-        // Find the service to get VAT included rate
-        const serviceInfo = services.find(s => s.name === service);
-        const vatIncludedRate = serviceInfo ? serviceInfo.vatIncluded : rate;
-
+        // Create service data object
         const serviceData = {
             service,
-            rate: parseFloat(vatIncludedRate)
+            rate: parseFloat(rate)
         };
 
-        addInvoiceService(currentInvoice.id, serviceData);
+        if (currentService) {
+            // For editing existing service, preserve the ID
+            addInvoiceService(currentInvoice.id, {
+                ...serviceData,
+                id: currentService.id // Preserve the original service ID
+            });
+        } else {
+            // For new services
+            addInvoiceService(currentInvoice.id, serviceData);
+        }
+        
+        setCurrentService(null);
         setShowServiceModal(false);
     };
 
+    const handleDeleteService = (invoiceId, serviceId, e) => {
+        e && e.stopPropagation();
+        
+        // Find the invoice
+        const invoice = openInvoices.find(inv => inv.id === invoiceId);
+        
+        // Don't allow deletion if it's the only service
+        if (invoice && invoice.services.length <= 1) {
+            alert("Cannot delete the only service. At least one service must remain.");
+            return;
+        }
+        
+        if (confirm("Are you sure you want to delete this service?")) {
+            removeInvoiceService(invoiceId, serviceId);
+        }
+    };
+
+    // Fix the handleAssignDriver function and the DriverModal integration
     const handleAssignDriver = () => {
         if (!currentInvoice) return;
-        assignDriver(currentInvoice.id, driverToAssign);
+        
+        console.log("Assigning driver:", driverToAssign, "to invoice ID:", currentInvoice.id);
+        
+        // Call the assignDriver function from DataContext
+        const result = assignDriver(currentInvoice.id, driverToAssign);
+        
+        // Close the modal
         setShowDriverModal(false);
     };
 
@@ -478,7 +516,7 @@ const OpenInvoices = () => {
                                                                         <h6 className="fw-bold mb-0">Services</h6>
                                                                         <div className="d-flex gap-2">
                                                                             <button
-                                                                                onClick={e => openServiceModal(invoice, e)}
+                                                                                onClick={e => openServiceModal(invoice, null, e)}
                                                                                 className="btn btn-sm btn-dark d-flex align-items-center gap-1"
                                                                             >
                                                                                 <Plus size={14} />
@@ -499,6 +537,7 @@ const OpenInvoices = () => {
                                                                                 <tr>
                                                                                     <th>Service</th>
                                                                                     <th className="text-end">Amount (incl. VAT)</th>
+                                                                                    <th className="text-center" style={{width: "120px"}}>Actions</th>
                                                                                 </tr>
                                                                             </thead>
                                                                             <tbody>
@@ -506,11 +545,31 @@ const OpenInvoices = () => {
                                                                                     <tr key={service.id}>
                                                                                         <td>{service.service}</td>
                                                                                         <td className="text-end">{formatCurrency(service.rate)}</td>
+                                                                                        <td className="text-center">
+                                                                                            <div className="d-flex justify-content-center gap-2">
+                                                                                                <button
+                                                                                                    onClick={e => openServiceModal(invoice, service, e)}
+                                                                                                    className="btn btn-sm btn-outline-primary"
+                                                                                                    title="Edit Service"
+                                                                                                >
+                                                                                                    <Edit2 size={14} />
+                                                                                                </button>
+                                                                                                {invoice.services.length > 1 && (
+                                                                                                    <button
+                                                                                                        onClick={e => handleDeleteService(invoice.id, service.id, e)}
+                                                                                                        className="btn btn-sm btn-outline-danger"
+                                                                                                        title="Delete Service"
+                                                                                                    >
+                                                                                                        <Trash2 size={14} />
+                                                                                                    </button>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        </td>
                                                                                     </tr>
                                                                                 ))}
                                                                                 {invoice.services.length === 0 && (
                                                                                     <tr>
-                                                                                        <td colSpan="2" className="text-center text-muted">No services added</td>
+                                                                                        <td colSpan="3" className="text-center text-muted">No services added</td>
                                                                                     </tr>
                                                                                 )}
                                                                             </tbody>
@@ -666,12 +725,17 @@ const OpenInvoices = () => {
             </Modal>
 
             {/* Service Modal */}
-            <Modal show={showServiceModal} onClose={() => setShowServiceModal(false)} title="Add Service">
+            <Modal 
+                show={showServiceModal} 
+                onClose={() => { setShowServiceModal(false); setCurrentService(null); }} 
+                title={currentService ? "Edit Service" : "Add Service"}
+            >
                 <ServiceForm
                     servicesList={services}
-                    onSave={(service, rate) => handleAddService(service, rate)}
-                    onCancel={() => setShowServiceModal(false)}
+                    onSave={(service, rate) => handleAddOrUpdateService(service, rate)}
+                    onCancel={() => { setShowServiceModal(false); setCurrentService(null); }}
                     invoice={currentInvoice}
+                    service={currentService}
                 />
             </Modal>
 
@@ -680,8 +744,10 @@ const OpenInvoices = () => {
                 show={showDriverModal}
                 onClose={() => setShowDriverModal(false)}
                 onSave={(driver) => {
+                    console.log("Driver selected:", driver);
                     setDriverToAssign(driver);
-                    handleAssignDriver();
+                    assignDriver(currentInvoice.id, driver); // Call assignDriver directly here
+                    setShowDriverModal(false); // Close modal after assignment
                 }}
                 drivers={drivers}
                 currentDriver={driverToAssign}

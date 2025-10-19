@@ -26,6 +26,7 @@ const GenerateInvoice = () => {
     const [showCustomerModal, setShowCustomerModal] = useState(false);
     const [showServiceModal, setShowServiceModal] = useState(false);
     const [currentInvoice, setCurrentInvoice] = useState(null);
+    const [currentExpense, setCurrentExpense] = useState(null); // Track current expense for editing
 
     // Get today's date in a consistent format
     const today = new Date();
@@ -137,7 +138,14 @@ const GenerateInvoice = () => {
         setShowExpenseModal(false);
     };
 
-    const openExpenseModal = () => {
+    const openExpenseModal = (expense) => {
+        if (expense) {
+            // If an expense is passed, we're editing, so pre-fill the form
+            setCurrentExpense(expense);
+        } else {
+            // Otherwise, it's a new expense
+            setCurrentExpense(null);
+        }
         setShowExpenseModal(true);
     };
 
@@ -439,13 +447,22 @@ const GenerateInvoice = () => {
                                                             <td className="px-3 py-2">{expense.date}</td>
                                                             <td className="px-3 py-2">{formatCurrency(expense.amount)}</td>
                                                             <td className="px-3 py-2 text-center">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => removeExpense(index)}
-                                                                    className="btn btn-sm btn-outline-danger"
-                                                                >
-                                                                    <Trash2 size={16} />
-                                                                </button>
+                                                                <div className="d-flex justify-content-center gap-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => openExpenseModal(expense)}
+                                                                        className="btn btn-sm btn-outline-primary"
+                                                                    >
+                                                                        <Edit2 size={14} />
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeExpense(index)}
+                                                                        className="btn btn-sm btn-outline-danger"
+                                                                    >
+                                                                        <Trash2 size={16} />
+                                                                    </button>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     ))
@@ -552,12 +569,17 @@ const GenerateInvoice = () => {
             </Modal>
 
             {/* Expense Modal */}
-            <Modal show={showExpenseModal} onClose={() => setShowExpenseModal(false)} title="Add Expense">
+            <Modal 
+                show={showExpenseModal} 
+                onClose={() => { setShowExpenseModal(false); setCurrentExpense(null); }} 
+                title={currentExpense ? "Edit Expense" : "Add Expense"}
+            >
                 <ExpenseForm
                     expenseTypes={expenseTypes}
                     onSave={(type, amount, date, description) => handleAddExpense(type, amount, date, description)}
-                    onCancel={() => setShowExpenseModal(false)}
+                    onCancel={() => { setShowExpenseModal(false); setCurrentExpense(null); }}
                     invoice={currentInvoice}
+                    expense={currentExpense}
                 />
             </Modal>
         </>

@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useData } from '../contexts/DataContext';
 
 const ExpenseForm = ({ expenseTypes, onSave, onCancel, invoice, expense }) => {
+    // Get expense default values from context
+    const { expenses } = useData();
+    
     // Initialize with existing expense data if provided, otherwise use defaults
     const [formData, setFormData] = useState({
         type: expense?.type || '',
@@ -12,7 +16,7 @@ const ExpenseForm = ({ expenseTypes, onSave, onCancel, invoice, expense }) => {
     // Update form data if expense prop changes
     useEffect(() => {
         if (expense) {
-            setFormData({
+            setFormData({       
                 type: expense.type || '',
                 amount: expense.amount || '',
                 date: expense.date || new Date().toISOString().split('T')[0],
@@ -23,10 +27,28 @@ const ExpenseForm = ({ expenseTypes, onSave, onCancel, invoice, expense }) => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData({
-            ...formData,
-            [name]: value
-        });
+        
+        // If expense type is changed, load default amount if available
+        if (name === 'type') {
+            const selectedExpense = expenses.find(exp => exp.name === value);
+            if (selectedExpense && selectedExpense.defaultValue) {
+                setFormData({
+                    ...formData,
+                    type: value,
+                    amount: selectedExpense.defaultValue
+                });
+            } else {
+                setFormData({
+                    ...formData,
+                    [name]: value
+                });
+            }
+        } else {
+            setFormData({
+                ...formData,
+                [name]: value
+            });
+        }
     };
 
     const handleSubmit = (e) => {

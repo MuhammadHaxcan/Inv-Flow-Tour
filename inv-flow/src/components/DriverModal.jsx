@@ -17,7 +17,7 @@ const DriverModal = ({ show, onClose, onSave, drivers, currentDriver = '' }) => 
 
     const handleSubmit = () => {
         if (!assignedDriver) return;
-        onSave(assignedDriver, assignmentDate, notes);
+        onSave(assignedDriver);
         onClose();
     };
 

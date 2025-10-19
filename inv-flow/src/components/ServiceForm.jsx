@@ -1,68 +1,79 @@
 import React, { useState, useEffect } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
 
-const ServiceForm = ({ servicesList, onSave, onCancel, invoice }) => {
-    const [service, setService] = useState('');
-    const [rate, setRate] = useState('');
-
+const ServiceForm = ({ servicesList, onSave, onCancel, invoice, service }) => {
+    // Initialize state from props
+    const [selectedService, setSelectedService] = useState(service?.service || '');
+    const [rate, setRate] = useState(service?.rate || '');
+    
+    // Update form when service prop changes
     useEffect(() => {
-        if (invoice) {
-            setService('');
-            setRate('');
+        if (service) {
+            // If editing an existing service, load its values
+            setSelectedService(service.service || '');
+            setRate(service.rate || '');
         }
-    }, [invoice]);
-
-    const handleServiceChange = (val) => {
-        setService(val);
-        const found = servicesList.find(s => s.name === val);
-        if (found) setRate(found.rate);
-        else setRate('');
+    }, [service]);
+    
+    // Handle service selection
+    const handleServiceChange = (e) => {
+        const serviceName = e.target.value;
+        setSelectedService(serviceName);
+        
+        // Only auto-fill rate if this is a new service (not editing)
+        if (serviceName && !service) {
+            const serviceInfo = servicesList.find(s => s.name === serviceName);
+            if (serviceInfo) {
+                setRate(serviceInfo.vatIncluded);
+            }
+        }
     };
-
+    
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!service || !rate) return;
-        onSave(service, rate);
+        
+        // Pass the values back to parent component
+        onSave(selectedService, parseFloat(rate));
     };
-
+    
     return (
         <form onSubmit={handleSubmit}>
             <div className="mb-3">
                 <label className="form-label">Service</label>
-                <select 
-                    value={service} 
-                    onChange={(e) => handleServiceChange(e.target.value)} 
+                <select
+                    value={selectedService}
+                    onChange={handleServiceChange}
                     className="form-select"
+                    required
                 >
                     <option value="">Select Service</option>
-                    {servicesList.map((s, i) => (
-                        <option key={i} value={s.name}>{s.name}</option>
+                    {servicesList.map((s) => (
+                        <option key={s.id} value={s.name}>{s.name}</option>
                     ))}
                 </select>
             </div>
             <div className="mb-3">
-                <label className="form-label">Rate (AED)</label>
-                <input 
-                    type="number" 
-                    value={rate} 
-                    onChange={(e) => setRate(e.target.value)} 
-                    className="form-control" 
-                    placeholder="0" 
+                <label className="form-label">Rate (AED with VAT)</label>
+                <input
+                    type="number"
+                    value={rate}
+                    onChange={(e) => setRate(e.target.value)}
+                    className="form-control"
+                    placeholder="0.00"
+                    step="0.01"
+                    required
                 />
+                {rate && (
+                    <small className="text-muted">
+                        (Excl. VAT: AED {(parseFloat(rate) / 1.05).toFixed(2)})
+                    </small>
+                )}
             </div>
-            <div className="d-flex gap-2">
-                <button 
-                    type="submit" 
-                    className="btn btn-primary flex-grow-1"
-                >
-                    Add Service
-                </button>
-                <button 
-                    type="button" 
-                    onClick={onCancel} 
-                    className="btn btn-outline-secondary"
-                >
+            <div className="d-flex justify-content-end gap-2">
+                <button type="button" className="btn btn-outline-secondary" onClick={onCancel}>
                     Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                    {service ? 'Update Service' : 'Add Service'}
                 </button>
             </div>
         </form>
