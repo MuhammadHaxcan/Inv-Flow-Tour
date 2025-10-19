@@ -1,48 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Info } from 'lucide-react';
 import ServiceModal from '../components/ServiceModal';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { useData } from '../contexts/DataContext';
 
 const Services = () => {
+    // Use data context
+    const { services, addService, updateService, deleteService } = useData();
+    
     // States
-    const [services, setServices] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentService, setCurrentService] = useState(null);
-
-    // Sample data - normally would come from API
-    useEffect(() => {
-        const sampleServices = [
-            { 
-                id: 1, 
-                name: 'Airport Transfer', 
-                description: 'Pickup and drop off service to and from airport',
-                charge: 4000,
-                vatIncluded: 4200 // 5% VAT included
-            },
-            { 
-                id: 2, 
-                name: 'City Tour', 
-                description: 'Full day city sightseeing tour',
-                charge: 5500,
-                vatIncluded: 5775 // 5% VAT included
-            },
-            { 
-                id: 3, 
-                name: 'Hourly Rental', 
-                description: 'Vehicle rental on hourly basis',
-                charge: 3000,
-                vatIncluded: 3150 // 5% VAT included
-            },
-            { 
-                id: 4, 
-                name: 'Outstation', 
-                description: 'Multi-day tour outside the city',
-                charge: 15000,
-                vatIncluded: 15750 // 5% VAT included
-            }
-        ];
-        setServices(sampleServices);
-    }, []);
 
     // Format amount to AED
     const formatCurrency = (amount) => {
@@ -64,7 +32,7 @@ const Services = () => {
     // Handle service deletion
     const handleDeleteService = (id) => {
         if (window.confirm('Are you sure you want to delete this service?')) {
-            setServices(services.filter(service => service.id !== id));
+            deleteService(id);
         }
     };
 
@@ -72,28 +40,21 @@ const Services = () => {
     const handleSaveService = (serviceData) => {
         if (currentService) {
             // Updating existing service
-            const updatedServices = services.map(service => 
-                service.id === currentService.id 
-                    ? { 
-                        ...service, 
-                        name: serviceData.name, 
-                        description: serviceData.description, 
-                        charge: serviceData.charge,
-                        vatIncluded: serviceData.vatIncluded
-                    } 
-                    : service
-            );
-            setServices(updatedServices);
+            updateService({ 
+                ...currentService,
+                name: serviceData.name, 
+                description: serviceData.description, 
+                charge: serviceData.charge,
+                vatIncluded: serviceData.vatIncluded
+            });
         } else {
             // Adding new service
-            const newService = {
-                id: services.length > 0 ? Math.max(...services.map(s => s.id)) + 1 : 1,
+            addService({
                 name: serviceData.name,
                 description: serviceData.description,
                 charge: serviceData.charge,
                 vatIncluded: serviceData.vatIncluded
-            };
-            setServices([...services, newService]);
+            });
         }
 
         setIsModalOpen(false);

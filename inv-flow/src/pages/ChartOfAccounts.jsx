@@ -2,47 +2,35 @@ import React, { useState } from 'react';
 import { User, Truck, Receipt, CreditCard, Plus, Edit2, Trash2 } from 'lucide-react';
 import CustomerModal from '../components/CustomerModal';
 import Modal from '../components/Modal';
+import { useData } from '../contexts/DataContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const ChartOfAccounts = () => {
     const [activeCategory, setActiveCategory] = useState('customer');
-
-    // Database state
-    const [customers, setCustomers] = useState([
-        { id: 1, name: 'ABC Company', phone: '+971501234567', email: 'contact@abc.com', origin: 'Dubai' },
-        { id: 2, name: 'XYZ Ltd', phone: '+971507654321', email: 'info@xyz.com', origin: 'Abu Dhabi' }
-    ]);
-
-    const [drivers, setDrivers] = useState([
-        { id: 1, name: 'Ahmed Khan', phone: '+971501111111' },
-        { id: 2, name: 'Ali Raza', phone: '+971502222222' }
-    ]);
-
-    const [expenses, setExpenses] = useState([
-        { id: 1, name: 'Fuel', defaultValue: 500 },
-        { id: 2, name: 'Tolls', defaultValue: 50 },
-        { id: 3, name: 'Parking', defaultValue: 30 }
-    ]);
-
-    const [bankAccounts, setBankAccounts] = useState([
-        { id: 1, name: 'Cash Account', accountNumber: 'N/A', accountType: 'cash', details: 'Cash on hand' },
-        { id: 2, name: 'Bank Account - HBL', accountNumber: '1234567890', accountType: 'bank', details: 'Current Account' }
-    ]);
-
-    // Modal state
     const [showAddModal, setShowAddModal] = useState(false);
     const [showCustomerModal, setShowCustomerModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
 
+    // Use data context
+    const { 
+        customers, addCustomer, updateCustomer, deleteCustomer,
+        drivers, addDriver, updateDriver, deleteDriver,
+        expenses, addExpenseType, updateExpenseType, deleteExpenseType,
+        accounts, addAccount, updateAccount, deleteAccount
+    } = useData();
+
+    // Handle deletion based on active category
     const handleDelete = (id) => {
-        if (activeCategory === 'customer') {
-            setCustomers(customers.filter(c => c.id !== id));
-        } else if (activeCategory === 'driver') {
-            setDrivers(drivers.filter(d => d.id !== id));
-        } else if (activeCategory === 'expense') {
-            setExpenses(expenses.filter(e => e.id !== id));
-        } else if (activeCategory === 'bank') {
-            setBankAccounts(bankAccounts.filter(b => b.id !== id));
+        if (window.confirm('Are you sure you want to delete this item?')) {
+            if (activeCategory === 'customer') {
+                deleteCustomer(id);
+            } else if (activeCategory === 'driver') {
+                deleteDriver(id);
+            } else if (activeCategory === 'expense') {
+                deleteExpenseType(id);
+            } else if (activeCategory === 'bank') {
+                deleteAccount(id);
+            }
         }
     };
 
@@ -69,11 +57,11 @@ const ChartOfAccounts = () => {
     const handleSaveCustomer = (formData) => {
         if (editingItem) {
             // Update existing customer
-            setCustomers(customers.map(c => c.id === editingItem.id ? { ...c, ...formData } : c));
+            updateCustomer({ ...editingItem, ...formData });
         } else {
             // Add new customer
             const newItem = { ...formData, id: Date.now() };
-            setCustomers([...customers, newItem]);
+            addCustomer(newItem);
         }
         setShowCustomerModal(false);
         setEditingItem(null);
@@ -83,21 +71,21 @@ const ChartOfAccounts = () => {
         if (editingItem) {
             // Update existing item
             if (activeCategory === 'driver') {
-                setDrivers(drivers.map(d => d.id === editingItem.id ? { ...d, ...formData } : d));
+                updateDriver({ ...editingItem, ...formData });
             } else if (activeCategory === 'expense') {
-                setExpenses(expenses.map(e => e.id === editingItem.id ? { ...e, ...formData } : e));
+                updateExpenseType({ ...editingItem, ...formData });
             } else if (activeCategory === 'bank') {
-                setBankAccounts(bankAccounts.map(b => b.id === editingItem.id ? { ...b, ...formData } : b));
+                updateAccount({ ...editingItem, ...formData });
             }
         } else {
             // Add new item
             const newItem = { ...formData, id: Date.now() };
             if (activeCategory === 'driver') {
-                setDrivers([...drivers, newItem]);
+                addDriver(newItem);
             } else if (activeCategory === 'expense') {
-                setExpenses([...expenses, newItem]);
+                addExpenseType(newItem);
             } else if (activeCategory === 'bank') {
-                setBankAccounts([...bankAccounts, newItem]);
+                addAccount(newItem);
             }
         }
         setShowAddModal(false);
@@ -124,7 +112,7 @@ const ChartOfAccounts = () => {
         data = expenses;
         columns = ['Name', 'Default Value (AED)'];
     } else if (activeCategory === 'bank') {
-        data = bankAccounts;
+        data = accounts;
         columns = ['Name', 'Account Number', 'Details'];
     }
 

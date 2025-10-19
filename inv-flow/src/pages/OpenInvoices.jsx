@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, forwardRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { ChevronDown, ChevronUp, Plus, DollarSign, Truck, Receipt, Edit2, Printer } from 'lucide-react';
 import Modal from '../components/Modal';
 import PaymentForm from '../components/PaymentForm';
@@ -6,9 +6,22 @@ import ExpenseForm from '../components/ExpenseForm';
 import ServiceForm from '../components/ServiceForm';
 import DriverModal from '../components/DriverModal';
 import PrintableInvoice from '../components/PrintableInvoice';
+import { useData } from '../contexts/DataContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const OpenInvoices = () => {
+    const {
+        openInvoices,
+        drivers,
+        services,
+        accounts,
+        expenses,
+        addPayment,
+        addExpense,
+        addInvoiceService,
+        assignDriver
+    } = useData();
+
     const [expandedInvoice, setExpandedInvoice] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showExpenseModal, setShowExpenseModal] = useState(false);
@@ -17,100 +30,15 @@ const OpenInvoices = () => {
     const [showPrintModal, setShowPrintModal] = useState(false);
 
     const [currentInvoice, setCurrentInvoice] = useState(null);
-    const [assignedDriver, setAssignedDriver] = useState('');
-    const [invoiceToPrint, setInvoiceToPrint] = useState(null); // <-- Add this state
+    const [driverToAssign, setDriverToAssign] = useState('');
     const printableInvoiceRef = useRef(null);
-
-    const [invoices, setInvoices] = useState([
-        {
-            id: 1,
-            number: 'INV-2024-0153',
-            date: '2024-03-15',
-            customer: 'ABC Company',
-            persons: 3,
-            driver: 'Ahmed Khan',
-            total: 12500,
-            paid: 5000,
-            status: 'partial',
-            services: [
-                { id: 1, service: 'Airport Transfer', rate: 5000 },
-                { id: 2, service: 'City Tour', rate: 7500 }
-            ],
-            expenses: [
-                { id: 1, type: 'Fuel', amount: 500, date: '2024-03-15' },
-                { id: 2, type: 'Tolls', amount: 100, date: '2024-03-15' }
-            ],
-            payments: [
-                { id: 1, amount: 5000, date: '2024-03-15', method: 'Cash Account', reference: 'ADV-001', vat: 0 }
-            ]
-        },
-        {
-            id: 2,
-            number: 'INV-2024-0154',
-            date: '2024-03-17',
-            customer: 'XYZ Holdings',
-            persons: 2,
-            driver: 'Ali Raza',
-            total: 9000,
-            paid: 3000,
-            status: 'partial',
-            services: [
-                { id: 1, service: 'Hourly Rental', rate: 3000 },
-                { id: 2, service: 'City Tour', rate: 6000 }
-            ],
-            expenses: [
-                { id: 1, type: 'Parking', amount: 200, date: '2024-03-17' }
-            ],
-            payments: [
-                { id: 1, amount: 3000, date: '2024-03-17', method: 'Bank Account - HBL', reference: 'DEP-002', vat: 150 }
-            ]
-        },
-        {
-            id: 3,
-            number: 'INV-2024-0155',
-            date: '2024-03-18',
-            customer: 'Global Trading',
-            persons: 4,
-            driver: '',
-            total: 15000,
-            paid: 0,
-            status: 'unpaid',
-            services: [
-                { id: 1, service: 'Outstation', rate: 15000 }
-            ],
-            expenses: [],
-            payments: []
-        }
-    ]);
-
-    const [drivers] = useState([
-        { id: 1, name: 'Ahmed Khan', phone: '+971501111111' },
-        { id: 2, name: 'Ali Raza', phone: '+971502222222' },
-        { id: 3, name: 'Mohammad Siddiq', phone: '+971503333333' }
-    ]);
-
-    const accounts = [
-        { name: 'Cash Account', accountType: 'cash', type: 'cash' },
-        { name: 'Bank Account - HBL', accountType: 'bank', type: 'bank' },
-        { name: 'Bank Account - MCB', accountType: 'bank', type: 'bank' },
-        { name: 'Credit Card', accountType: 'bank', type: 'bank' }
-    ];
-
-    const expenseTypes = ['Fuel', 'Tolls', 'Parking', 'Tickets', 'Maintenance'];
-
-    const servicesList = [
-        { name: 'Airport Transfer', rate: 5000 },
-        { name: 'City Tour', rate: 8000 },
-        { name: 'Hourly Rental', rate: 3000 },
-        { name: 'Outstation', rate: 12000 }
-    ];
 
     const toggleExpand = (id) => {
         setExpandedInvoice(expandedInvoice === id ? null : id);
     };
 
     const getStatusColor = (status) => {
-        switch (status) {                                                                           
+        switch (status) {
             case 'paid': return 'bg-success text-white';
             case 'partial': return 'bg-warning text-dark';
             case 'unpaid': return 'bg-danger text-white';
@@ -148,7 +76,7 @@ const OpenInvoices = () => {
     const openDriverModal = (invoice, e) => {
         e && e.stopPropagation();
         setCurrentInvoice(invoice);
-        setAssignedDriver(invoice.driver || '');
+        setDriverToAssign(invoice.driver || '');
         setShowDriverModal(true);
     };
 
@@ -158,16 +86,20 @@ const OpenInvoices = () => {
         setShowPrintModal(true);
     };
 
-    // Calculate VAT based on payment method
-    const calculateVAT = (payment, accounts) => {
-        const account = accounts.find(acc => acc.name === payment.method);
-        // Apply 5% VAT if it's a bank account, 0 if it's cash
-        return account?.accountType === 'cash' ? 0 : payment.amount * 0.05;
-    };
-
     // Calculate total VAT for an invoice
-    const calculateTotalVAT = (invoice, accounts) => {
-        return invoice.payments.reduce((sum, payment) => sum + calculateVAT(payment, accounts), 0);
+    const calculateTotalVAT = (invoice) => {
+        // Extract 5% VAT from each service
+        const serviceVAT = invoice.services.reduce((sum, service) => {
+            const rate = parseFloat(service.rate) || 0;
+            return sum + (rate * 0.05 / 1.05); // Extract VAT from VAT-included price
+        }, 0);
+
+        // Add payment VAT if present
+        const paymentVAT = invoice.payments.reduce((sum, payment) => {
+            return sum + (payment.vat || 0);
+        }, 0);
+
+        return serviceVAT + paymentVAT;
     };
 
     // Format amount to AED
@@ -175,146 +107,69 @@ const OpenInvoices = () => {
         return `AED ${parseFloat(amount || 0).toFixed(2)}`;
     };
 
-    // Update the handleAddPayment function to include VAT calculation
     const handleAddPayment = (amount, method, date, reference, notes) => {
         if (!currentInvoice) return;
-        const parsedAmount = parseFloat(amount);
-        
-        // Find account to determine if VAT applies
-        const account = accounts.find(acc => acc.name === method);
-        const vatAmount = account?.accountType === 'cash' ? 0 : parsedAmount * 0.05;
-        
-        const updatedInvoices = invoices.map(inv => {
-            if (inv.id === currentInvoice.id) {
-                const newPayment = {
-                    id: Date.now(),
-                    amount: parsedAmount,
-                    date,
-                    method,
-                    reference,
-                    notes,
-                    vat: vatAmount
-                };
 
-                const newPaid = inv.paid + parsedAmount;
-                let newStatus = 'unpaid';
-                if (newPaid >= inv.total) newStatus = 'paid';
-                else if (newPaid > 0) newStatus = 'partial';
+        const paymentData = {
+            amount: parseFloat(amount),
+            method,
+            date,
+            reference,
+            notes
+        };
 
-                return {
-                    ...inv,
-                    payments: [...inv.payments, newPayment],
-                    paid: newPaid,
-                    vat: (inv.vat || 0) + vatAmount,
-                    status: newStatus
-                };
-            }
-            return inv;
-        });
-
-        // Filter out paid invoices
-        const filteredInvoices = updatedInvoices.filter(inv => inv.status !== 'paid');
-        
-        setInvoices(filteredInvoices);
+        addPayment(currentInvoice.id, paymentData);
         setShowPaymentModal(false);
     };
 
     const handleAddExpense = (type, amount, date, description) => {
         if (!currentInvoice) return;
-        const updatedInvoices = invoices.map(inv => {
-            if (inv.id === currentInvoice.id) {
-                const newExpense = {
-                    id: Date.now(),
-                    type,
-                    amount: parseFloat(amount),
-                    date,
-                    description
-                };
 
-                return {
-                    ...inv,
-                    expenses: [...inv.expenses, newExpense]
-                };
-            }
-            return inv;
-        });
+        const expenseData = {
+            type,
+            amount: parseFloat(amount),
+            date,
+            description
+        };
 
-        setInvoices(updatedInvoices);
+        addExpense(currentInvoice.id, expenseData);
         setShowExpenseModal(false);
     };
 
     const handleAddService = (service, rate) => {
         if (!currentInvoice) return;
-        const updatedInvoices = invoices.map(inv => {
-            if (inv.id === currentInvoice.id) {
-                const newService = {
-                    id: Date.now(),
-                    service,
-                    rate: parseFloat(rate)
-                };
 
-                const newTotal = inv.total + parseFloat(rate);
-                let newStatus = 'unpaid';
-                if (inv.paid >= newTotal) newStatus = 'paid';
-                else if (inv.paid > 0) newStatus = 'partial';
+        // Find the service to get VAT included rate
+        const serviceInfo = services.find(s => s.name === service);
+        const vatIncludedRate = serviceInfo ? serviceInfo.vatIncluded : rate;
 
-                return {
-                    ...inv,
-                    services: [...inv.services, newService],
-                    total: newTotal,
-                    status: newStatus
-                };
-            }
-            return inv;
-        });
+        const serviceData = {
+            service,
+            rate: parseFloat(vatIncludedRate)
+        };
 
-        setInvoices(updatedInvoices);
+        addInvoiceService(currentInvoice.id, serviceData);
         setShowServiceModal(false);
     };
 
     const handleAssignDriver = () => {
         if (!currentInvoice) return;
-        const updatedInvoices = invoices.map(inv => {
-            if (inv.id === currentInvoice.id) {
-                return {
-                    ...inv,
-                    driver: assignedDriver
-                };
-            }
-            return inv;
-        });
-
-        setInvoices(updatedInvoices);
+        assignDriver(currentInvoice.id, driverToAssign);
         setShowDriverModal(false);
     };
 
-    // Print invoice handler
-    const handlePrintInvoice = () => {
-        const printContent = document.getElementById('printable-invoice');
-        const originalContents = document.body.innerHTML;
-        
-        document.body.innerHTML = printContent.innerHTML;
-        
-        window.print();
-        
-        document.body.innerHTML = originalContents;
-        
-        // Reload the page to restore all React event listeners
-        window.location.reload();
-    };
-            
-    // Replace your current handleDirectPrint function with this version
+    // Handle direct printing
     const handleDirectPrint = (invoice, e) => {
         e && e.stopPropagation();
-        
+
         // Create a hidden iframe
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         document.body.appendChild(iframe);
-        
+
         // Get access to the iframe document
         const iframeDoc = iframe.contentWindow.document;
-        
+
         // Write the HTML content to the iframe
         iframeDoc.write(`<!DOCTYPE html>
         <html>
@@ -348,7 +203,7 @@ const OpenInvoices = () => {
                     </div>
                 </div>
                 
-                <!-- Improved Bill To and Driver section with normal font size -->
+                <!-- Bill To and Driver section -->
                 <div class="row g-0 mb-3 border-bottom pb-2">
                     <div class="col-6">
                         <h5 class="fw-bold mb-1">Bill To:</h5>
@@ -368,7 +223,7 @@ const OpenInvoices = () => {
                         <thead class="table-light">
                             <tr>
                                 <th>Description</th>
-                                <th class="text-end" style="width:30%">Service Charge</th>
+                                <th class="text-end" style="width:30%">Service Charge (incl. VAT)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -405,101 +260,94 @@ const OpenInvoices = () => {
             </div>
         </body>
         </html>`);
-    
-    iframeDoc.close();
-    
-    // Wait for the iframe content to load
-    iframe.onload = function() {
-        try {
-            // Print the iframe content
-            iframe.contentWindow.print();
-            
-            // Remove the iframe after printing (with a delay to ensure printing completes)
-            setTimeout(() => {
+
+        iframeDoc.close();
+
+        // Wait for the iframe content to load
+        iframe.onload = function () {
+            try {
+                // Print the iframe content
+                iframe.contentWindow.print();
+
+                // Remove the iframe after printing (with a delay to ensure printing completes)
+                setTimeout(() => {
+                    document.body.removeChild(iframe);
+                }, 1000);
+            } catch (e) {
+                console.error('Print failed', e);
                 document.body.removeChild(iframe);
-            }, 1000);
-        } catch (e) {
-            console.error('Print failed', e);
-            document.body.removeChild(iframe);
-        }
+            }
+        };
     };
-};
-    
+
     // Helper functions for rendering invoice details in the print window
     const getDriverContact = (invoice) => {
         if (!invoice.driver || !drivers) return '';
         const driver = drivers.find(d => d.name === invoice.driver);
         return driver ? `<p class="mb-0 text-muted">Contact: ${driver.phone}</p>` : '';
     };
-    
+
     const getServiceRowsHTML = (invoice) => {
         if (!invoice.services || !invoice.services.length) {
             return '<tr><td colspan="2" class="text-center">No services added</td></tr>';
         }
-        
+
         return invoice.services.map(service => {
-            const original = parseFloat(service.rate) || 0;
-            const vat = original * 0.05;
-            const discounted = original - vat;
-            
+            const rateWithVat = parseFloat(service.rate) || 0;
+
             return `<tr>
                 <td>${service.service}</td>
-                <td class="text-end">AED ${discounted.toFixed(2)}</td>
+                <td class="text-end">AED ${rateWithVat.toFixed(2)}</td>
             </tr>`;
         }).join('');
     };
-    
+
     const getInvoiceTotalsHTML = (invoice) => {
         if (!invoice.services || !invoice.services.length) return '';
-        
-        const serviceRows = invoice.services.map(service => {
-            const original = parseFloat(service.rate) || 0;
-            const vat = original * 0.05;
-            const discounted = original - vat;
-            return { original, vat, discounted };
-        });
-        
-        const serviceTotal = serviceRows.reduce((sum, s) => sum + s.discounted, 0);
-        const vatTotal = serviceRows.reduce((sum, s) => sum + s.vat, 0);
-        const subtotal = serviceTotal + vatTotal;
-        
+
+        const total = invoice.services.reduce((sum, s) => sum + parseFloat(s.rate || 0), 0);
+        const vat = calculateTotalVAT(invoice);
+        const subtotal = total - vat;
+
         return `
             <tr>
-                <th class="text-end">Service Total:</th>
-                <th class="text-end">AED ${serviceTotal.toFixed(2)}</th>
-            </tr>
-            <tr>
-                <th class="text-end">VAT Total:</th>
-                <th class="text-end">AED ${vatTotal.toFixed(2)}</th>
-            </tr>
-            <tr>
-                <th class="text-end">Subtotal:</th>
+                <th class="text-end">Subtotal (excl. VAT):</th>
                 <th class="text-end">AED ${subtotal.toFixed(2)}</th>
+            </tr>
+            <tr>
+                <th class="text-end">VAT (5%):</th>
+                <th class="text-end">AED ${vat.toFixed(2)}</th>
+            </tr>
+            <tr>
+                <th class="text-end">Total (incl. VAT):</th>
+                <th class="text-end">AED ${total.toFixed(2)}</th>
             </tr>
         `;
     };
 
-    // Add totals calculation for the table footer
+    // Calculate totals for the table footer
     const calculateTotals = () => {
-        if (!invoices.length) return { outstanding: 0, total: 0 };
-        
-        return invoices.reduce((acc, invoice) => {
+        if (!openInvoices.length) return { outstanding: 0, total: 0 };
+
+        return openInvoices.reduce((acc, invoice) => {
             acc.total += invoice.total;
             acc.outstanding += (invoice.total - invoice.paid);
             return acc;
         }, { outstanding: 0, total: 0 });
     };
 
-    // Add this before the return statement
     const totals = calculateTotals();
 
+    // Get expense types from the expenses context
+    const expenseTypes = expenses.map(e => e.name);
+
     return (
-        <>            
+        <>
             <div className="content-wrapper">
                 <div className="card shadow">
                     <div className="card-header bg-light py-2">
                         <div className="d-flex justify-content-between align-items-center">
-                            <h3 className="h5 fw-bold text-primary mb-0">Open Invoices</h3> 
+                            <h3 className="h5 fw-bold text-primary mb-0">Open Invoices</h3>
                             <p className="text-muted small mb-0">
                                 Manage your pending invoices, record payments and track expenses
                             </p>
@@ -517,14 +365,14 @@ const OpenInvoices = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {invoices.length === 0 ? (
+                                    {openInvoices.length === 0 ? (
                                         <tr>
                                             <td colSpan="4" className="text-center py-4 text-muted">
                                                 No invoices found
                                             </td>
                                         </tr>
                                     ) : (
-                                        invoices.map(invoice => (
+                                        openInvoices.map(invoice => (
                                             <React.Fragment key={invoice.id}>
                                                 <tr
                                                     className={`${expandedInvoice === invoice.id ? 'table-active' : ''} cursor-pointer`}
@@ -558,7 +406,7 @@ const OpenInvoices = () => {
                                                         <div className="d-flex flex-column align-items-end">
                                                             <div className="d-flex align-items-center gap-2">
                                                                 <span className="fw-bold">
-                                                                    AED {(invoice.total - invoice.paid).toFixed(2)}
+                                                                    {formatCurrency(invoice.total - invoice.paid)}
                                                                 </span>
                                                                 <button
                                                                     onClick={e => handleDirectPrint(invoice, e)}
@@ -569,7 +417,7 @@ const OpenInvoices = () => {
                                                                 </button>
                                                             </div>
                                                             <span className="text-muted small">
-                                                                VAT: AED {calculateTotalVAT(invoice, accounts).toFixed(2)}
+                                                                VAT: {formatCurrency(calculateTotalVAT(invoice))}
                                                             </span>
                                                         </div>
                                                         <span className={`badge ${getStatusColor(invoice.status)} rounded-pill`}>
@@ -586,9 +434,9 @@ const OpenInvoices = () => {
                                                                     <div className="d-flex justify-content-between align-items-center">
                                                                         <h5 className="card-title mb-0 fw-bold">Invoice Details</h5>
                                                                         <div className="text-muted">
-                                                                            Total: AED {invoice.total.toFixed(2)} |
-                                                                            Paid: AED {invoice.paid.toFixed(2)} |
-                                                                            Balance: AED {(invoice.total - invoice.paid).toFixed(2)}
+                                                                            Total: {formatCurrency(invoice.total)} |
+                                                                            Paid: {formatCurrency(invoice.paid)} |
+                                                                            Balance: {formatCurrency(invoice.total - invoice.paid)}
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -612,7 +460,6 @@ const OpenInvoices = () => {
                                                                                 <DollarSign size={14} />
                                                                                 Add Payment
                                                                             </button>
-                                                                            {/* Print Voucher button removed */}
                                                                         </div>
                                                                     </div>
                                                                     <div className="table-responsive">
@@ -620,14 +467,14 @@ const OpenInvoices = () => {
                                                                             <thead>
                                                                                 <tr>
                                                                                     <th>Service</th>
-                                                                                    <th className="text-end">Amount</th>
+                                                                                    <th className="text-end">Amount (incl. VAT)</th>
                                                                                 </tr>
                                                                             </thead>
                                                                             <tbody>
                                                                                 {invoice.services.map(service => (
                                                                                     <tr key={service.id}>
                                                                                         <td>{service.service}</td>
-                                                                                        <td className="text-end">AED {service.rate.toFixed(2)}</td>
+                                                                                        <td className="text-end">{formatCurrency(service.rate)}</td>
                                                                                     </tr>
                                                                                 ))}
                                                                                 {invoice.services.length === 0 && (
@@ -675,7 +522,7 @@ const OpenInvoices = () => {
                                                                                     <tr key={exp.id}>
                                                                                         <td>{exp.type}</td>
                                                                                         <td>{exp.date}</td>
-                                                                                        <td className="text-end">AED {exp.amount.toFixed(2)}</td>
+                                                                                        <td className="text-end">{formatCurrency(exp.amount)}</td>
                                                                                     </tr>
                                                                                 ))}
                                                                                 {invoice.expenses.length === 0 && (
@@ -712,10 +559,10 @@ const OpenInvoices = () => {
                                                                                         <td>{p.date}</td>
                                                                                         <td>{p.method}</td>
                                                                                         <td className="text-end">
-                                                                                            AED {p.amount.toFixed(2)}
+                                                                                            {formatCurrency(p.amount)}
                                                                                             {p.vat > 0 && (
                                                                                                 <span className="text-muted small d-block">
-                                                                                                    VAT: AED {p.vat.toFixed(2)}
+                                                                                                    VAT: {formatCurrency(p.vat)}
                                                                                                 </span>
                                                                                             )}
                                                                                         </td>
@@ -776,7 +623,7 @@ const OpenInvoices = () => {
             {/* Service Modal */}
             <Modal show={showServiceModal} onClose={() => setShowServiceModal(false)} title="Add Service">
                 <ServiceForm
-                    servicesList={servicesList}
+                    servicesList={services}
                     onSave={(service, rate) => handleAddService(service, rate)}
                     onCancel={() => setShowServiceModal(false)}
                     invoice={currentInvoice}
@@ -784,33 +631,36 @@ const OpenInvoices = () => {
             </Modal>
 
             {/* Driver Modal */}
-            <DriverModal 
-                show={showDriverModal} 
-                onClose={() => setShowDriverModal(false)} 
-                onSave={(driver) => handleAssignDriver()}
+            <DriverModal
+                show={showDriverModal}
+                onClose={() => setShowDriverModal(false)}
+                onSave={(driver) => {
+                    setDriverToAssign(driver);
+                    handleAssignDriver();
+                }}
                 drivers={drivers}
-                currentDriver={assignedDriver}
+                currentDriver={driverToAssign}
             />
 
             {/* Print Modal */}
-            <Modal 
-                show={showPrintModal} 
-                onClose={() => setShowPrintModal(false)} 
+            <Modal
+                show={showPrintModal}
+                onClose={() => setShowPrintModal(false)}
                 title="Print Invoice Voucher"
                 size="lg"
             >
-                <div className="mb-3 px-0"> {/* Remove padding if needed */}
+                <div className="mb-3 px-0">
                     <PrintableInvoice invoice={currentInvoice} ref={printableInvoiceRef} />
                 </div>
                 <div className="d-flex justify-content-end">
-                    <button 
-                        onClick={handlePrintInvoice}
+                    <button
+                        onClick={() => handleDirectPrint(currentInvoice)}
                         className="btn btn-primary me-2"
                     >
                         <Printer size={16} className="me-2" />
                         Print
                     </button>
-                    <button 
+                    <button
                         onClick={() => setShowPrintModal(false)}
                         className="btn btn-secondary"
                     >

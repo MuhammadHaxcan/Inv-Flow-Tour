@@ -6,9 +6,20 @@ import ServiceForm from '../components/ServiceForm';
 import PaymentForm from '../components/PaymentForm';
 import ExpenseForm from '../components/ExpenseForm';
 import DriverModal from '../components/DriverModal';
+import { useData } from '../contexts/DataContext';
+import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const GenerateInvoice = () => {
+    const navigate = useNavigate();
+
+    // Use data context
+    const {
+        customers, addCustomer,
+        drivers, services, accounts, expenses,
+        nextInvoiceNumber, generateInvoice
+    } = useData();
+
     // Invoice state
     const [showDriverModal, setShowDriverModal] = useState(false);
     const [showExpenseModal, setShowExpenseModal] = useState(false);
@@ -19,77 +30,58 @@ const GenerateInvoice = () => {
     // Get today's date in a consistent format
     const today = new Date();
     const formattedToday = today.toISOString().split('T')[0]; // YYYY-MM-DD format for date inputs
+    const displayDate = today.toLocaleString('en-AE', { year: 'numeric', month: 'short', day: 'numeric' });
 
-    // Format for display (this is used in the invoice date display)
-    const displayDate = today.toLocaleString('en-AE', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
-
-    // Update the service date state to use the same date as the invoice
+    // Form state
     const [serviceDate, setServiceDate] = useState(formattedToday);
     const [selectedCustomer, setSelectedCustomer] = useState('');
     const [assignedDriver, setAssignedDriver] = useState('');
     const [accommodation, setAccommodation] = useState('');
-    const [services, setServices] = useState([{ service: '', rate: '' }]);
-    const [expenses, setExpenses] = useState([]);
-    
+    const [invoiceServices, setInvoiceServices] = useState([{ service: '', rate: '' }]);
+    const [invoiceExpenses, setInvoiceExpenses] = useState([]);
+    const [payments, setPayments] = useState([]);
+
     // Add this effect to keep currentInvoice updated
     useEffect(() => {
         const invoice = {
             customer: selectedCustomer,
             driver: assignedDriver,
             serviceDate,
-            accommodation,
-            services,
-            expenses,
+            persons: accommodation,
+            services: invoiceServices,
+            expenses: invoiceExpenses,
+            payments: payments,
+            paid: payments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0),
             total: calculateInvoiceTotal()
         };
         setCurrentInvoice(invoice);
-    }, [selectedCustomer, assignedDriver, serviceDate, accommodation, services, expenses]);
+    }, [selectedCustomer, assignedDriver, serviceDate, accommodation, invoiceServices, invoiceExpenses, payments]);
 
-    // Data
-    const [customers, setCustomers] = useState([
-        { id: 1, name: 'ABC Company', phone: '+971501234567', email: 'contact@abc.com', origin: 'Dubai' },
-        { id: 2, name: 'XYZ Ltd', phone: '+971507654321', email: 'info@xyz.com', origin: 'Abu Dhabi' }
-    ]);
-
-    const drivers = [
-        { id: 1, name: 'Ahmed Khan', phone: '+971501111111' },
-        { id: 2, name: 'Ali Raza', phone: '+971502222222' }
-    ];
-
-    const servicesList = [
-        { name: 'Airport Transfer', rate: 5000 },
-        { name: 'City Tour', rate: 8000 },
-        { name: 'Hourly Rental', rate: 3000 },
-        { name: 'Outstation', rate: 12000 }
-    ];
-
-    const expenseTypes = ['Fuel', 'Tolls', 'Parking', 'Tickets', 'Maintenance'];
+    const expenseTypes = expenses.map(expense => expense.name);
 
     const addService = () => {
-        setServices([...services, { service: '', rate: '' }]);
+        setInvoiceServices([...invoiceServices, { service: '', rate: '' }]);
     };
 
     const removeService = (index) => {
-        const newServices = services.filter((_, i) => i !== index);
-        setServices(newServices);
+        const newServices = invoiceServices.filter((_, i) => i !== index);
+        setInvoiceServices(newServices);
     };
 
+    // Updated to use vatIncluded instead of charge
     const updateService = (index, field, value) => {
-        const newServices = [...services];
+        const newServices = [...invoiceServices];
         newServices[index][field] = value;
 
         if (field === 'service') {
-            const selectedService = servicesList.find(s => s.name === value);
+            const selectedService = services.find(s => s.name === value);
             if (selectedService) {
-                newServices[index].rate = selectedService.rate;
+                // Use vatIncluded for the rate to include VAT
+                newServices[index].rate = selectedService.vatIncluded;
             }
         }
 
-        setServices(newServices);
+        setInvoiceServices(newServices);
     };
 
     const addExpense = () => {
@@ -97,27 +89,30 @@ const GenerateInvoice = () => {
     };
 
     const removeExpense = (index) => {
-        const newExpenses = expenses.filter((_, i) => i !== index);
-        setExpenses(newExpenses);
+        const newExpenses = invoiceExpenses.filter((_, i) => i !== index);
+        setInvoiceExpenses(newExpenses);
     };
 
     // Update the calculation functions
     const calculateSubtotal = () => {
-        return services.reduce((sum, s) => sum + (parseFloat(s.rate) || 0), 0);
+        return invoiceServices.reduce((sum, s) => sum + (parseFloat(s.rate) || 0), 0);
     };
 
     const calculateExpensesTotal = () => {
-        return expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+        return invoiceExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
     };
 
     const calculateVAT = () => {
-        // In a real implementation, this would calculate VAT based on payment method
-        // For now returning 0 as VAT is handled at payment time
-        return 0;
+        // VAT is already included in the rate, so we're just showing the VAT portion for display
+        return invoiceServices.reduce((sum, s) => {
+            const rate = parseFloat(s.rate) || 0;
+            // Calculate VAT at 5%
+            return sum + (rate * 0.05 / 1.05); // Extract VAT from VAT-included price
+        }, 0);
     };
 
     const calculateInvoiceTotal = () => {
-        return calculateSubtotal() + calculateVAT();
+        return calculateSubtotal(); // Total already includes VAT
     };
 
     const calculateNetAmount = () => {
@@ -125,8 +120,7 @@ const GenerateInvoice = () => {
     };
 
     const handleAddCustomer = (formData) => {
-        const newCustomer = { ...formData, id: Date.now() };
-        setCustomers([...customers, newCustomer]);
+        const newCustomer = addCustomer(formData);
         setSelectedCustomer(newCustomer.name);
         setShowCustomerModal(false);
     };
@@ -139,7 +133,7 @@ const GenerateInvoice = () => {
             date,
             description
         };
-        setExpenses([...expenses, newExpense]);
+        setInvoiceExpenses([...invoiceExpenses, newExpense]);
         setShowExpenseModal(false);
     };
 
@@ -148,13 +142,56 @@ const GenerateInvoice = () => {
     };
 
     const handleAddService = (service, rate) => {
-        const newService = { service, rate };
-        setServices([...services, newService]);
+        // Find the service to get the VAT included rate
+        const serviceInfo = services.find(s => s.name === service);
+        const vatIncludedRate = serviceInfo ? serviceInfo.vatIncluded : rate;
+
+        const newService = {
+            service,
+            rate: vatIncludedRate // Use VAT included rate
+        };
+        setInvoiceServices([...invoiceServices, newService]);
         setShowServiceModal(false);
     };
 
     const formatCurrency = (amount) => {
         return `AED ${parseFloat(amount || 0).toFixed(2)}`;
+    };
+
+    // Updated to handle form submission and save invoice with only service and pax as mandatory
+    const handleSaveInvoice = () => {
+        if (!selectedCustomer) {
+            alert('Please select a customer');
+            return;
+        }
+
+        // Validate that at least one service is fully filled
+        const validServices = invoiceServices.filter(s => s.service && s.rate);
+        if (validServices.length === 0) {
+            alert('Please add at least one service');
+            return;
+        }
+
+        // Validate person accommodation
+        if (!accommodation) {
+            alert('Please enter number of persons');
+            return;
+        }
+
+        const invoiceData = {
+            customer: selectedCustomer,
+            driver: assignedDriver || '', // Make driver optional
+            serviceDate,
+            persons: parseInt(accommodation) || 0,
+            services: validServices, // Only include valid services
+            expenses: invoiceExpenses,
+            payments: payments,
+            paid: payments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0),
+            total: calculateInvoiceTotal()
+        };
+
+        generateInvoice(invoiceData);
+        navigate('/open-invoices');
     };
 
     return (
@@ -167,30 +204,30 @@ const GenerateInvoice = () => {
                             <div className="d-flex align-items-center gap-3">
                                 <div className="form-group mb-0">
                                     <label className="small text-muted mb-1">Invoice Number</label>
-                                    <input 
-                                        type="text" 
-                                        value="INV-2024-0156" 
-                                        className="form-control form-control-sm bg-light" 
-                                        disabled 
+                                    <input
+                                        type="text"
+                                        value={nextInvoiceNumber}
+                                        className="form-control form-control-sm bg-light"
+                                        disabled
                                         style={{ minWidth: "150px" }}
                                     />
                                 </div>
                                 <div className="form-group mb-0">
                                     <label className="small text-muted mb-1">Invoice Date</label>
-                                    <input 
-                                        type="text" 
-                                        value={displayDate} 
-                                        className="form-control form-control-sm bg-light" 
+                                    <input
+                                        type="text"
+                                        value={displayDate}
+                                        className="form-control form-control-sm bg-light"
                                         disabled
                                         style={{ minWidth: "150px" }}
                                     />
                                 </div>
                                 <div className="form-group mb-0">
                                     <label className="small text-muted mb-1">Created By</label>
-                                    <input 
-                                        type="text" 
-                                        value="Admin User" 
-                                        className="form-control form-control-sm bg-light" 
+                                    <input
+                                        type="text"
+                                        value="Admin User"
+                                        className="form-control form-control-sm bg-light"
                                         disabled
                                         style={{ minWidth: "120px" }}
                                     />
@@ -203,12 +240,13 @@ const GenerateInvoice = () => {
                             {/* First row - Customer and Service Date */}
                             <div className="row mb-3">
                                 <div className="col-md-6">
-                                    <label className="form-label small fw-medium">Customer Information</label>
+                                    <label className="form-label small fw-medium">Customer Information <span className="text-danger">*</span></label>
                                     <div className="d-flex gap-2">
                                         <select
                                             value={selectedCustomer}
                                             onChange={(e) => setSelectedCustomer(e.target.value)}
-                                            className="form-select form-select-sm flex-grow-1"
+                                            className={`form-select form-select-sm flex-grow-1 ${!selectedCustomer && 'is-invalid'}`}
+                                            required
                                         >
                                             <option value="">Select Customer</option>
                                             {customers.map((customer) => (
@@ -225,31 +263,19 @@ const GenerateInvoice = () => {
                                         </button>
                                     </div>
                                 </div>
-                                
+
                                 <div className="col-md-6">
                                     <label className="form-label small fw-medium">Service Date</label>
-                                    <div className="position-relative">
+                                    <div className="input-group input-group-sm">
                                         <input
                                             type="date"
                                             value={serviceDate}
                                             onChange={(e) => setServiceDate(e.target.value)}
-                                            onClick={(e) => e.target.showPicker()} // Add click handler
-                                            onKeyDown={(e) => {
-                                                if (e.key === ' ') { // Handle spacebar
-                                                    e.preventDefault();
-                                                    e.target.showPicker();
-                                                }
-                                            }}
-                                            className="form-control form-control-sm date-input"
-                                            style={{ 
-                                                paddingRight: "2rem",
-                                                cursor: "pointer" // Add pointer cursor
-                                            }}
+                                            className="form-control"
                                         />
-                                        <Calendar 
-                                            size={16} 
-                                            className="position-absolute end-0 top-50 translate-middle-y me-2 text-muted pointer-events-none"
-                                        />
+                                        <span className="input-group-text">
+                                            <Calendar size={16} className="text-muted" />
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -257,7 +283,7 @@ const GenerateInvoice = () => {
                             {/* Driver and Accommodation */}
                             <div className="row mb-3">
                                 <div className="col-md-6">
-                                    <label className="form-label small fw-medium">Driver</label>
+                                    <label className="form-label small fw-medium">Driver (Optional)</label>
                                     <div>
                                         {assignedDriver ? (
                                             <div className="p-2 bg-light border rounded d-flex align-items-center justify-content-between">
@@ -287,16 +313,17 @@ const GenerateInvoice = () => {
                                         )}
                                     </div>
                                 </div>
-                                
+
                                 <div className="col-md-6">
-                                    <label className="form-label small fw-medium">Person Accommodation</label>
+                                    <label className="form-label small fw-medium">Person Accommodation <span className="text-danger">*</span></label>
                                     <input
                                         type="number"
                                         value={accommodation}
                                         onChange={(e) => setAccommodation(e.target.value)}
                                         placeholder="Number of persons"
-                                        className="form-control form-control-sm"
+                                        className={`form-control form-control-sm ${!accommodation && 'is-invalid'}`}
                                         min="1"
+                                        required
                                     />
                                 </div>
                             </div>
@@ -304,7 +331,7 @@ const GenerateInvoice = () => {
                             {/* Services Section */}
                             <div className="mb-4">
                                 <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <label className="form-label fw-bold mb-0">Services</label>
+                                    <label className="form-label fw-bold mb-0">Services <span className="text-danger">*</span></label>
                                     <button
                                         type="button"
                                         onClick={addService}
@@ -319,23 +346,24 @@ const GenerateInvoice = () => {
                                     <table className="table table-hover mb-0">
                                         <thead className="table-light">
                                             <tr>
-                                                <th className="px-3 py-2">Service</th>
-                                                <th className="px-3 py-2">Rate (AED)</th>
+                                                <th className="px-3 py-2">Service <span className="text-danger">*</span></th>
+                                                <th className="px-3 py-2">Rate (AED with VAT) <span className="text-danger">*</span></th>
                                                 <th className="px-3 py-2 text-center" style={{ width: "60px" }}></th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {services.map((service, index) => (
+                                            {invoiceServices.map((service, index) => (
                                                 <tr key={index}>
                                                     <td className="px-3 py-2">
                                                         <select
                                                             value={service.service}
                                                             onChange={(e) => updateService(index, 'service', e.target.value)}
-                                                            className="form-select"
+                                                            className={`form-select ${(!service.service && index === 0) && 'is-invalid'}`}
+                                                            required={index === 0}
                                                         >
                                                             <option value="">Select Service</option>
-                                                            {servicesList.map((s, i) => (
-                                                                <option key={i} value={s.name}>{s.name}</option>
+                                                            {services.map((s) => (
+                                                                <option key={s.id} value={s.name}>{s.name}</option>
                                                             ))}
                                                         </select>
                                                     </td>
@@ -344,12 +372,18 @@ const GenerateInvoice = () => {
                                                             type="number"
                                                             value={service.rate}
                                                             onChange={(e) => updateService(index, 'rate', e.target.value)}
-                                                            className="form-control"
+                                                            className={`form-control ${(!service.rate && index === 0) && 'is-invalid'}`}
                                                             placeholder="0"
+                                                            required={index === 0}
                                                         />
+                                                        {service.rate && (
+                                                            <small className="text-muted">
+                                                                (Excl. VAT: AED {parseFloat(service.rate / 1.05).toFixed(2)})
+                                                            </small>
+                                                        )}
                                                     </td>
                                                     <td className="px-3 py-2 text-center">
-                                                        {services.length > 1 && (
+                                                        {invoiceServices.length > 1 && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => removeService(index)}
@@ -371,7 +405,7 @@ const GenerateInvoice = () => {
                                 {/* Left side: Expenses */}
                                 <div className="col-md-6 mb-4">
                                     <div className="d-flex justify-content-between align-items-center mb-2">
-                                        <label className="form-label fw-bold mb-0">Expenses</label>
+                                        <label className="form-label fw-bold mb-0">Expenses (Optional)</label>
                                         <button
                                             type="button"
                                             onClick={addExpense}
@@ -392,14 +426,14 @@ const GenerateInvoice = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {expenses.length === 0 ? (
+                                                {invoiceExpenses.length === 0 ? (
                                                     <tr>
                                                         <td colSpan="4" className="text-center py-3 text-muted">
                                                             No expenses added
                                                         </td>
                                                     </tr>
                                                 ) : (
-                                                    expenses.map((expense, index) => (
+                                                    invoiceExpenses.map((expense, index) => (
                                                         <tr key={expense.id}>
                                                             <td className="px-3 py-2">{expense.type}</td>
                                                             <td className="px-3 py-2">{expense.date}</td>
@@ -417,7 +451,7 @@ const GenerateInvoice = () => {
                                                     ))
                                                 )}
                                             </tbody>
-                                            {expenses.length > 0 && (
+                                            {invoiceExpenses.length > 0 && (
                                                 <tfoot className="table-light">
                                                     <tr>
                                                         <td colSpan="2" className="text-end fw-bold">Total Expenses:</td>
@@ -428,26 +462,26 @@ const GenerateInvoice = () => {
                                         </table>
                                     </div>
                                 </div>
-                                
+
                                 {/* Right side: Total and buttons */}
                                 <div className="col-md-6 mb-4">
                                     <div className="card bg-light h-100">
                                         <div className="card-body d-flex flex-column">
                                             <div className="mb-4 flex-grow-1">
                                                 <div className="d-flex justify-content-between mb-2">
-                                                    <span className="text-muted">Subtotal:</span>
-                                                    <span className="fw-medium">{formatCurrency(calculateSubtotal())}</span>
+                                                    <span className="text-muted">Subtotal (excl. VAT):</span>
+                                                    <span className="fw-medium">{formatCurrency(calculateSubtotal() - calculateVAT())}</span>
                                                 </div>
                                                 <div className="d-flex justify-content-between mb-2">
-                                                    <span className="text-muted">VAT:</span>
+                                                    <span className="text-muted">VAT (5%):</span>
                                                     <span className="fw-medium">{formatCurrency(calculateVAT())}</span>
                                                 </div>
                                                 <div className="d-flex justify-content-between pt-2 border-top mb-3">
-                                                    <span className="fw-bold">Invoice Total:</span>
+                                                    <span className="fw-bold">Invoice Total (incl. VAT):</span>
                                                     <span className="fw-bold">{formatCurrency(calculateInvoiceTotal())}</span>
                                                 </div>
-                                                
-                                                {expenses.length > 0 && (
+
+                                                {invoiceExpenses.length > 0 && (
                                                     <>
                                                         <div className="d-flex justify-content-between mb-2">
                                                             <span className="text-muted">Total Expenses:</span>
@@ -460,12 +494,21 @@ const GenerateInvoice = () => {
                                                     </>
                                                 )}
                                             </div>
-                                            
+
                                             <div className="d-flex gap-2">
-                                                <button type="button" className="btn btn-primary flex-grow-1 py-2">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-primary flex-grow-1 py-2"
+                                                    onClick={handleSaveInvoice}
+                                                    disabled={!selectedCustomer || !accommodation || invoiceServices[0].service === '' || invoiceServices[0].rate === ''}
+                                                >
                                                     Save Invoice
                                                 </button>
-                                                <button type="button" className="btn btn-outline-secondary py-2">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-secondary py-2"
+                                                    onClick={() => navigate('/')}
+                                                >
                                                     Cancel
                                                 </button>
                                             </div>
@@ -487,9 +530,9 @@ const GenerateInvoice = () => {
             />
 
             {/* Driver Modal */}
-            <DriverModal 
-                show={showDriverModal} 
-                onClose={() => setShowDriverModal(false)} 
+            <DriverModal
+                show={showDriverModal}
+                onClose={() => setShowDriverModal(false)}
                 onSave={(driver, date, notes) => {
                     setAssignedDriver(driver);
                     setShowDriverModal(false);
@@ -501,11 +544,11 @@ const GenerateInvoice = () => {
             {/* Service Modal */}
             <Modal show={showServiceModal} onClose={() => setShowServiceModal(false)} title="Add Service">
                 <ServiceForm
-                    servicesList={servicesList}
+                    servicesList={services}
                     onSave={(service, rate) => handleAddService(service, rate)}
                     onCancel={() => setShowServiceModal(false)}
                     invoice={currentInvoice}
-                />      
+                />
             </Modal>
 
             {/* Expense Modal */}
