@@ -6,6 +6,7 @@ import ServiceForm from '../components/ServiceForm';
 import PaymentForm from '../components/PaymentForm';
 import ExpenseForm from '../components/ExpenseForm';
 import DriverModal from '../components/DriverModal';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import { useData } from '../contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -27,6 +28,8 @@ const GenerateInvoice = () => {
     const [showServiceModal, setShowServiceModal] = useState(false);
     const [currentInvoice, setCurrentInvoice] = useState(null);
     const [currentExpense, setCurrentExpense] = useState(null); // Track current expense for editing
+    const [showDeleteExpenseModal, setShowDeleteExpenseModal] = useState(false);
+    const [expenseToDeleteIndex, setExpenseToDeleteIndex] = useState(null);
 
     // Get today's date in a consistent format
     const today = new Date();
@@ -92,6 +95,19 @@ const GenerateInvoice = () => {
     const removeExpense = (index) => {
         const newExpenses = invoiceExpenses.filter((_, i) => i !== index);
         setInvoiceExpenses(newExpenses);
+    };
+
+    const requestDeleteExpense = (index) => {
+        setExpenseToDeleteIndex(index);
+        setShowDeleteExpenseModal(true);
+    };
+
+    const confirmDeleteExpense = () => {
+        if (expenseToDeleteIndex !== null) {
+            removeExpense(expenseToDeleteIndex);
+        }
+        setExpenseToDeleteIndex(null);
+        setShowDeleteExpenseModal(false);
     };
 
     // Update the calculation functions
@@ -457,7 +473,7 @@ const GenerateInvoice = () => {
                                                                     </button>
                                                                     <button
                                                                         type="button"
-                                                                        onClick={() => removeExpense(index)}
+                                                                        onClick={() => requestDeleteExpense(index)}
                                                                         className="btn btn-sm btn-outline-danger"
                                                                     >
                                                                         <Trash2 size={16} />
@@ -582,6 +598,18 @@ const GenerateInvoice = () => {
                     expense={currentExpense}
                 />
             </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmationModal
+                show={showDeleteExpenseModal}
+                onClose={() => { setShowDeleteExpenseModal(false); setExpenseToDeleteIndex(null); }}
+                onConfirm={confirmDeleteExpense}
+                itemName={expenseToDeleteIndex !== null ? invoiceExpenses[expenseToDeleteIndex]?.type : ''}
+                title="Delete Expense"
+                message="Are you sure you want to delete this expense?"
+                confirmButtonText="Delete"
+                confirmButtonVariant="danger"
+            />
         </>
     );
 };

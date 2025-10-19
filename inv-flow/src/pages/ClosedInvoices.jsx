@@ -1,90 +1,17 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, FileText, DollarSign, Receipt } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileText, DollarSign, Receipt, Printer } from 'lucide-react';
+import { useData } from '../contexts/DataContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const ClosedInvoices = () => {
     const [expandedInvoice, setExpandedInvoice] = useState(null);
 
-    // Sample data - normally would come from API or context
-    const [invoices, setInvoices] = useState([
-        {
-            id: 1,
-            number: 'INV-2024-0150',
-            date: '2024-03-10',
-            customer: 'Global Trading',
-            persons: 2,
-            driver: 'Ahmed Khan',
-            total: 9500,
-            paid: 9500,
-            status: 'paid',
-            vat: 475, // 5% of 9500
-            services: [
-                { id: 1, service: 'Airport Transfer', rate: 4000 },
-                { id: 2, service: 'City Tour', rate: 5500 }
-            ],
-            expenses: [
-                { id: 1, type: 'Fuel', amount: 300, date: '2024-03-10' },
-                { id: 2, type: 'Tolls', amount: 100, date: '2024-03-10' }
-            ],
-            payments: [
-                { id: 1, amount: 5000, date: '2024-03-10', method: 'Cash Account', reference: 'ADV-001' },
-                { id: 2, amount: 4500, date: '2024-03-15', method: 'Bank Account - HBL', reference: 'TRX-123' }
-            ]
-        },
-        {
-            id: 2,
-            number: 'INV-2024-0154',
-            date: '2024-03-17',
-            customer: 'XYZ Ltd',
-            persons: 2,
-            driver: 'Ali Raza',
-            total: 8000,
-            paid: 8000,
-            status: 'paid',
-            vat: 400, // 5% of 8000
-            services: [
-                { id: 1, service: 'Hourly Rental', rate: 3000 },
-                { id: 2, service: 'City Tour', rate: 5000 }
-            ],
-            expenses: [
-                { id: 1, type: 'Fuel', amount: 400, date: '2024-03-17' }
-            ],
-            payments: [
-                { id: 1, amount: 8000, date: '2024-03-17', method: 'Bank Account - HBL', reference: 'TRX-452' }
-            ]
-        },
-        {
-            id: 3,
-            number: 'INV-2024-0148',
-            date: '2024-03-05',
-            customer: 'ABC Company',
-            persons: 4,
-            driver: 'Mohammad Siddiq',
-            total: 15000,
-            paid: 15000,
-            status: 'paid',
-            vat: 750, // 5% of 15000
-            services: [
-                { id: 1, service: 'Outstation', rate: 15000 }
-            ],
-            expenses: [
-                { id: 1, type: 'Fuel', amount: 800, date: '2024-03-05' },
-                { id: 2, type: 'Accommodation', amount: 600, date: '2024-03-06' }
-            ],
-            payments: [
-                { id: 1, amount: 7500, date: '2024-03-05', method: 'Cash Account', reference: 'ADV-005' },
-                { id: 2, amount: 7500, date: '2024-03-12', method: 'Bank Account - MCB', reference: 'TRF-789' }
-            ]
-        }
-    ]);
-
-    // Add accounts data to match with payment methods
-    const [accounts] = useState([
-        { name: 'Cash Account', accountType: 'cash' },
-        { name: 'Bank Account - HBL', accountType: 'bank' },
-        { name: 'Bank Account - MCB', accountType: 'bank' },
-        { name: 'Credit Card', accountType: 'bank' }
-    ]);
+    // Use data context instead of local state
+    const {
+        closedInvoices,
+        accounts,
+        drivers
+    } = useData();
 
     const toggleExpand = (id) => {
         setExpandedInvoice(expandedInvoice === id ? null : id);
@@ -96,13 +23,19 @@ const ClosedInvoices = () => {
     };
 
     // Calculate VAT as 5% of the invoice total
-    const calculateVAT = (invoice) => { 
-        return invoice.total * 0.05;
-    };
+    const calculateVAT = (invoice) => {
+        // Extract 5% VAT from each service
+        const serviceVAT = invoice.services.reduce((sum, service) => {
+            const rate = parseFloat(service.rate) || 0;
+            return sum + (rate * 0.05 / 1.05); // Extract VAT from VAT-included price
+        }, 0);
 
-    // Calculate discounted service rate (95% of original rate)
-    const calculateDiscountedRate = (rate) => {
-        return rate * 0.95;
+        // Add payment VAT if present
+        const paymentVAT = invoice.payments.reduce((sum, payment) => {
+            return sum + (payment.vat || 0);
+        }, 0);
+
+        return serviceVAT + paymentVAT;
     };
 
     // Calculate net amount (Total - VAT - Expenses)
@@ -114,25 +47,192 @@ const ClosedInvoices = () => {
 
     // Format amount to AED
     const formatCurrency = (amount) => {
-        return `AED ${parseFloat(amount).toFixed(2)}`;
+        return `AED ${parseFloat(amount || 0).toFixed(2)}`;
     };
 
     // Calculate totals for footer row
     const calculateTotals = () => {
-        return invoices.reduce((acc, invoice) => {
+        if (!closedInvoices.length) return { total: 0, vat: 0, expenses: 0, net: 0 };
+
+        return closedInvoices.reduce((acc, invoice) => {
             const vatAmount = calculateVAT(invoice);
             const expensesTotal = calculateExpensesTotal(invoice.expenses);
             
             acc.total += invoice.total;
             acc.vat += vatAmount;
             acc.expenses += expensesTotal;
-            acc.net += (invoice.total - vatAmount - expensesTotal);
+            acc.net += (invoice.total - vatAmount - expensesTotal); // Fixed calculation
             
             return acc;
         }, { total: 0, vat: 0, expenses: 0, net: 0 });
     };
 
     const totals = calculateTotals();
+
+    // Get driver contact information
+    const getDriverContact = (invoice) => {
+        if (!invoice.driver || !drivers) return 'Not assigned';
+        const driver = drivers.find(d => d.name === invoice.driver);
+        return driver ? driver.phone : 'No contact information';
+    };
+
+    const handleDirectPrint = (invoice, e) => {
+        e && e.stopPropagation();
+
+        // Create a hidden iframe
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+
+        // Get access to the iframe document
+        const iframeDoc = iframe.contentWindow.document;
+
+        // Write the HTML content to the iframe
+        iframeDoc.write(`<!DOCTYPE html>
+        <html>
+        <head>
+            <title>${invoice.number}</title>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+            <style>
+                @media print {
+                    body { padding: 15px; font-size: 11pt; }
+                    @page { size: A4; margin: 7mm; }
+                    .container { padding: 0 !important; max-width: 100%; }
+                    .table { margin-bottom: 10px; }
+                    h5 { margin-bottom: 5px !important; font-size: 12pt !important; font-weight: bold; }
+                    p { margin-bottom: 3px !important; font-size: 11pt !important; }
+                    .table td, .table th { font-size: 11pt !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container p-1">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h2 class="fw-bold text-primary mb-1">Invoice</h2>
+                        <p class="mb-0 text-muted">INV-FLOW TRANSPORT LLC</p>
+                        <p class="mb-0 text-muted">Dubai, UAE</p>
+                        <p class="mb-0 text-muted">info@inv-flow.ae | +971-4-123-4567</p>
+                    </div>
+                    <div class="text-end">
+                        <h3 class="fw-bold mb-1">${invoice.number}</h3>
+                        <p class="mb-0">Date: ${new Date(invoice.date).toLocaleDateString()}</p>
+                    </div>
+                </div>
+                
+                <!-- Bill To and Driver section -->
+                <div class="row g-0 mb-3 border-bottom pb-2">
+                    <div class="col-6">
+                        <h5 class="fw-bold mb-1">Bill To:</h5>
+                        <p class="mb-1 fw-medium">${invoice.customer}</p>
+                        <p class="mb-0 text-muted">Number of persons: ${invoice.persons}</p>
+                    </div>
+                    <div class="col-6 text-end">
+                        <h5 class="fw-bold mb-1">Driver:</h5>
+                        <p class="mb-1">${invoice.driver || "Not assigned"}</p>
+                        <p class="mb-0 text-muted">Contact: ${getDriverContact(invoice)}</p>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h5 class="fw-bold mb-2">Services</h5>
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Description</th>
+                                <th class="text-end" style="width:30%">Service Charge (incl. VAT)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${getServiceRowsHTML(invoice)}
+                        </tbody>
+                        <tfoot>
+                            ${getInvoiceTotalsHTML(invoice)}
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <div class="row g-0 mb-3 mt-4 pt-4 border-top">
+                    <div class="col-6">
+                        <h5 class="fw-bold mb-2">Payment Information:</h5>
+                        <p class="mb-0">Status: <span class="fw-medium">Paid</span></p>
+                        <p class="mb-0">Amount Paid: AED ${invoice.paid.toFixed(2)}</p>
+                        <p class="mb-0">Balance Due: AED 0.00</p>
+                    </div>
+                    <div class="col-6 text-end">
+                        <div class="mt-3">
+                            <div class="border-top pt-2 w-50 ms-auto">
+                                <p class="mb-0">Authorized Signature</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center text-muted">
+                    <p class="mb-0">Thank you for your business!</p>
+                    <p class="mb-0">This is a computer-generated document and does not require a signature.</p>
+                </div>
+            </div>
+        </body>
+        </html>`);
+
+        iframeDoc.close();
+
+        // Wait for the iframe content to load
+        iframe.onload = function () {
+            try {
+                // Print the iframe content
+                iframe.contentWindow.print();
+
+                // Remove the iframe after printing (with a delay to ensure printing completes)
+                setTimeout(() => {
+                    document.body.removeChild(iframe);
+                }, 1000);
+            } catch (e) {
+                console.error('Print failed', e);
+                document.body.removeChild(iframe);
+            }
+        };
+    };
+
+    // Helper functions for rendering invoice details in the print window
+    const getServiceRowsHTML = (invoice) => {
+        if (!invoice.services || !invoice.services.length) {
+            return '<tr><td colspan="2" class="text-center">No services added</td></tr>';
+        }
+
+        return invoice.services.map(service => {
+            const rateWithVat = parseFloat(service.rate) || 0;
+
+            return `<tr>
+                <td>${service.service}</td>
+                <td class="text-end">AED ${rateWithVat.toFixed(2)}</td>
+            </tr>`;
+        }).join('');
+    };
+
+    const getInvoiceTotalsHTML = (invoice) => {
+        if (!invoice.services || !invoice.services.length) return '';
+
+        const total = invoice.services.reduce((sum, s) => sum + parseFloat(s.rate || 0), 0);
+        const vat = calculateVAT(invoice);
+        const subtotal = total - vat;
+
+        return `
+            <tr>
+                <th class="text-end">Subtotal (excl. VAT):</th>
+                <th class="text-end">AED ${subtotal.toFixed(2)}</th>
+            </tr>
+            <tr>
+                <th class="text-end">VAT (5%):</th>
+                <th class="text-end">AED ${vat.toFixed(2)}</th>
+            </tr>
+            <tr>
+                <th class="text-end">Total (incl. VAT):</th>
+                <th class="text-end">AED ${total.toFixed(2)}</th>
+            </tr>
+        `;
+    };
 
     return (
         <>
@@ -161,14 +261,14 @@ const ClosedInvoices = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {invoices.length === 0 ? (
+                                    {closedInvoices.length === 0 ? (
                                         <tr>
                                             <td colSpan="7" className="text-center py-4 text-muted">
                                                 No closed invoices found
                                             </td>
                                         </tr>
                                     ) : (
-                                        invoices.map(invoice => (
+                                        closedInvoices.map(invoice => (
                                             <React.Fragment key={invoice.id}>
                                                 <tr
                                                     onClick={() => toggleExpand(invoice.id)}
@@ -177,7 +277,7 @@ const ClosedInvoices = () => {
                                                 >
                                                     <td className="px-4 py-3">
                                                         <div className="d-flex align-items-center">
-                                                            {expandedInvoice === invoice.id ? 
+                                                            {expandedInvoice === invoice.id ?
                                                                 <ChevronUp size={18} className="text-secondary me-2" /> :
                                                                 <ChevronDown size={18} className="text-secondary me-2" />
                                                             }
@@ -209,7 +309,7 @@ const ClosedInvoices = () => {
                                                         {formatCurrency(calculateNetAmount(invoice))}
                                                     </td>
                                                 </tr>
-                                                
+
                                                 {expandedInvoice === invoice.id && (
                                                     <tr>
                                                         <td colSpan="7" className="p-0 border-0">
@@ -217,12 +317,22 @@ const ClosedInvoices = () => {
                                                                 <div className="card-header bg-light py-3">
                                                                     <div className="d-flex justify-content-between align-items-center">
                                                                         <h6 className="card-title mb-0 fw-bold">Invoice Details</h6>
-                                                                        <div className="text-muted small">
-                                                                            Driver: {invoice.driver || 'Not Assigned'}
+                                                                        <div className="d-flex align-items-center gap-2">
+                                                                            <div className="text-muted small me-3">
+                                                                                Driver: {invoice.driver || 'Not Assigned'}
+                                                                            </div>
+                                                                            <button
+                                                                                onClick={(e) => handleDirectPrint(invoice, e)}
+                                                                                className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                                                                                title="Print Invoice"
+                                                                            >
+                                                                                <Printer size={14} />
+                                                                                Print
+                                                                            </button>
                                                                         </div>
                                                                     </div>
                                                                 </div>
-                                                                
+
                                                                 {/* Services */}
                                                                 <div className="card-body border-bottom py-3">
                                                                     <h6 className="fw-bold mb-3 d-flex align-items-center gap-2">
@@ -233,18 +343,18 @@ const ClosedInvoices = () => {
                                                                             <thead>
                                                                                 <tr>
                                                                                     <th>Service</th>
-                                                                                    <th className="text-end">Amount</th>
+                                                                                    <th className="text-end">Amount (incl. VAT)</th>
                                                                                 </tr>
                                                                             </thead>
                                                                             <tbody>
                                                                                 {invoice.services.map(service => (
                                                                                     <tr key={service.id}>
                                                                                         <td>{service.service}</td>
-                                                                                        <td className="text-end">{formatCurrency(calculateDiscountedRate(service.rate))}</td>
+                                                                                        <td className="text-end">{formatCurrency(service.rate)}</td>
                                                                                     </tr>
                                                                                 ))}
                                                                                 <tr className="table-light fw-medium">
-                                                                                    <td>Service Total</td>
+                                                                                    <td>Service Total (excl. VAT)</td>
                                                                                     <td className="text-end">{formatCurrency(invoice.total - calculateVAT(invoice))}</td>
                                                                                 </tr>
                                                                                 <tr>
@@ -252,14 +362,14 @@ const ClosedInvoices = () => {
                                                                                     <td className="text-end">{formatCurrency(calculateVAT(invoice))}</td>
                                                                                 </tr>
                                                                                 <tr className="table-light fw-bold">
-                                                                                    <td>Total Amount</td>
+                                                                                    <td>Total Amount (incl. VAT)</td>
                                                                                     <td className="text-end">{formatCurrency(invoice.total)}</td>
                                                                                 </tr>
                                                                             </tbody>
                                                                         </table>
                                                                     </div>
                                                                 </div>
-                                                                
+
                                                                 {/* Expenses */}
                                                                 <div className="card-body border-bottom py-3">
                                                                     <h6 className="fw-bold mb-3 d-flex align-items-center gap-2">
@@ -298,7 +408,7 @@ const ClosedInvoices = () => {
                                                                         </table>
                                                                     </div>
                                                                 </div>
-                                                                
+
                                                                 {/* Payments */}
                                                                 <div className="card-body py-3">
                                                                     <h6 className="fw-bold mb-3 d-flex align-items-center gap-2">
@@ -320,7 +430,14 @@ const ClosedInvoices = () => {
                                                                                         <td>{payment.date}</td>
                                                                                         <td>{payment.method}</td>
                                                                                         <td>{payment.reference}</td>
-                                                                                        <td className="text-end">{formatCurrency(payment.amount)}</td>
+                                                                                        <td className="text-end">
+                                                                                            {formatCurrency(payment.amount)}
+                                                                                            {payment.vat > 0 && (
+                                                                                                <span className="text-muted small d-block">
+                                                                                                    VAT: {formatCurrency(payment.vat)}
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </td>
                                                                                     </tr>
                                                                                 ))}
                                                                                 <tr className="table-success fw-bold">
@@ -331,7 +448,7 @@ const ClosedInvoices = () => {
                                                                         </table>
                                                                     </div>
                                                                 </div>
-                                                                
+
                                                                 {/* Summary */}
                                                                 <div className="card-footer bg-light">
                                                                     <div className="row">

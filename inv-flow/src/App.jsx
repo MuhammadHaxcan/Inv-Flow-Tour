@@ -5,7 +5,7 @@ import GenerateInvoice from './pages/GenerateInvoice'
 import ChartOfAccounts from './pages/ChartOfAccounts'
 import OpenInvoices from './pages/OpenInvoices'
 import ClosedInvoices from './pages/ClosedInvoices'
-import BankTransactions from './pages/BankTransactions'
+import BankStatement from './pages/BankStatement';
 import Services from './pages/Services'
 import { DataProvider } from './contexts/DataContext'
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -71,7 +71,7 @@ function App() {
                                     </div>
                                     {/* Other Nav Items */}
                                     <NavLink
-                                        to="/bank-transactions"
+                                        to="/bank-statement"
                                         className={({ isActive }) =>
                                             `px-4 py-2 text-decoration-none d-flex align-items-center gap-2 ${isActive
                                                 ? 'text-primary border-bottom border-2 border-primary'
@@ -80,7 +80,7 @@ function App() {
                                         }
                                     >
                                         <CreditCard size={18} />
-                                        Bank Transactions
+                                        Bank Statement
                                     </NavLink>
                                     <NavLink
                                         to="/services"
@@ -119,7 +119,7 @@ function App() {
                         <Route path="/generateinvoice" element={<GenerateInvoice />} />
                         <Route path="/open-invoices" element={<OpenInvoices />} />
                         <Route path="/closed-invoices" element={<ClosedInvoices />} />
-                        <Route path="/bank-transactions" element={<BankTransactions />} />
+                        <Route path="/bank-statement" element={<BankStatement />} />
                         <Route path="/services" element={<Services />} />
                         <Route path="/accounts" element={<ChartOfAccounts />} />
                     </Routes>

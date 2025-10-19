@@ -3,7 +3,7 @@ import { Calendar, Filter, ChevronDown, ChevronUp, DollarSign } from 'lucide-rea
 import { useData } from '../contexts/DataContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-const BankTransactions = () => {
+const BankStatement = () => {
     const { transactions, accounts } = useData();
 
     // States
@@ -70,7 +70,7 @@ const BankTransactions = () => {
                 <div className="card shadow">
                     <div className="card-header bg-light py-2">
                         <div className="d-flex justify-content-between align-items-center">
-                            <h3 className="h5 fw-bold text-primary mb-0">Bank Transactions</h3>
+                            <h3 className="h5 fw-bold text-primary mb-0">Bank Statement</h3>
                             <p className="text-muted small mb-0">
                                 View all financial transactions
                             </p>
@@ -245,4 +245,4 @@ const BankTransactions = () => {
     );
 };
 
-export default BankTransactions;
+export default BankStatement;

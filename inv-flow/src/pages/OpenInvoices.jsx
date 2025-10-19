@@ -8,6 +8,7 @@ import DriverModal from '../components/DriverModal';
 import PrintableInvoice from '../components/PrintableInvoice';
 import { useData } from '../contexts/DataContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 
 const OpenInvoices = () => {
     const {
@@ -32,12 +33,15 @@ const OpenInvoices = () => {
     const [showDriverModal, setShowDriverModal] = useState(false);
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [showDeleteServiceAlert, setShowDeleteServiceAlert] = useState(false);
+    const [showDeleteExpenseModal, setShowDeleteExpenseModal] = useState(false);
+    const [expenseToDelete, setExpenseToDelete] = useState({ invoiceId: null, expenseId: null, type: '' });
+    const [showDeleteServiceModal, setShowDeleteServiceModal] = useState(false);
+    const [serviceToDelete, setServiceToDelete] = useState({ invoiceId: null, serviceId: null, service: '' });
 
     const [currentInvoice, setCurrentInvoice] = useState(null);
     const [driverToAssign, setDriverToAssign] = useState('');
     const [currentExpense, setCurrentExpense] = useState(null);
     const [currentService, setCurrentService] = useState(null);
-    const [serviceToDelete, setServiceToDelete] = useState(null);
     const printableInvoiceRef = useRef(null);
 
     const toggleExpand = (id) => {
@@ -156,11 +160,15 @@ const OpenInvoices = () => {
         setShowExpenseModal(false);
     };
 
-    const handleDeleteExpense = (invoiceId, expenseId, e) => {
-        e && e.stopPropagation();
-        if (confirm("Are you sure you want to delete this expense?")) {
-            removeExpense(invoiceId, expenseId);
-        }
+    const requestDeleteExpense = (invoiceId, expense) => {
+        setExpenseToDelete({ invoiceId, expenseId: expense.id, type: expense.type });
+        setShowDeleteExpenseModal(true);
+    };
+
+    const confirmDeleteExpense = () => {
+        removeExpense(expenseToDelete.invoiceId, expenseToDelete.expenseId);
+        setShowDeleteExpenseModal(false);
+        setExpenseToDelete({ invoiceId: null, expenseId: null, type: '' });
     };
 
     // Update this function to handle service updates correctly
@@ -188,37 +196,23 @@ const OpenInvoices = () => {
         setShowServiceModal(false);
     };
 
-    const handleDeleteService = (invoiceId, serviceId, e) => {
-        e && e.stopPropagation();
-        
+    const requestDeleteService = (invoiceId, service) => {
         // Find the invoice
         const invoice = openInvoices.find(inv => inv.id === invoiceId);
-        
-        // Don't allow deletion if it's the only service
         if (invoice && invoice.services.length <= 1) {
             alert("Cannot delete the only service. At least one service must remain.");
             return;
         }
-        
-        if (confirm("Are you sure you want to delete this service?")) {
-            removeInvoiceService(invoiceId, serviceId);
-        }
+        setServiceToDelete({ invoiceId, serviceId: service.id, service: service.service });
+        setShowDeleteServiceModal(true);
     };
 
-    // Fix the handleAssignDriver function and the DriverModal integration
-    const handleAssignDriver = () => {
-        if (!currentInvoice) return;
-        
-        console.log("Assigning driver:", driverToAssign, "to invoice ID:", currentInvoice.id);
-        
-        // Call the assignDriver function from DataContext
-        const result = assignDriver(currentInvoice.id, driverToAssign);
-        
-        // Close the modal
-        setShowDriverModal(false);
+    const confirmDeleteService = () => {
+        removeInvoiceService(serviceToDelete.invoiceId, serviceToDelete.serviceId);
+        setShowDeleteServiceModal(false);
+        setServiceToDelete({ invoiceId: null, serviceId: null, service: '' });
     };
 
-    // Handle direct printing
     const handleDirectPrint = (invoice, e) => {
         e && e.stopPropagation();
 
@@ -556,7 +550,7 @@ const OpenInvoices = () => {
                                                                                                 </button>
                                                                                                 {invoice.services.length > 1 && (
                                                                                                     <button
-                                                                                                        onClick={e => handleDeleteService(invoice.id, service.id, e)}
+                                                                                                        onClick={e => requestDeleteService(invoice.id, service)}
                                                                                                         className="btn btn-sm btn-outline-danger"
                                                                                                         title="Delete Service"
                                                                                                     >
@@ -617,7 +611,7 @@ const OpenInvoices = () => {
                                                                                                     <Edit2 size={14} />
                                                                                                 </button>
                                                                                                 <button
-                                                                                                    onClick={e => handleDeleteExpense(invoice.id, exp.id, e)}
+                                                                                                    onClick={e => requestDeleteExpense(invoice.id, exp)}
                                                                                                     className="btn btn-sm btn-outline-danger"
                                                                                                     title="Delete Expense"
                                                                                                 >
@@ -779,6 +773,27 @@ const OpenInvoices = () => {
                     </button>
                 </div>
             </Modal>
+
+            <DeleteConfirmationModal
+                show={showDeleteExpenseModal}
+                onClose={() => setShowDeleteExpenseModal(false)}
+                onConfirm={confirmDeleteExpense}
+                itemName={expenseToDelete.type}
+                title="Delete Expense"
+                message="Are you sure you want to delete this expense?"
+                confirmButtonText="Delete"
+                confirmButtonVariant="danger"
+            />
+            <DeleteConfirmationModal
+                show={showDeleteServiceModal}
+                onClose={() => setShowDeleteServiceModal(false)}
+                onConfirm={confirmDeleteService}
+                itemName={serviceToDelete.service}
+                title="Delete Service"
+                message="Are you sure you want to delete this service?"
+                confirmButtonText="Delete"
+                confirmButtonVariant="danger"
+            />
         </>
     );
 };
