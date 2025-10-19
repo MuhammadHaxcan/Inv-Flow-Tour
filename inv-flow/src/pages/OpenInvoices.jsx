@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, forwardRef } from 'react';
 import { ChevronDown, ChevronUp, Plus, DollarSign, Truck, Receipt, Edit2, Printer } from 'lucide-react';
 import Modal from '../components/Modal';
 import PaymentForm from '../components/PaymentForm';
@@ -18,6 +18,7 @@ const OpenInvoices = () => {
 
     const [currentInvoice, setCurrentInvoice] = useState(null);
     const [assignedDriver, setAssignedDriver] = useState('');
+    const [invoiceToPrint, setInvoiceToPrint] = useState(null); // <-- Add this state
     const printableInvoiceRef = useRef(null);
 
     const [invoices, setInvoices] = useState([
@@ -301,6 +302,181 @@ const OpenInvoices = () => {
         // Reload the page to restore all React event listeners
         window.location.reload();
     };
+            
+    // Replace your current handleDirectPrint function with this version
+    const handleDirectPrint = (invoice, e) => {
+        e && e.stopPropagation();
+        
+        // Create a hidden iframe
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        
+        // Get access to the iframe document
+        const iframeDoc = iframe.contentWindow.document;
+        
+        // Write the HTML content to the iframe
+        iframeDoc.write(`<!DOCTYPE html>
+        <html>
+        <head>
+            <title>${invoice.number}</title>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+            <style>
+                @media print {
+                    body { padding: 15px; }
+                    @page { size: A4; margin: 7mm; }
+                    .container { padding: 0 !important; max-width: 100%; }
+                    .table { margin-bottom: 10px; }
+                    h5 { margin-bottom: 3px !important; font-size: 1rem !important; }
+                    p { margin-bottom: 2px !important; font-size: 0.9rem !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container p-1">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h2 class="fw-bold text-primary mb-1">Invoice</h2>
+                        <p class="mb-0 text-muted small">INV-FLOW TRANSPORT LLC</p>
+                        <p class="mb-0 text-muted small">Dubai, UAE</p>
+                        <p class="mb-0 text-muted small">info@inv-flow.ae | +971-4-123-4567</p>
+                    </div>
+                    <div class="text-end">
+                        <h3 class="fw-bold mb-1">${invoice.number}</h3>
+                        <p class="mb-0 small">Date: ${new Date(invoice.date).toLocaleDateString()}</p>
+                    </div>
+                </div>
+                
+                <!-- Improved Bill To and Driver section with reduced spacing -->
+                <div class="row g-0 mb-3 border-bottom pb-2">
+                    <div class="col-6">
+                        <h5 class="fw-bold mb-1 small">Bill To:</h5>
+                        <p class="mb-1 fw-medium">${invoice.customer}</p>
+                        <p class="mb-0 text-muted small">Number of persons: ${invoice.persons}</p>
+                    </div>
+                    <div class="col-6 text-end">
+                        <h5 class="fw-bold mb-1 small">Driver:</h5>
+                        <p class="mb-1">${invoice.driver || "Not assigned"}</p>
+                        ${getDriverContact(invoice)}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h5 class="fw-bold mb-2 small">Services</h5>
+                    <table class="table table-bordered table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Description</th>
+                                <th class="text-end" style="width:30%">Service Charge</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${getServiceRowsHTML(invoice)}
+                        </tbody>
+                        <tfoot>
+                            ${getInvoiceTotalsHTML(invoice)}
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <div class="row g-0 mb-3 mt-4 pt-4 border-top">
+                    <div class="col-6">
+                        <h5 class="fw-bold mb-1 small">Payment Information:</h5>
+                        <p class="mb-0 small">Status: <span class="fw-medium">
+                            ${invoice.status === 'paid' ? 'Paid' : invoice.status === 'partial' ? 'Partially Paid' : 'Unpaid'}
+                        </span></p>
+                        <p class="mb-0 small">Amount Paid: AED ${invoice.paid.toFixed(2)}</p>
+                        <p class="mb-0 small">Balance Due: AED ${(invoice.total - invoice.paid).toFixed(2)}</p>
+                    </div>
+                    <div class="col-6 text-end">
+                        <div class="mt-3">
+                            <div class="border-top pt-2 w-50 ms-auto">
+                                <p class="mb-0 small">Authorized Signature</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center text-muted small">
+                    <p class="mb-0">Thank you for your business!</p>
+                    <p class="mb-0">This is a computer-generated document and does not require a signature.</p>
+                </div>
+            </div>
+        </body>
+        </html>`);
+    
+    iframeDoc.close();
+    
+    // Wait for the iframe content to load
+    iframe.onload = function() {
+        try {
+            // Print the iframe content
+            iframe.contentWindow.print();
+            
+            // Remove the iframe after printing (with a delay to ensure printing completes)
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+            }, 1000);
+        } catch (e) {
+            console.error('Print failed', e);
+            document.body.removeChild(iframe);
+        }
+    };
+};
+    
+    // Helper functions for rendering invoice details in the print window
+    const getDriverContact = (invoice) => {
+        if (!invoice.driver || !drivers) return '';
+        const driver = drivers.find(d => d.name === invoice.driver);
+        return driver ? `<p class="mb-0 text-muted">Contact: ${driver.phone}</p>` : '';
+    };
+    
+    const getServiceRowsHTML = (invoice) => {
+        if (!invoice.services || !invoice.services.length) {
+            return '<tr><td colspan="2" class="text-center">No services added</td></tr>';
+        }
+        
+        return invoice.services.map(service => {
+            const original = parseFloat(service.rate) || 0;
+            const vat = original * 0.05;
+            const discounted = original - vat;
+            
+            return `<tr>
+                <td>${service.service}</td>
+                <td class="text-end">AED ${discounted.toFixed(2)}</td>
+            </tr>`;
+        }).join('');
+    };
+    
+    const getInvoiceTotalsHTML = (invoice) => {
+        if (!invoice.services || !invoice.services.length) return '';
+        
+        const serviceRows = invoice.services.map(service => {
+            const original = parseFloat(service.rate) || 0;
+            const vat = original * 0.05;
+            const discounted = original - vat;
+            return { original, vat, discounted };
+        });
+        
+        const serviceTotal = serviceRows.reduce((sum, s) => sum + s.discounted, 0);
+        const vatTotal = serviceRows.reduce((sum, s) => sum + s.vat, 0);
+        const subtotal = serviceTotal + vatTotal;
+        
+        return `
+            <tr>
+                <th class="text-end">Service Total:</th>
+                <th class="text-end">AED ${serviceTotal.toFixed(2)}</th>
+            </tr>
+            <tr>
+                <th class="text-end">VAT Total:</th>
+                <th class="text-end">AED ${vatTotal.toFixed(2)}</th>
+            </tr>
+            <tr>
+                <th class="text-end">Subtotal:</th>
+                <th class="text-end">AED ${subtotal.toFixed(2)}</th>
+            </tr>
+        `;
+    };
 
     // Add totals calculation for the table footer
     const calculateTotals = () => {
@@ -317,7 +493,7 @@ const OpenInvoices = () => {
     const totals = calculateTotals();
 
     return (
-        <>
+        <>            
             <div className="content-wrapper">
                 <div className="card shadow">
                     <div className="card-header bg-light py-2">
@@ -384,7 +560,7 @@ const OpenInvoices = () => {
                                                                     AED {(invoice.total - invoice.paid).toFixed(2)}
                                                                 </span>
                                                                 <button
-                                                                    onClick={e => { e.stopPropagation(); openPrintModal(invoice, e); }}
+                                                                    onClick={e => handleDirectPrint(invoice, e)}
                                                                     className="btn btn-sm btn-primary d-flex align-items-center gap-1"
                                                                     title="Print Invoice"
                                                                 >
@@ -622,7 +798,7 @@ const OpenInvoices = () => {
                 title="Print Invoice Voucher"
                 size="lg"
             >
-                <div className="mb-3">
+                <div className="mb-3 px-0"> {/* Remove padding if needed */}
                     <PrintableInvoice invoice={currentInvoice} ref={printableInvoiceRef} />
                 </div>
                 <div className="d-flex justify-content-end">
