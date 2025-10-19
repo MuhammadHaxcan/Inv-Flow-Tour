@@ -3,14 +3,37 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 
 const PrintableInvoice = ({ invoice }) => {
     if (!invoice) return null;
-    
+
     const formatCurrency = (amount) => {
         return `AED ${parseFloat(amount || 0).toFixed(2)}`;
     };
 
-    const calculateSubtotal = () => {
-        return invoice.services.reduce((sum, service) => sum + (parseFloat(service.rate) || 0), 0);
-    };
+    // Find driver contact number if available
+    let driverContact = '';
+    if (invoice.driver && invoice.drivers && Array.isArray(invoice.drivers)) {
+        const driverObj = invoice.drivers.find(d => d.name === invoice.driver);
+        if (driverObj) driverContact = driverObj.phone;
+    }
+
+    // Calculate discounted service charges and VAT for each service
+    const serviceRows = invoice.services.map((service, index) => {
+        const original = parseFloat(service.rate) || 0;
+        const vat = original * 0.05;
+        const discounted = original - vat;
+        return {
+            ...service,
+            original,
+            vat,
+            discounted
+        };
+    });
+
+    // Service total (sum of discounted charges)
+    const serviceTotal = serviceRows.reduce((sum, s) => sum + s.discounted, 0);
+    // VAT total (sum of all VATs)
+    const vatTotal = serviceRows.reduce((sum, s) => sum + s.vat, 0);
+    // Subtotal (service total + VAT total)
+    const subtotal = serviceTotal + vatTotal;
 
     return (
         <div className="printable-invoice p-4" id="printable-invoice">
@@ -36,6 +59,9 @@ const PrintableInvoice = ({ invoice }) => {
                 <div className="col-md-6 text-md-end">
                     <h5 className="fw-bold">Driver:</h5>
                     <p className="mb-0">{invoice.driver || "Not assigned"}</p>
+                    {driverContact && (
+                        <p className="mb-0 text-muted">Contact: {driverContact}</p>
+                    )}
                 </div>
             </div>
 
@@ -45,25 +71,29 @@ const PrintableInvoice = ({ invoice }) => {
                     <thead className="table-light">
                         <tr>
                             <th>Description</th>
-                            <th className="text-end">Amount</th>
+                            <th className="text-end">Service Charge</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {invoice.services.map((service, index) => (
+                        {serviceRows.map((service, index) => (
                             <tr key={service.id || index}>
                                 <td>{service.service}</td>
-                                <td className="text-end">{formatCurrency(service.rate)}</td>
+                                <td className="text-end">{formatCurrency(service.discounted)}</td>
                             </tr>
                         ))}
                     </tbody>
                     <tfoot>
                         <tr>
-                            <th className="text-end">Subtotal:</th>
-                            <th className="text-end">{formatCurrency(calculateSubtotal())}</th>
+                            <th className="text-end">Service Total:</th>
+                            <th className="text-end">{formatCurrency(serviceTotal)}</th>
                         </tr>
                         <tr>
-                            <th className="text-end">Total:</th>
-                            <th className="text-end">{formatCurrency(invoice.total)}</th>
+                            <th className="text-end">VAT Total:</th>
+                            <th className="text-end">{formatCurrency(vatTotal)}</th>
+                        </tr>
+                        <tr>
+                            <th className="text-end">Subtotal:</th>
+                            <th className="text-end">{formatCurrency(subtotal)}</th>
                         </tr>
                     </tfoot>
                 </table>
@@ -74,7 +104,7 @@ const PrintableInvoice = ({ invoice }) => {
                     <h5 className="fw-bold">Payment Information:</h5>
                     <p className="mb-0">Status: <span className="fw-medium">{invoice.status === 'paid' ? 'Paid' : invoice.status === 'partial' ? 'Partially Paid' : 'Unpaid'}</span></p>
                     <p className="mb-0">Amount Paid: {formatCurrency(invoice.paid)}</p>
-                    <p className="mb-0">Balance Due: {formatCurrency(invoice.total - invoice.paid)}</p>
+                    <p className="mb-0">Balance Due: {formatCurrency(subtotal - invoice.paid)}</p>
                 </div>
                 <div className="col-md-6 text-md-end">
                     <div className="mt-5 pt-5">

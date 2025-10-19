@@ -40,7 +40,28 @@ const OpenInvoices = () => {
                 { id: 2, type: 'Tolls', amount: 100, date: '2024-03-15' }
             ],
             payments: [
-                { id: 1, amount: 5000, date: '2024-03-15', method: 'Cash Account', reference: 'ADV-001' }
+                { id: 1, amount: 5000, date: '2024-03-15', method: 'Cash Account', reference: 'ADV-001', vat: 0 }
+            ]
+        },
+        {
+            id: 2,
+            number: 'INV-2024-0154',
+            date: '2024-03-17',
+            customer: 'XYZ Holdings',
+            persons: 2,
+            driver: 'Ali Raza',
+            total: 9000,
+            paid: 3000,
+            status: 'partial',
+            services: [
+                { id: 1, service: 'Hourly Rental', rate: 3000 },
+                { id: 2, service: 'City Tour', rate: 6000 }
+            ],
+            expenses: [
+                { id: 1, type: 'Parking', amount: 200, date: '2024-03-17' }
+            ],
+            payments: [
+                { id: 1, amount: 3000, date: '2024-03-17', method: 'Bank Account - HBL', reference: 'DEP-002', vat: 150 }
             ]
         },
         {
@@ -357,8 +378,22 @@ const OpenInvoices = () => {
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-3 text-end">
-                                                        <div className="fw-bold">
-                                                            AED {(invoice.total - invoice.paid).toFixed(2)}
+                                                        <div className="d-flex flex-column align-items-end">
+                                                            <div className="d-flex align-items-center gap-2">
+                                                                <span className="fw-bold">
+                                                                    AED {(invoice.total - invoice.paid).toFixed(2)}
+                                                                </span>
+                                                                <button
+                                                                    onClick={e => { e.stopPropagation(); openPrintModal(invoice, e); }}
+                                                                    className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                                                                    title="Print Invoice"
+                                                                >
+                                                                    <Printer size={14} />
+                                                                </button>
+                                                            </div>
+                                                            <span className="text-muted small">
+                                                                VAT: AED {calculateTotalVAT(invoice, accounts).toFixed(2)}
+                                                            </span>
                                                         </div>
                                                         <span className={`badge ${getStatusColor(invoice.status)} rounded-pill`}>
                                                             {getStatusText(invoice.status)}
@@ -387,26 +422,20 @@ const OpenInvoices = () => {
                                                                         <h6 className="fw-bold mb-0">Services</h6>
                                                                         <div className="d-flex gap-2">
                                                                             <button
-                                                                                onClick={(e) => openServiceModal(invoice, e)}
+                                                                                onClick={e => openServiceModal(invoice, e)}
                                                                                 className="btn btn-sm btn-dark d-flex align-items-center gap-1"
                                                                             >
                                                                                 <Plus size={14} />
                                                                                 Add Service
                                                                             </button>
                                                                             <button
-                                                                                onClick={(e) => openPaymentModal(invoice, e)}
+                                                                                onClick={e => openPaymentModal(invoice, e)}
                                                                                 className="btn btn-sm btn-success d-flex align-items-center gap-1"
                                                                             >
                                                                                 <DollarSign size={14} />
                                                                                 Add Payment
                                                                             </button>
-                                                                            <button
-                                                                                onClick={(e) => openPrintModal(invoice, e)}
-                                                                                className="btn btn-sm btn-primary d-flex align-items-center gap-1"
-                                                                            >
-                                                                                <Printer size={14} />
-                                                                                Print Voucher
-                                                                            </button>
+                                                                            {/* Print Voucher button removed */}
                                                                         </div>
                                                                     </div>
                                                                     <div className="table-responsive">
@@ -440,14 +469,14 @@ const OpenInvoices = () => {
                                                                         <h6 className="fw-bold mb-0">Expenses</h6>
                                                                         <div className="d-flex gap-2">
                                                                             <button
-                                                                                onClick={(e) => openExpenseModal(invoice, e)}
+                                                                                onClick={e => openExpenseModal(invoice, e)}
                                                                                 className="btn btn-sm btn-dark d-flex align-items-center gap-1"
                                                                             >
                                                                                 <Plus size={14} />
                                                                                 Add Expense
                                                                             </button>
                                                                             <button
-                                                                                onClick={(e) => openDriverModal(invoice, e)}
+                                                                                onClick={e => openDriverModal(invoice, e)}
                                                                                 className="btn btn-sm btn-primary d-flex align-items-center gap-1"
                                                                             >
                                                                                 <Truck size={14} />
@@ -505,7 +534,14 @@ const OpenInvoices = () => {
                                                                                     <tr key={p.id}>
                                                                                         <td>{p.date}</td>
                                                                                         <td>{p.method}</td>
-                                                                                        <td className="text-end">AED {p.amount.toFixed(2)}</td>
+                                                                                        <td className="text-end">
+                                                                                            AED {p.amount.toFixed(2)}
+                                                                                            {p.vat > 0 && (
+                                                                                                <span className="text-muted small d-block">
+                                                                                                    VAT: AED {p.vat.toFixed(2)}
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </td>
                                                                                         <td>{p.reference}</td>
                                                                                     </tr>
                                                                                 ))}
