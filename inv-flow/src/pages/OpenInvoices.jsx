@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ChevronDown, ChevronUp, Plus, DollarSign, Truck, Receipt, Edit2, Printer } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, DollarSign, Truck, Receipt, Edit2, Printer, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
 import PaymentForm from '../components/PaymentForm';
 import ExpenseForm from '../components/ExpenseForm';
@@ -19,7 +19,9 @@ const OpenInvoices = () => {
         addPayment,
         addExpense,
         addInvoiceService,
-        assignDriver
+        assignDriver,
+        updateExpense,
+        removeExpense
     } = useData();
 
     const [expandedInvoice, setExpandedInvoice] = useState(null);
@@ -31,6 +33,7 @@ const OpenInvoices = () => {
 
     const [currentInvoice, setCurrentInvoice] = useState(null);
     const [driverToAssign, setDriverToAssign] = useState('');
+    const [currentExpense, setCurrentExpense] = useState(null);
     const printableInvoiceRef = useRef(null);
 
     const toggleExpand = (id) => {
@@ -61,9 +64,10 @@ const OpenInvoices = () => {
         setShowPaymentModal(true);
     };
 
-    const openExpenseModal = (invoice, e) => {
+    const openExpenseModal = (invoice, expense = null, e) => {
         e && e.stopPropagation();
         setCurrentInvoice(invoice);
+        setCurrentExpense(expense);
         setShowExpenseModal(true);
     };
 
@@ -122,7 +126,7 @@ const OpenInvoices = () => {
         setShowPaymentModal(false);
     };
 
-    const handleAddExpense = (type, amount, date, description) => {
+    const handleAddOrUpdateExpense = (type, amount, date, description) => {
         if (!currentInvoice) return;
 
         const expenseData = {
@@ -132,8 +136,26 @@ const OpenInvoices = () => {
             description
         };
 
-        addExpense(currentInvoice.id, expenseData);
+        if (currentExpense) {
+            // Update existing expense
+            updateExpense(currentInvoice.id, currentExpense.id, {
+                ...currentExpense,
+                ...expenseData
+            });
+        } else {
+            // Add new expense
+            addExpense(currentInvoice.id, expenseData);
+        }
+
+        setCurrentExpense(null);
         setShowExpenseModal(false);
+    };
+
+    const handleDeleteExpense = (invoiceId, expenseId, e) => {
+        e && e.stopPropagation();
+        if (confirm("Are you sure you want to delete this expense?")) {
+            removeExpense(invoiceId, expenseId);
+        }
     };
 
     const handleAddService = (service, rate) => {
@@ -396,10 +418,19 @@ const OpenInvoices = () => {
                                                         <div className="text-muted small">{invoice.persons} persons</div>
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        <div>
-                                                            {invoice.driver || (
-                                                                <span className="text-warning">Not assigned</span>
-                                                            )}
+                                                        <div className="d-flex align-items-center justify-content-between">
+                                                            <div>
+                                                                {invoice.driver || (
+                                                                    <span className="text-warning">Not assigned</span>
+                                                                )}
+                                                            </div>
+                                                            <button
+                                                                onClick={(e) => openDriverModal(invoice, e)}
+                                                                className="btn btn-sm btn-outline-primary ms-2"
+                                                                title={invoice.driver ? 'Change Driver' : 'Assign Driver'}
+                                                            >
+                                                                <Edit2 size={14} />
+                                                            </button>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-3 text-end">
@@ -493,18 +524,11 @@ const OpenInvoices = () => {
                                                                         <h6 className="fw-bold mb-0">Expenses</h6>
                                                                         <div className="d-flex gap-2">
                                                                             <button
-                                                                                onClick={e => openExpenseModal(invoice, e)}
+                                                                                onClick={e => openExpenseModal(invoice, null, e)}
                                                                                 className="btn btn-sm btn-dark d-flex align-items-center gap-1"
                                                                             >
                                                                                 <Plus size={14} />
                                                                                 Add Expense
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={e => openDriverModal(invoice, e)}
-                                                                                className="btn btn-sm btn-primary d-flex align-items-center gap-1"
-                                                                            >
-                                                                                <Truck size={14} />
-                                                                                {invoice.driver ? 'Change Driver' : 'Assign Driver'}
                                                                             </button>
                                                                         </div>
                                                                     </div>
@@ -515,6 +539,7 @@ const OpenInvoices = () => {
                                                                                     <th>Type</th>
                                                                                     <th>Date</th>
                                                                                     <th className="text-end">Amount</th>
+                                                                                    <th className="text-center">Actions</th>
                                                                                 </tr>
                                                                             </thead>
                                                                             <tbody>
@@ -523,11 +548,29 @@ const OpenInvoices = () => {
                                                                                         <td>{exp.type}</td>
                                                                                         <td>{exp.date}</td>
                                                                                         <td className="text-end">{formatCurrency(exp.amount)}</td>
+                                                                                        <td className="text-center">
+                                                                                            <div className="d-flex justify-content-center gap-2">
+                                                                                                <button
+                                                                                                    onClick={e => openExpenseModal(invoice, exp, e)}
+                                                                                                    className="btn btn-sm btn-outline-primary"
+                                                                                                    title="Edit Expense"
+                                                                                                >
+                                                                                                    <Edit2 size={14} />
+                                                                                                </button>
+                                                                                                <button
+                                                                                                    onClick={e => handleDeleteExpense(invoice.id, exp.id, e)}
+                                                                                                    className="btn btn-sm btn-outline-danger"
+                                                                                                    title="Delete Expense"
+                                                                                                >
+                                                                                                    <Trash2 size={14} />
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        </td>
                                                                                     </tr>
                                                                                 ))}
                                                                                 {invoice.expenses.length === 0 && (
                                                                                     <tr>
-                                                                                        <td colSpan="3" className="text-center text-muted">No expenses added</td>
+                                                                                        <td colSpan="4" className="text-center text-muted">No expenses added</td>
                                                                                     </tr>
                                                                                 )}
                                                                             </tbody>
@@ -611,12 +654,14 @@ const OpenInvoices = () => {
             </Modal>
 
             {/* Expense Modal */}
-            <Modal show={showExpenseModal} onClose={() => setShowExpenseModal(false)} title="Add Expense">
+            <Modal show={showExpenseModal} onClose={() => { setShowExpenseModal(false); setCurrentExpense(null); }}
+                title={currentExpense ? "Edit Expense" : "Add Expense"}>
                 <ExpenseForm
                     expenseTypes={expenseTypes}
-                    onSave={(type, amount, date, description) => handleAddExpense(type, amount, date, description)}
-                    onCancel={() => setShowExpenseModal(false)}
+                    onSave={(type, amount, date, description) => handleAddOrUpdateExpense(type, amount, date, description)}
+                    onCancel={() => { setShowExpenseModal(false); setCurrentExpense(null); }}
                     invoice={currentInvoice}
+                    expense={currentExpense}
                 />
             </Modal>
 

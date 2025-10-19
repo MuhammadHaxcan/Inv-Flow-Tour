@@ -361,6 +361,72 @@ export function DataProvider({ children }) {
     ));
   };
 
+  const updateExpense = (invoiceId, expenseId, updatedExpense) => {
+    // Find invoice
+    const invoice = openInvoices.find(inv => inv.id === invoiceId);
+    if (!invoice) return null;
+    
+    // Update expense
+    const updatedInvoice = {
+      ...invoice,
+      expenses: invoice.expenses.map(exp => 
+        exp.id === expenseId ? { ...exp, ...updatedExpense } : exp
+      )
+    };
+    
+    // Update transaction if needed
+    const expenseTransaction = transactions.find(t => 
+      t.invoiceId === invoiceId && t.reference === `EXP-${expenseId}`
+    );
+    
+    if (expenseTransaction) {
+      const updatedTransaction = {
+        ...expenseTransaction,
+        date: updatedExpense.date,
+        description: `${updatedExpense.type} expense for ${invoice.number}`,
+        debit: updatedExpense.amount,
+        expenseType: updatedExpense.type
+      };
+      
+      setTransactions(transactions.map(t => 
+        t.id === expenseTransaction.id ? updatedTransaction : t
+      ));
+    }
+    
+    setOpenInvoices(openInvoices.map(inv => 
+      inv.id === invoiceId ? updatedInvoice : inv
+    ));
+    
+    return updatedInvoice;
+  };
+
+  const removeExpense = (invoiceId, expenseId) => {
+    // Find invoice
+    const invoice = openInvoices.find(inv => inv.id === invoiceId);
+    if (!invoice) return null;
+    
+    // Find expense to remove
+    const expenseToRemove = invoice.expenses.find(e => e.id === expenseId);
+    if (!expenseToRemove) return null;
+    
+    // Update invoice
+    const updatedInvoice = {
+      ...invoice,
+      expenses: invoice.expenses.filter(e => e.id !== expenseId)
+    };
+    
+    // Remove associated transaction
+    setTransactions(transactions.filter(t => 
+      !(t.invoiceId === invoiceId && t.reference === `EXP-${expenseId}`)
+    ));
+    
+    setOpenInvoices(openInvoices.map(inv => 
+      inv.id === invoiceId ? updatedInvoice : inv
+    ));
+    
+    return updatedInvoice;
+  };
+
   return (
     <DataContext.Provider value={{
       customers,
@@ -391,7 +457,9 @@ export function DataProvider({ children }) {
       addPayment,
       addExpense,
       addInvoiceService,
-      assignDriver
+      assignDriver,
+      updateExpense,
+      removeExpense
     }}>
       {children}
     </DataContext.Provider>

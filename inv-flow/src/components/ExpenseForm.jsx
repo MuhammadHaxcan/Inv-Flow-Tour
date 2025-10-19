@@ -1,51 +1,97 @@
 import React, { useState, useEffect } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
 
-const ExpenseForm = ({ expenseTypes, onSave, onCancel, invoice }) => {
-    const [type, setType] = useState('');
-    const [amount, setAmount] = useState('');
-    const [date, setDate] = useState('');
-    const [description, setDescription] = useState('');
+const ExpenseForm = ({ expenseTypes, onSave, onCancel, invoice, expense }) => {
+    // Initialize with existing expense data if provided, otherwise use defaults
+    const [formData, setFormData] = useState({
+        type: expense?.type || '',
+        amount: expense?.amount || '',
+        date: expense?.date || new Date().toISOString().split('T')[0],
+        description: expense?.description || ''
+    });
 
+    // Update form data if expense prop changes
     useEffect(() => {
-        if (invoice) {
-            setType('');
-            setAmount('');
-            setDate(new Date().toISOString().slice(0, 10));
-            setDescription('');
+        if (expense) {
+            setFormData({
+                type: expense.type || '',
+                amount: expense.amount || '',
+                date: expense.date || new Date().toISOString().split('T')[0],
+                description: expense.description || ''
+            });
         }
-    }, [invoice]);
+    }, [expense]);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({
+            ...formData,
+            [name]: value
+        });
+    };
 
     const handleSubmit = (e) => {
-        e.preventDefault(); 
-        if (!type || !amount) return;
-        onSave(type, amount, date, description);
+        e.preventDefault();
+        onSave(formData.type, formData.amount, formData.date, formData.description);
     };
 
     return (
         <form onSubmit={handleSubmit}>
             <div className="mb-3">
                 <label className="form-label">Expense Type</label>
-                <select value={type} onChange={(e) => setType(e.target.value)} className="form-select">
-                    <option value="">Select expense type</option>
-                    {expenseTypes.map((t, i) => <option key={i} value={t}>{t}</option>)}
+                <select
+                    name="type"
+                    value={formData.type}
+                    onChange={handleChange}
+                    className="form-select"
+                    required
+                >
+                    <option value="">Select Expense Type</option>
+                    {expenseTypes.map((type, index) => (
+                        <option key={index} value={type}>{type}</option>
+                    ))}
                 </select>
             </div>
             <div className="mb-3">
-                <label className="form-label">Amount</label>
-                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="form-control" placeholder="Enter amount" />
+                <label className="form-label">Amount (AED)</label>
+                <input
+                    type="number"
+                    name="amount"
+                    value={formData.amount}
+                    onChange={handleChange}
+                    className="form-control"
+                    placeholder="0.00"
+                    step="0.01"
+                    required
+                />
             </div>
             <div className="mb-3">
-                <label className="form-label">Expense Date</label>
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="form-control" />
+                <label className="form-label">Date</label>
+                <input
+                    type="date"
+                    name="date"
+                    value={formData.date}
+                    onChange={handleChange}
+                    className="form-control"
+                    required
+                />
             </div>
             <div className="mb-3">
-                <label className="form-label">Description</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="form-control" rows="3" placeholder="Describe the expense" />
+                <label className="form-label">Description (Optional)</label>
+                <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    className="form-control"
+                    rows="2"
+                />
             </div>
-            <div className="d-flex gap-2">
-                <button type="submit" className="btn btn-primary flex-grow-1">Add Expense</button>
-                <button type="button" onClick={onCancel} className="btn btn-outline-secondary">Cancel</button>
+            <div className="d-flex justify-content-end gap-2">
+                <button type="button" className="btn btn-outline-secondary" onClick={onCancel}>
+                    Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                    {expense ? 'Update Expense' : 'Add Expense'}
+                </button>
             </div>
         </form>
     );
