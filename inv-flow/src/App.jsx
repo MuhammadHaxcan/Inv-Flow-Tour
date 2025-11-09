@@ -1,5 +1,5 @@
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { FileText, Building2, FileCheck2, CheckCircle, CreditCard, Tag } from 'lucide-react'
+import { FileText, Building2, FileCheck2, CheckCircle, CreditCard, Tag, Calendar } from 'lucide-react'
 import './App.css'
 import GenerateInvoice from './pages/GenerateInvoice'
 import ChartOfAccounts from './pages/ChartOfAccounts'
@@ -7,6 +7,7 @@ import OpenInvoices from './pages/OpenInvoices'
 import ClosedInvoices from './pages/ClosedInvoices'
 import BankStatement from './pages/BankStatement';
 import Services from './pages/Services'
+import CalendarView from './pages/CalendarView'
 import { DataProvider } from './contexts/DataContext'
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -69,6 +70,19 @@ function App() {
                                             </li>
                                         </ul>
                                     </div>
+                                    {/* Calendar NavLink */}
+                                    <NavLink
+                                        to="/calendar"
+                                        className={({ isActive }) =>
+                                            `px-4 py-2 text-decoration-none d-flex align-items-center gap-2 ${isActive
+                                                ? 'text-primary border-bottom border-2 border-primary'
+                                                : 'text-secondary'
+                                            }`
+                                        }
+                                    >
+                                        <Calendar size={18} />
+                                        Calendar
+                                    </NavLink>
                                     {/* Other Nav Items */}
                                     <NavLink
                                         to="/bank-statement"
@@ -119,6 +133,7 @@ function App() {
                         <Route path="/generateinvoice" element={<GenerateInvoice />} />
                         <Route path="/open-invoices" element={<OpenInvoices />} />
                         <Route path="/closed-invoices" element={<ClosedInvoices />} />
+                        <Route path="/calendar" element={<CalendarView />} />
                         <Route path="/bank-statement" element={<BankStatement />} />
                         <Route path="/services" element={<Services />} />
                         <Route path="/accounts" element={<ChartOfAccounts />} />

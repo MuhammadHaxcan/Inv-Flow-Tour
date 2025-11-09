@@ -4,21 +4,44 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 const DataContext = createContext();
 
 // Initial data
+// Initial data
 const initialData = {
     customers: [
-        { id: 1, name: 'ABC Company', phone: '+971501234567', email: 'contact@abc.com', origin: 'Dubai' },
-        { id: 2, name: 'XYZ Ltd', phone: '+971507654321', email: 'info@xyz.com', origin: 'Abu Dhabi' }
+        { id: 1, name: 'GlobalTech Solutions Inc.', phone: '+1-212-555-1234', email: 'contact@globaltech.com', origin: 'New York, USA' },
+        { id: 2, name: 'EuroStar Holdings', phone: '+44-20-7946-0958', email: 'info@eurostar.eu', origin: 'London, UK' },
+        { id: 3, name: 'Asia Pacific Ventures', phone: '+65-6789-1234', email: 'hello@apventures.sg', origin: 'Singapore' },
+        { id: 4, name: 'Majid Al Futtaim Properties', phone: '+971502345678', email: 'travel@maf.ae', origin: 'Business Bay, Dubai' },
+        { id: 5, name: 'RAK Tourism Authority', phone: '+971509876543', email: 'info@raktourism.ae', origin: 'Ras Al Khaimah, UAE' },
+        { id: 6, name: 'Sharjah International Expo', phone: '+971506789012', email: 'logistics@sharjahexpo.ae', origin: 'Sharjah, UAE' },
+        { id: 7, name: 'Ajman Beach Resort', phone: '+971503456789', email: 'concierge@ajmanbeach.ae', origin: 'Ajman, UAE' },
+        { id: 8, name: 'Etihad Airways Corporate', phone: '+971508901234', email: 'corporate@etihad.ae', origin: 'Abu Dhabi Airport, UAE' }
     ],
     drivers: [
-        { id: 1, name: 'Ahmed Khan', phone: '+971501111111' },
-        { id: 2, name: 'Ali Raza', phone: '+971502222222' },
-        { id: 3, name: 'Mohammad Siddiq', phone: '+971503333333' }
+        { id: 1, name: 'Ahmed Al Mansouri', phone: '+971501111111' },
+        { id: 2, name: 'Ali Hassan', phone: '+971502222222' },
+        { id: 3, name: 'Mohammad Siddiqui', phone: '+971503333333' },
+        { id: 4, name: 'Khalid Ibrahim', phone: '+971504444444' },
+        { id: 5, name: 'Rashid Al Maktoum', phone: '+971505555555' },
+        { id: 6, name: 'Omar Abdulla', phone: '+971506666666' },
+        { id: 7, name: 'Youssef Ahmed', phone: '+971507777777' },
+        { id: 8, name: 'Hamza Malik', phone: '+971508888888' }
     ],
     services: [
-        { id: 1, name: 'Airport Transfer', description: 'Pickup and drop off service to and from airport', charge: 4000, vatIncluded: 4200 },
-        { id: 2, name: 'City Tour', description: 'Full day city sightseeing tour', charge: 5500, vatIncluded: 5775 },
-        { id: 3, name: 'Hourly Rental', description: 'Vehicle rental on hourly basis', charge: 3000, vatIncluded: 3150 },
-        { id: 4, name: 'Outstation', description: 'Multi-day tour outside the city', charge: 15000, vatIncluded: 15750 }
+        { id: 1, name: 'Dubai Airport Transfer (DXB)', description: 'Premium pickup/drop-off service to/from Dubai International Airport', charge: 250, vatIncluded: 262.50 },
+        { id: 2, name: 'Abu Dhabi Airport Transfer (AUH)', description: 'Luxury transfer service to/from Abu Dhabi Airport', charge: 350, vatIncluded: 367.50 },
+        { id: 3, name: 'Dubai City Tour - Full Day', description: 'Complete Dubai sightseeing: Burj Khalifa, Dubai Mall, Palm Jumeirah, Gold Souk', charge: 450, vatIncluded: 472.50 },
+        { id: 4, name: 'Abu Dhabi City Tour', description: 'Sheikh Zayed Mosque, Emirates Palace, Louvre Abu Dhabi, Corniche', charge: 500, vatIncluded: 525 },
+        { id: 5, name: 'Desert Safari with BBQ', description: 'Dune bashing, camel ride, traditional BBQ dinner & entertainment', charge: 350, vatIncluded: 367.50 },
+        { id: 6, name: 'Hourly Rental - 4 Hours', description: 'Luxury vehicle rental with driver for 4 hours within city limits', charge: 300, vatIncluded: 315 },
+        { id: 7, name: 'Hourly Rental - 8 Hours', description: 'Full day luxury vehicle rental with professional driver', charge: 550, vatIncluded: 577.50 },
+        { id: 8, name: 'Dubai to Abu Dhabi Transfer', description: 'One-way intercity transfer between Dubai and Abu Dhabi', charge: 400, vatIncluded: 420 },
+        { id: 9, name: 'Sharjah City Tour', description: 'Cultural tour: Sharjah Museum, Al Noor Mosque, Heritage Area', charge: 300, vatIncluded: 315 },
+        { id: 10, name: 'Hatta Mountain Tour', description: 'Day trip to Hatta: heritage village, dam, wadi activities', charge: 600, vatIncluded: 630 },
+        { id: 11, name: 'Al Ain Oasis Day Trip', description: 'Visit Al Ain Zoo, Jebel Hafeet, hot springs, camel market', charge: 700, vatIncluded: 735 },
+        { id: 12, name: 'Fujairah Beach & Mountain Tour', description: 'East coast tour: beaches, wadis, Fujairah Fort', charge: 650, vatIncluded: 682.50 },
+        { id: 13, name: 'Wedding/Event Transfer', description: 'Premium decorated vehicle for special occasions (4 hours)', charge: 800, vatIncluded: 840 },
+        { id: 14, name: 'Corporate Roadshow Service', description: 'Multi-location business tour with WiFi-enabled luxury vehicle', charge: 1200, vatIncluded: 1260 },
+        { id: 15, name: 'VIP Airport Meet & Greet', description: 'Personalized assistance with immigration, luggage & luxury transfer', charge: 500, vatIncluded: 525 }
     ],
     accounts: [
         { id: 1, name: 'Cash Account', accountNumber: 'N/A', accountType: 'cash', details: 'Cash on hand' },
@@ -36,68 +59,349 @@ const initialData = {
     openInvoices: [
         {
             id: 1,
-            number: 'INV-2024-0153',
-            date: '2024-03-15',
-            customer: 'ABC Company',
+            number: 'INV-2025-0153',
+            date: '2025-10-15',
+            customer: 'GlobalTech Solutions Inc.',
             persons: 3,
-            driver: 'Ahmed Khan',
+            driver: 'Ahmed Al Mansouri',
             total: 12500,
             paid: 5000,
             status: 'partial',
             services: [
-                { id: 1, service: 'Airport Transfer', rate: 5000 },
-                { id: 2, service: 'City Tour', rate: 7500 }
+                { id: 1, service: 'Dubai Airport Transfer (DXB)', rate: 5000 },
+                { id: 2, service: 'Dubai City Tour - Full Day', rate: 7500 }
             ],
             expenses: [
-                { id: 1, type: 'Fuel', amount: 500, date: '2024-03-15' },
-                { id: 2, type: 'Tolls', amount: 100, date: '2024-03-15' }
+                { id: 1, type: 'Fuel', amount: 500, date: '2025-10-15' },
+                { id: 2, type: 'Tolls', amount: 100, date: '2025-10-15' }
             ],
             payments: [
-                { id: 1, amount: 5000, date: '2024-03-15', method: 'Cash Account', reference: 'ADV-001', vat: 0 }
+                { id: 1, amount: 5000, date: '2025-10-15', method: 'Cash Account', reference: 'ADV-001', vat: 0 }
+            ]
+        },
+        {
+            id: 2,
+            number: 'INV-2025-0154',
+            date: '2025-10-17',
+            customer: 'Sharjah International Expo',
+            persons: 5,
+            driver: 'Ali Hassan',
+            total: 9500,
+            paid: 3000,
+            status: 'partial',
+            services: [
+                { id: 1, service: 'Corporate Roadshow Service', rate: 9500 }
+            ],
+            expenses: [
+                { id: 1, type: 'Fuel', amount: 600, date: '2025-10-17' },
+                { id: 2, type: 'Parking', amount: 200, date: '2025-10-17' }
+            ],
+            payments: [
+                { id: 1, amount: 3000, date: '2025-10-16', method: 'Bank Account - HBL', reference: 'TRX-456', vat: 150 }
+            ]
+        },
+        {
+            id: 3,
+            number: 'INV-2025-0155',
+            date: '2025-10-20',
+            customer: 'Ajman Beach Resort',
+            persons: 2,
+            driver: 'Mohammad Siddiqui',
+            total: 5250,
+            paid: 0,
+            status: 'unpaid',
+            services: [
+                { id: 1, service: 'Fujairah Beach & Mountain Tour', rate: 5250 }
+            ],
+            expenses: [],
+            payments: []
+        },
+        {
+            id: 4,
+            number: 'INV-2025-0156',
+            date: '2025-10-25',
+            customer: 'RAK Tourism Authority',
+            persons: 8,
+            driver: 'Khalid Ibrahim',
+            total: 15000,
+            paid: 5000,
+            status: 'partial',
+            services: [
+                { id: 1, service: 'Wedding/Event Transfer', rate: 5000 },
+                { id: 2, service: 'VIP Airport Meet & Greet', rate: 10000 }
+            ],
+            expenses: [
+                { id: 1, type: 'Tickets', amount: 800, date: '2025-10-25' }
+            ],
+            payments: [
+                { id: 1, amount: 5000, date: '2025-10-20', method: 'Cash Account', reference: 'ADV-002', vat: 0 }
+            ]
+        },
+        {
+            id: 5,
+            number: 'INV-2025-0158',
+            date: '2025-10-28',
+            customer: 'Majid Al Futtaim Properties',
+            persons: 4,
+            driver: 'Youssef Ahmed',
+            total: 8500,
+            paid: 2000,
+            status: 'partial',
+            services: [
+                { id: 1, service: 'Desert Safari with BBQ', rate: 3500 },
+                { id: 2, service: 'Hatta Mountain Tour', rate: 5000 }
+            ],
+            expenses: [
+                { id: 1, type: 'Fuel', amount: 450, date: '2025-10-28' }
+            ],
+            payments: [
+                { id: 1, amount: 2000, date: '2025-10-25', method: 'Cash Account', reference: 'ADV-005', vat: 0 }
+            ]
+        },
+        {
+            id: 6,
+            number: 'INV-2025-0159',
+            date: '2025-10-15',
+            customer: 'EuroStar Holdings',
+            persons: 5,
+            driver: 'Hamza Malik',
+            total: 7500,
+            paid: 3000,
+            status: 'partial',
+            services: [
+                { id: 1, service: 'Abu Dhabi Airport Transfer (AUH)', rate: 2500 },
+                { id: 2, service: 'Corporate Roadshow Service', rate: 5000 }
+            ],
+            expenses: [
+                { id: 1, type: 'Fuel', amount: 350, date: '2025-10-15' }
+            ],
+            payments: [
+                { id: 1, amount: 3000, date: '2025-10-14', method: 'Bank Account - HBL', reference: 'TRX-789', vat: 150 }
+            ]
+        },
+        {
+            id: 7,
+            number: 'INV-2025-0160',
+            date: '2025-10-15',
+            customer: 'Asia Pacific Ventures',
+            persons: 4,
+            driver: 'Omar Abdulla',
+            total: 9800,
+            paid: 4000,
+            status: 'partial',
+            services: [
+                { id: 1, service: 'Dubai City Tour - Full Day', rate: 4800 },
+                { id: 2, service: 'Hourly Rental - 8 Hours', rate: 5000 }
+            ],
+            expenses: [
+                { id: 1, type: 'Parking', amount: 200, date: '2025-10-15' }
+            ],
+            payments: [
+                { id: 1, amount: 4000, date: '2025-10-15', method: 'Credit Card', reference: 'TRX-888', vat: 200 }
             ]
         }
     ],
     closedInvoices: [
         {
             id: 1,
-            number: 'INV-2024-0150',
-            date: '2024-03-10',
-            customer: 'Global Trading',
+            number: 'INV-2025-0150',
+            date: '2025-10-10',
+            customer: 'Al Fahim Group',
             persons: 2,
-            driver: 'Ahmed Khan',
+            driver: 'Rashid Al Maktoum',
             total: 9500,
             paid: 9500,
             status: 'paid',
             vat: 475,
             services: [
-                { id: 1, service: 'Airport Transfer', rate: 4000 },
-                { id: 2, service: 'City Tour', rate: 5500 }
+                { id: 1, service: 'Abu Dhabi Airport Transfer (AUH)', rate: 4000 },
+                { id: 2, service: 'Abu Dhabi City Tour', rate: 5500 }
             ],
             expenses: [
-                { id: 1, type: 'Fuel', amount: 300, date: '2024-03-10' },
-                { id: 2, type: 'Tolls', amount: 100, date: '2024-03-10' }
+                { id: 1, type: 'Fuel', amount: 300, date: '2025-10-10' },
+                { id: 2, type: 'Tolls', amount: 100, date: '2025-10-10' }
             ],
             payments: [
-                { id: 1, amount: 5000, date: '2024-03-10', method: 'Cash Account', reference: 'ADV-001' },
-                { id: 2, amount: 4500, date: '2024-03-15', method: 'Bank Account - HBL', reference: 'TRX-123' }
+                { id: 1, amount: 5000, date: '2025-10-08', method: 'Cash Account', reference: 'ADV-001' },
+                { id: 2, amount: 4500, date: '2025-10-10', method: 'Bank Account - HBL', reference: 'TRX-123' }
+            ]
+        },
+        {
+            id: 2,
+            number: 'INV-2025-0151',
+            date: '2025-10-12',
+            customer: 'Dubai Pearl Hotels & Resorts',
+            persons: 4,
+            driver: 'Omar Abdulla',
+            total: 7800,
+            paid: 7800,
+            status: 'paid',
+            vat: 390,
+            services: [
+                { id: 1, service: 'Hourly Rental - 8 Hours', rate: 7800 }
+            ],
+            expenses: [
+                { id: 1, type: 'Fuel', amount: 400, date: '2025-10-12' },
+                { id: 2, type: 'Parking', amount: 120, date: '2025-10-12' }
+            ],
+            payments: [
+                { id: 1, amount: 7800, date: '2025-10-12', method: 'Bank Account - MCB', reference: 'TRX-234' }
+            ]
+        },
+        {
+            id: 3,
+            number: 'INV-2025-0152',
+            date: '2025-10-05',
+            customer: 'Majid Al Futtaim Properties',
+            persons: 6,
+            driver: 'Youssef Ahmed',
+            total: 12500,
+            paid: 12500,
+            status: 'paid',
+            vat: 625,
+            services: [
+                { id: 1, service: 'Desert Safari with BBQ', rate: 3500 },
+                { id: 2, service: 'Dubai City Tour - Full Day', rate: 9000 }
+            ],
+            expenses: [
+                { id: 1, type: 'Fuel', amount: 550, date: '2025-10-05' },
+                { id: 2, type: 'Tickets', amount: 1200, date: '2025-10-05' }
+            ],
+            payments: [
+                { id: 1, amount: 6000, date: '2025-10-01', method: 'Cash Account', reference: 'ADV-003' },
+                { id: 2, amount: 6500, date: '2025-10-07', method: 'Credit Card', reference: 'TRX-345' }
+            ]
+        },
+        {
+            id: 4,
+            number: 'INV-2025-0149',
+            date: '2025-10-02',
+            customer: 'Etihad Airways Corporate',
+            persons: 3,
+            driver: 'Hamza Malik',
+            total: 5250,
+            paid: 5250,
+            status: 'paid',
+            vat: 262.5,
+            services: [
+                { id: 1, service: 'Dubai to Abu Dhabi Transfer', rate: 5250 }
+            ],
+            expenses: [
+                { id: 1, type: 'Tolls', amount: 100, date: '2025-10-02' }
+            ],
+            payments: [
+                { id: 1, amount: 5250, date: '2025-10-02', method: 'Bank Account - HBL', reference: 'TRX-111' }
+            ]
+        },
+        {
+            id: 5,
+            number: 'INV-2025-0157',
+            date: '2025-10-21',
+            customer: 'Dubai Pearl Hotels & Resorts',
+            persons: 2,
+            driver: 'Ali Hassan',
+            total: 6500,
+            paid: 6500,
+            status: 'paid',
+            vat: 325,
+            services: [
+                { id: 1, service: 'VIP Airport Meet & Greet', rate: 6500 }
+            ],
+            expenses: [
+                { id: 1, type: 'Parking', amount: 150, date: '2025-10-21' }
+            ],
+            payments: [
+                { id: 1, amount: 6500, date: '2025-10-21', method: 'Credit Card', reference: 'TRX-567' }
             ]
         }
     ],
     transactions: [
         {
             id: 1,
-            date: '2024-03-10',
-            description: 'Global Trading payment',
-            invoiceNumber: 'INV-2024-0150',
+            date: '2025-10-08',
+            description: 'Al Fahim Group payment',
+            invoiceNumber: 'INV-2025-0150',
             account: 'Cash Account',
             credit: 5000,
             debit: 0,
             reference: 'ADV-001',
             invoiceId: 1,
             notes: 'Advance payment'
+        },
+        {
+            id: 2,
+            date: '2025-10-10',
+            description: 'Al Fahim Group payment',
+            invoiceNumber: 'INV-2025-0150',
+            account: 'Bank Account - HBL',
+            credit: 4500,
+            debit: 0,
+            reference: 'TRX-123',
+            invoiceId: 1,
+            notes: 'Final payment'
+        },
+        {
+            id: 3,
+            date: '2025-10-12',
+            description: 'Dubai Pearl Hotels & Resorts payment',
+            invoiceNumber: 'INV-2025-0151',
+            account: 'Bank Account - MCB',
+            credit: 7800,
+            debit: 0,
+            reference: 'TRX-234',
+            invoiceId: 2,
+            notes: 'Full payment'
+        },
+        {
+            id: 4,
+            date: '2025-10-01',
+            description: 'Majid Al Futtaim Properties payment',
+            invoiceNumber: 'INV-2025-0152',
+            account: 'Cash Account',
+            credit: 6000,
+            debit: 0,
+            reference: 'ADV-003',
+            invoiceId: 3,
+            notes: 'Advance payment'
+        },
+        {
+            id: 5,
+            date: '2025-10-07',
+            description: 'Majid Al Futtaim Properties payment',
+            invoiceNumber: 'INV-2025-0152',
+            account: 'Credit Card',
+            credit: 6500,
+            debit: 0,
+            reference: 'TRX-345',
+            invoiceId: 3,
+            notes: 'Balance payment'
+        },
+        {
+            id: 6,
+            date: '2025-10-21',
+            description: 'Dubai Pearl Hotels & Resorts payment',
+            invoiceNumber: 'INV-2025-0157',
+            account: 'Credit Card',
+            credit: 6500,
+            debit: 0,
+            reference: 'TRX-567',
+            invoiceId: 5,
+            notes: 'Full payment'
+        },
+        {
+            id: 7,
+            date: '2025-10-14',
+            description: 'Etihad Airways Corporate payment',
+            invoiceNumber: 'INV-2025-0159',
+            account: 'Bank Account - HBL',
+            credit: 3000,
+            debit: 0,
+            reference: 'TRX-789',
+            invoiceId: 6,
+            notes: 'Advance payment'
         }
     ],
-    nextInvoiceNumber: 'INV-2024-0156'
+    nextInvoiceNumber: 'INV-2025-0160' // Updated next invoice number
 };
 
 export function DataProvider({ children }) {
