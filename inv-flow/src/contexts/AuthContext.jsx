@@ -46,6 +46,10 @@ export function AuthProvider({ children }) {
             setPermissions(response.permissions);
             return { success: true };
         } catch (error) {
+            // Check if it's a connection error
+            if (error.message.includes('Cannot connect to server')) {
+                return { success: false, error: 'Cannot connect to server. Please ensure the backend is running on http://localhost:5104 or https://localhost:7291', connectionError: true };
+            }
             return { success: false, error: error.message };
         }
     };

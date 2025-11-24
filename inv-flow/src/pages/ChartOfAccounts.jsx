@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Truck, Receipt, CreditCard, Plus, Edit2, Trash2 } from 'lucide-react';
 import CustomerModal from '../components/CustomerModal';
 import Modal from '../components/Modal';
@@ -16,8 +16,18 @@ const ChartOfAccounts = () => {
         customers, addCustomer, updateCustomer, deleteCustomer,
         drivers, addDriver, updateDriver, deleteDriver,
         expenses, addExpenseType, updateExpenseType, deleteExpenseType,
-        accounts, addAccount, updateAccount, deleteAccount
+        accounts, addAccount, updateAccount, deleteAccount,
+        loadCustomers, loadDrivers, loadExpenses, loadAccounts,
+        loadingStates
     } = useData();
+
+    // Load all data when component mounts
+    useEffect(() => {
+        loadCustomers();
+        loadDrivers();
+        loadExpenses();
+        loadAccounts();
+    }, [loadCustomers, loadDrivers, loadExpenses, loadAccounts]);
 
     // Handle deletion based on active category
     const handleDelete = (id) => {

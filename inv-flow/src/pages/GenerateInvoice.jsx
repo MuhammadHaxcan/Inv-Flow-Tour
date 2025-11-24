@@ -18,8 +18,20 @@ const GenerateInvoice = () => {
     const {
         customers, addCustomer,
         drivers, services, accounts, expenses,
-        nextInvoiceNumber, generateInvoice
+        nextInvoiceNumber, generateInvoice,
+        loadCustomers, loadDrivers, loadServices, loadAccounts, loadExpenses, loadNextInvoiceNumber,
+        loadingStates
     } = useData();
+
+    // Load only needed data when component mounts
+    useEffect(() => {
+        loadCustomers();
+        loadDrivers();
+        loadServices();
+        loadAccounts();
+        loadExpenses();
+        loadNextInvoiceNumber();
+    }, [loadCustomers, loadDrivers, loadServices, loadAccounts, loadExpenses, loadNextInvoiceNumber]);
 
     // Invoice state
     const [showDriverModal, setShowDriverModal] = useState(false);
@@ -183,7 +195,7 @@ const GenerateInvoice = () => {
     };
 
     // Updated to handle form submission and save invoice with only service and pax as mandatory
-    const handleSaveInvoice = () => {
+    const handleSaveInvoice = async () => {
         if (!selectedCustomer) {
             alert('Please select a customer');
             return;
@@ -202,21 +214,83 @@ const GenerateInvoice = () => {
             return;
         }
 
+        // Find customer ID
+        const customer = customers.find(c => c.name === selectedCustomer);
+        if (!customer) {
+            alert('Customer not found');
+            return;
+        }
+
+        // Find driver ID if driver is selected
+        const driver = assignedDriver ? drivers.find(d => d.name === assignedDriver) : null;
+
+        // Transform services to API format
+        const servicesData = validServices.map(s => {
+            const service = services.find(svc => svc.name === s.service);
+            return {
+                serviceId: service?.id || 0,
+                rate: parseFloat(s.rate) || 0
+            };
+        }).filter(s => s.serviceId > 0);
+
+        // Transform expenses to API format
+        const expensesData = invoiceExpenses.map(exp => {
+            const expenseType = expenses.find(e => e.name === exp.type);
+            return {
+                expenseTypeId: expenseType?.id || 0,
+                amount: parseFloat(exp.amount) || 0,
+                date: exp.date || serviceDate
+            };
+        }).filter(e => e.expenseTypeId > 0);
+
+        // Transform payments to API format
+        const paymentsData = payments.map(pay => {
+            const account = accounts.find(a => a.name === pay.method);
+            return {
+                accountId: account?.id || 0,
+                amount: parseFloat(pay.amount) || 0,
+                date: pay.date || serviceDate,
+                reference: pay.reference || '',
+                notes: pay.notes || ''
+            };
+        }).filter(p => p.accountId > 0);
+
         const invoiceData = {
-            customer: selectedCustomer,
-            driver: assignedDriver || '', // Make driver optional
-            serviceDate,
-            persons: parseInt(accommodation) || 0,
-            services: validServices, // Only include valid services
-            expenses: invoiceExpenses,
-            payments: payments,
-            paid: payments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0),
-            total: calculateInvoiceTotal()
+            date: serviceDate,
+            customerId: customer.id,
+            driverId: driver?.id || null,
+            persons: parseInt(accommodation) || 1,
+            services: servicesData,
+            expenses: expensesData,
+            payments: paymentsData
         };
 
-        generateInvoice(invoiceData);
-        navigate('/open-invoices');
+        try {
+            await generateInvoice(invoiceData);
+            navigate('/open-invoices');
+        } catch (error) {
+            alert('Error generating invoice: ' + error.message);
+        }
     };
+
+    // Show loading state if data is being loaded
+    const isLoading = loadingStates.customers || loadingStates.drivers || loadingStates.services || 
+                     loadingStates.accounts || loadingStates.expenses || loadingStates.nextInvoiceNumber;
+
+    if (isLoading) {
+        return (
+            <div className="content-wrapper py-3 px-4">
+                <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                    <div className="text-center">
+                        <div className="spinner-border text-primary mb-3" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                        <p className="text-muted">Loading invoice data...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>

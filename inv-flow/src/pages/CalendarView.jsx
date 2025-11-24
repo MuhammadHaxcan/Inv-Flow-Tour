@@ -25,9 +25,16 @@ const customStyles = `
 `;
 
 const CalendarView = () => {
-  const { openInvoices, closedInvoices, drivers } = useData();
+  const { openInvoices, closedInvoices, drivers, loadOpenInvoices, loadClosedInvoices, loadDrivers, loadingStates } = useData();
   const [events, setEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
+
+  // Load only needed data when component mounts
+  useEffect(() => {
+    loadOpenInvoices();
+    loadClosedInvoices();
+    loadDrivers();
+  }, [loadOpenInvoices, loadClosedInvoices, loadDrivers]);
   const [dateInvoices, setDateInvoices] = useState({ open: [], closed: [] });
   const [showModal, setShowModal] = useState(false);
   const [currentView, setCurrentView] = useState('dayGridMonth');

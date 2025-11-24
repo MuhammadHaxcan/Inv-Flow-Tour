@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useCallback } from 'react';
 import {
     customersAPI, driversAPI, servicesAPI, accountsAPI, expenseTypesAPI,
     invoicesAPI, transactionsAPI
@@ -7,7 +7,7 @@ import {
 const DataContext = createContext();
 
 export function DataProvider({ children }) {
-    // State for all our data
+    // State for all our data - initialized as empty, loaded on demand
     const [customers, setCustomers] = useState([]);
     const [drivers, setDrivers] = useState([]);
     const [services, setServices] = useState([]);
@@ -17,53 +17,176 @@ export function DataProvider({ children }) {
     const [closedInvoices, setClosedInvoices] = useState([]);
     const [transactions, setTransactions] = useState([]);
     const [nextInvoiceNumber, setNextInvoiceNumber] = useState('');
-    const [loading, setLoading] = useState(true);
+    
+    // Loading states for each resource
+    const [loadingStates, setLoadingStates] = useState({
+        customers: false,
+        drivers: false,
+        services: false,
+        accounts: false,
+        expenses: false,
+        openInvoices: false,
+        closedInvoices: false,
+        transactions: false,
+        nextInvoiceNumber: false
+    });
 
-    // Load initial data
-    useEffect(() => {
-        loadAllData();
-    }, []);
+    // Cache to track what's been loaded
+    const [loaded, setLoaded] = useState({
+        customers: false,
+        drivers: false,
+        services: false,
+        accounts: false,
+        expenses: false,
+        openInvoices: false,
+        closedInvoices: false,
+        transactions: false,
+        nextInvoiceNumber: false
+    });
 
-    const loadAllData = async () => {
+    // Load customers only when needed
+    const loadCustomers = useCallback(async (force = false) => {
+        if (loaded.customers && !force) return;
+        setLoadingStates(prev => ({ ...prev, customers: true }));
         try {
-            setLoading(true);
-            const [
-                customersData,
-                driversData,
-                servicesData,
-                accountsData,
-                expensesData,
-                openInvoicesData,
-                closedInvoicesData,
-                transactionsData,
-                nextNumberData
-            ] = await Promise.all([
-                customersAPI.getAll().catch(() => []),
-                driversAPI.getAll().catch(() => []),
-                servicesAPI.getAll().catch(() => []),
-                accountsAPI.getAll().catch(() => []),
-                expenseTypesAPI.getAll().catch(() => []),
-                invoicesAPI.getOpen().catch(() => []),
-                invoicesAPI.getClosed().catch(() => []),
-                transactionsAPI.getAll().catch(() => []),
-                invoicesAPI.getNextNumber().catch(() => ({ number: 'INV-2025-0001' }))
-            ]);
-
-            setCustomers(customersData);
-            setDrivers(driversData);
-            setServices(servicesData);
-            setAccounts(accountsData);
-            setExpenses(expensesData);
-            setOpenInvoices(openInvoicesData);
-            setClosedInvoices(closedInvoicesData);
-            setTransactions(transactionsData);
-            setNextInvoiceNumber(nextNumberData.number || 'INV-2025-0001');
+            const data = await customersAPI.getAll();
+            setCustomers(data);
+            setLoaded(prev => ({ ...prev, customers: true }));
         } catch (error) {
-            console.error('Error loading data:', error);
+            console.error('Error loading customers:', error);
+            setCustomers([]);
         } finally {
-            setLoading(false);
+            setLoadingStates(prev => ({ ...prev, customers: false }));
         }
-    };
+    }, [loaded.customers]);
+
+    // Load drivers only when needed
+    const loadDrivers = useCallback(async (force = false) => {
+        if (loaded.drivers && !force) return;
+        setLoadingStates(prev => ({ ...prev, drivers: true }));
+        try {
+            const data = await driversAPI.getAll();
+            setDrivers(data);
+            setLoaded(prev => ({ ...prev, drivers: true }));
+        } catch (error) {
+            console.error('Error loading drivers:', error);
+            setDrivers([]);
+        } finally {
+            setLoadingStates(prev => ({ ...prev, drivers: false }));
+        }
+    }, [loaded.drivers]);
+
+    // Load services only when needed
+    const loadServices = useCallback(async (force = false) => {
+        if (loaded.services && !force) return;
+        setLoadingStates(prev => ({ ...prev, services: true }));
+        try {
+            const data = await servicesAPI.getAll();
+            setServices(data);
+            setLoaded(prev => ({ ...prev, services: true }));
+        } catch (error) {
+            console.error('Error loading services:', error);
+            setServices([]);
+        } finally {
+            setLoadingStates(prev => ({ ...prev, services: false }));
+        }
+    }, [loaded.services]);
+
+    // Load accounts only when needed
+    const loadAccounts = useCallback(async (force = false) => {
+        if (loaded.accounts && !force) return;
+        setLoadingStates(prev => ({ ...prev, accounts: true }));
+        try {
+            const data = await accountsAPI.getAll();
+            setAccounts(data);
+            setLoaded(prev => ({ ...prev, accounts: true }));
+        } catch (error) {
+            console.error('Error loading accounts:', error);
+            setAccounts([]);
+        } finally {
+            setLoadingStates(prev => ({ ...prev, accounts: false }));
+        }
+    }, [loaded.accounts]);
+
+    // Load expense types only when needed
+    const loadExpenses = useCallback(async (force = false) => {
+        if (loaded.expenses && !force) return;
+        setLoadingStates(prev => ({ ...prev, expenses: true }));
+        try {
+            const data = await expenseTypesAPI.getAll();
+            setExpenses(data);
+            setLoaded(prev => ({ ...prev, expenses: true }));
+        } catch (error) {
+            console.error('Error loading expenses:', error);
+            setExpenses([]);
+        } finally {
+            setLoadingStates(prev => ({ ...prev, expenses: false }));
+        }
+    }, [loaded.expenses]);
+
+    // Load open invoices only when needed
+    const loadOpenInvoices = useCallback(async (force = false) => {
+        if (loaded.openInvoices && !force) return;
+        setLoadingStates(prev => ({ ...prev, openInvoices: true }));
+        try {
+            const data = await invoicesAPI.getOpen();
+            setOpenInvoices(data);
+            setLoaded(prev => ({ ...prev, openInvoices: true }));
+        } catch (error) {
+            console.error('Error loading open invoices:', error);
+            setOpenInvoices([]);
+        } finally {
+            setLoadingStates(prev => ({ ...prev, openInvoices: false }));
+        }
+    }, [loaded.openInvoices]);
+
+    // Load closed invoices only when needed
+    const loadClosedInvoices = useCallback(async (force = false) => {
+        if (loaded.closedInvoices && !force) return;
+        setLoadingStates(prev => ({ ...prev, closedInvoices: true }));
+        try {
+            const data = await invoicesAPI.getClosed();
+            setClosedInvoices(data);
+            setLoaded(prev => ({ ...prev, closedInvoices: true }));
+        } catch (error) {
+            console.error('Error loading closed invoices:', error);
+            setClosedInvoices([]);
+        } finally {
+            setLoadingStates(prev => ({ ...prev, closedInvoices: false }));
+        }
+    }, [loaded.closedInvoices]);
+
+    // Load transactions only when needed
+    const loadTransactions = useCallback(async (force = false) => {
+        if (loaded.transactions && !force) return;
+        setLoadingStates(prev => ({ ...prev, transactions: true }));
+        try {
+            const data = await transactionsAPI.getAll();
+            setTransactions(data);
+            setLoaded(prev => ({ ...prev, transactions: true }));
+        } catch (error) {
+            console.error('Error loading transactions:', error);
+            setTransactions([]);
+        } finally {
+            setLoadingStates(prev => ({ ...prev, transactions: false }));
+        }
+    }, [loaded.transactions]);
+
+    // Load next invoice number only when needed
+    const loadNextInvoiceNumber = useCallback(async (force = false) => {
+        if (loaded.nextInvoiceNumber && !force) return;
+        setLoadingStates(prev => ({ ...prev, nextInvoiceNumber: true }));
+        try {
+            const data = await invoicesAPI.getNextNumber();
+            setNextInvoiceNumber(data.number || 'INV-2025-0001');
+            setLoaded(prev => ({ ...prev, nextInvoiceNumber: true }));
+        } catch (error) {
+            console.error('Error loading next invoice number:', error);
+            setNextInvoiceNumber('INV-2025-0001');
+        } finally {
+            setLoadingStates(prev => ({ ...prev, nextInvoiceNumber: false }));
+        }
+    }, [loaded.nextInvoiceNumber]);
 
     // Customer functions
     const addCustomer = async (customer) => {
@@ -218,7 +341,6 @@ export function DataProvider({ children }) {
     // Invoice functions
     const generateInvoice = async (invoiceData) => {
         try {
-            // Transform data to match API format
             const createInvoiceDto = {
                 date: invoiceData.date || new Date().toISOString().split('T')[0],
                 customerId: invoiceData.customerId,
@@ -231,17 +353,12 @@ export function DataProvider({ children }) {
 
             const newInvoice = await invoicesAPI.create(createInvoiceDto);
             
-            // Reload invoices
-            const [open, closed] = await Promise.all([
-                invoicesAPI.getOpen(),
-                invoicesAPI.getClosed()
+            // Reload relevant invoices
+            await Promise.all([
+                loadOpenInvoices(true),
+                loadClosedInvoices(true),
+                loadNextInvoiceNumber(true)
             ]);
-            setOpenInvoices(open);
-            setClosedInvoices(closed);
-
-            // Update next invoice number
-            const nextNumber = await invoicesAPI.getNextNumber();
-            setNextInvoiceNumber(nextNumber.number);
 
             return newInvoice;
         } catch (error) {
@@ -259,15 +376,11 @@ export function DataProvider({ children }) {
                 notes: paymentData.notes
             });
 
-            // Reload invoices and transactions
-            const [open, closed, trans] = await Promise.all([
-                invoicesAPI.getOpen(),
-                invoicesAPI.getClosed(),
-                transactionsAPI.getAll()
+            await Promise.all([
+                loadOpenInvoices(true),
+                loadClosedInvoices(true),
+                loadTransactions(true)
             ]);
-            setOpenInvoices(open);
-            setClosedInvoices(closed);
-            setTransactions(trans);
 
             return updatedInvoice;
         } catch (error) {
@@ -283,13 +396,10 @@ export function DataProvider({ children }) {
                 date: expenseData.date
             });
 
-            // Reload invoices and transactions
-            const [open, trans] = await Promise.all([
-                invoicesAPI.getOpen(),
-                transactionsAPI.getAll()
+            await Promise.all([
+                loadOpenInvoices(true),
+                loadTransactions(true)
             ]);
-            setOpenInvoices(open);
-            setTransactions(trans);
 
             return updatedInvoice;
         } catch (error) {
@@ -301,27 +411,22 @@ export function DataProvider({ children }) {
         try {
             let updatedInvoice;
             if (serviceData.id) {
-                // Update existing service
                 updatedInvoice = await invoicesAPI.updateService(invoiceId, {
                     id: serviceData.id,
                     serviceId: serviceData.serviceId,
                     rate: serviceData.rate
                 });
             } else {
-                // Add new service
                 updatedInvoice = await invoicesAPI.addService(invoiceId, {
                     serviceId: serviceData.serviceId,
                     rate: serviceData.rate
                 });
             }
 
-            // Reload invoices
-            const [open, closed] = await Promise.all([
-                invoicesAPI.getOpen(),
-                invoicesAPI.getClosed()
+            await Promise.all([
+                loadOpenInvoices(true),
+                loadClosedInvoices(true)
             ]);
-            setOpenInvoices(open);
-            setClosedInvoices(closed);
 
             return updatedInvoice;
         } catch (error) {
@@ -333,13 +438,10 @@ export function DataProvider({ children }) {
         try {
             const updatedInvoice = await invoicesAPI.removeService(invoiceId, serviceId);
 
-            // Reload invoices
-            const [open, closed] = await Promise.all([
-                invoicesAPI.getOpen(),
-                invoicesAPI.getClosed()
+            await Promise.all([
+                loadOpenInvoices(true),
+                loadClosedInvoices(true)
             ]);
-            setOpenInvoices(open);
-            setClosedInvoices(closed);
 
             return updatedInvoice;
         } catch (error) {
@@ -352,13 +454,10 @@ export function DataProvider({ children }) {
             const driverId = drivers.find(d => d.name === driverName)?.id;
             const updatedInvoice = await invoicesAPI.assignDriver(invoiceId, { driverId });
 
-            // Reload invoices
-            const [open, closed] = await Promise.all([
-                invoicesAPI.getOpen(),
-                invoicesAPI.getClosed()
+            await Promise.all([
+                loadOpenInvoices(true),
+                loadClosedInvoices(true)
             ]);
-            setOpenInvoices(open);
-            setClosedInvoices(closed);
 
             return updatedInvoice;
         } catch (error) {
@@ -374,13 +473,10 @@ export function DataProvider({ children }) {
                 date: updatedExpense.date
             });
 
-            // Reload invoices and transactions
-            const [open, trans] = await Promise.all([
-                invoicesAPI.getOpen(),
-                transactionsAPI.getAll()
+            await Promise.all([
+                loadOpenInvoices(true),
+                loadTransactions(true)
             ]);
-            setOpenInvoices(open);
-            setTransactions(trans);
 
             return updatedInvoice;
         } catch (error) {
@@ -392,13 +488,10 @@ export function DataProvider({ children }) {
         try {
             const updatedInvoice = await invoicesAPI.removeExpense(invoiceId, expenseId);
 
-            // Reload invoices and transactions
-            const [open, trans] = await Promise.all([
-                invoicesAPI.getOpen(),
-                transactionsAPI.getAll()
+            await Promise.all([
+                loadOpenInvoices(true),
+                loadTransactions(true)
             ]);
-            setOpenInvoices(open);
-            setTransactions(trans);
 
             return updatedInvoice;
         } catch (error) {
@@ -408,6 +501,7 @@ export function DataProvider({ children }) {
 
     return (
         <DataContext.Provider value={{
+            // Data
             customers,
             drivers,
             services,
@@ -417,7 +511,22 @@ export function DataProvider({ children }) {
             closedInvoices,
             transactions,
             nextInvoiceNumber,
-            loading,
+            
+            // Loading states
+            loadingStates,
+            
+            // Load functions (on-demand loading)
+            loadCustomers,
+            loadDrivers,
+            loadServices,
+            loadAccounts,
+            loadExpenses,
+            loadOpenInvoices,
+            loadClosedInvoices,
+            loadTransactions,
+            loadNextInvoiceNumber,
+            
+            // CRUD functions
             addCustomer,
             updateCustomer,
             deleteCustomer,
@@ -441,7 +550,6 @@ export function DataProvider({ children }) {
             updateExpense,
             removeExpense,
             removeInvoiceService,
-            refreshData: loadAllData
         }}>
             {children}
         </DataContext.Provider>

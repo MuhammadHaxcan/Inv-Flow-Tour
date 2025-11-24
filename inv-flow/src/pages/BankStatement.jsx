@@ -4,7 +4,13 @@ import { useData } from '../contexts/DataContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const BankStatement = () => {
-    const { transactions, accounts } = useData();
+    const { transactions, accounts, loadTransactions, loadAccounts, loadingStates } = useData();
+
+    // Load only needed data when component mounts
+    useEffect(() => {
+        loadTransactions();
+        loadAccounts();
+    }, [loadTransactions, loadAccounts]);
 
     // States
     const [filteredTransactions, setFilteredTransactions] = useState([]);

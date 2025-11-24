@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, FileText, DollarSign, Receipt, Printer } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -10,8 +10,17 @@ const ClosedInvoices = () => {
     const {
         closedInvoices,
         accounts,
-        drivers
+        drivers,
+        loadClosedInvoices, loadAccounts, loadDrivers,
+        loadingStates
     } = useData();
+
+    // Load only needed data when component mounts
+    useEffect(() => {
+        loadClosedInvoices();
+        loadAccounts();
+        loadDrivers();
+    }, [loadClosedInvoices, loadAccounts, loadDrivers]);
 
     const toggleExpand = (id) => {
         setExpandedInvoice(expandedInvoice === id ? null : id);

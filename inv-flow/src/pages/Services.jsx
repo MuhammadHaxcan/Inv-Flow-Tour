@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Info } from 'lucide-react';
 import ServiceModal from '../components/ServiceModal';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -6,7 +6,12 @@ import { useData } from '../contexts/DataContext';
 
 const Services = () => {
     // Use data context
-    const { services, addService, updateService, deleteService } = useData();
+    const { services, addService, updateService, deleteService, loadServices, loadingStates } = useData();
+
+    // Load services when component mounts
+    useEffect(() => {
+        loadServices();
+    }, [loadServices]);
     
     // States
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -59,6 +64,21 @@ const Services = () => {
 
         setIsModalOpen(false);
     };
+
+    if (loadingStates.services) {
+        return (
+            <div className="content-wrapper py-3 px-4">
+                <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                    <div className="text-center">
+                        <div className="spinner-border text-primary mb-3" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                        <p className="text-muted">Loading services...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>

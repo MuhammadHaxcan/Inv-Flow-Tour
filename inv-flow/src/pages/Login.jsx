@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { AlertCircle } from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Login = () => {
@@ -34,8 +35,25 @@ const Login = () => {
                     <h4 className="text-center mb-4 text-secondary">Sign In</h4>
                     
                     {error && (
-                        <div className="alert alert-danger" role="alert">
-                            {error}
+                        <div className={`alert ${error.includes('Cannot connect') ? 'alert-warning' : 'alert-danger'}`} role="alert">
+                            <div className="d-flex align-items-center gap-2">
+                                <AlertCircle size={18} />
+                                <div>
+                                    <strong>{error.includes('Cannot connect') ? 'Connection Error' : 'Login Failed'}</strong>
+                                    <div className="small mt-1">{error}</div>
+                                    {error.includes('Cannot connect') && (
+                                        <div className="small mt-2">
+                                            <strong>To fix this:</strong>
+                                            <ol className="mb-0 mt-2 text-start">
+                                                <li>Open a terminal in the <code>inv-flow-backend</code> folder</li>
+                                                <li>Run: <code>dotnet run</code></li>
+                                                <li>Wait for "Now listening on: http://localhost:5104"</li>
+                                                <li>Refresh this page and try again</li>
+                                            </ol>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
 

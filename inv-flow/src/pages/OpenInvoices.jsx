@@ -23,8 +23,19 @@ const OpenInvoices = () => {
         assignDriver,
         updateExpense,
         removeExpense,
-        removeInvoiceService // Make sure this exists in DataContext
+        removeInvoiceService,
+        loadOpenInvoices, loadDrivers, loadServices, loadAccounts, loadExpenses,
+        loadingStates
     } = useData();
+
+    // Load only needed data when component mounts
+    useEffect(() => {
+        loadOpenInvoices();
+        loadDrivers();
+        loadServices();
+        loadAccounts();
+        loadExpenses();
+    }, [loadOpenInvoices, loadDrivers, loadServices, loadAccounts, loadExpenses]);
 
     const [expandedInvoice, setExpandedInvoice] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -43,6 +54,9 @@ const OpenInvoices = () => {
     const [currentExpense, setCurrentExpense] = useState(null);
     const [currentService, setCurrentService] = useState(null);
     const printableInvoiceRef = useRef(null);
+
+    // Show loading state if data is being loaded
+    const isLoading = loadingStates.openInvoices || loadingStates.drivers || loadingStates.services || loadingStates.accounts || loadingStates.expenses;
 
     const toggleExpand = (id) => {
         setExpandedInvoice(expandedInvoice === id ? null : id);

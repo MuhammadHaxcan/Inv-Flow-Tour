@@ -1,30 +1,39 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import { FileText, Building2, FileCheck2, CheckCircle, CreditCard, Tag, Calendar, Users, LogOut } from 'lucide-react'
 import './App.css'
-import GenerateInvoice from './pages/GenerateInvoice'
-import ChartOfAccounts from './pages/ChartOfAccounts'
-import OpenInvoices from './pages/OpenInvoices'
-import ClosedInvoices from './pages/ClosedInvoices'
-import BankStatement from './pages/BankStatement';
-import Services from './pages/Services'
-import CalendarView from './pages/CalendarView'
-import Login from './pages/Login'
-import Admin from './pages/Admin'
 import { DataProvider } from './contexts/DataContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import 'bootstrap/dist/css/bootstrap.min.css';
+
+// Lazy load pages for code splitting
+const Login = lazy(() => import('./pages/Login'));
+const GenerateInvoice = lazy(() => import('./pages/GenerateInvoice'));
+const ChartOfAccounts = lazy(() => import('./pages/ChartOfAccounts'));
+const OpenInvoices = lazy(() => import('./pages/OpenInvoices'));
+const ClosedInvoices = lazy(() => import('./pages/ClosedInvoices'));
+const BankStatement = lazy(() => import('./pages/BankStatement'));
+const Services = lazy(() => import('./pages/Services'));
+const CalendarView = lazy(() => import('./pages/CalendarView'));
+const Admin = lazy(() => import('./pages/Admin'));
+
+// Loading component
+const PageLoader = () => (
+    <div className="min-vh-100 d-flex align-items-center justify-content-center">
+        <div className="text-center">
+            <div className="spinner-border text-primary mb-3" role="status">
+                <span className="visually-hidden">Loading...</span>
+            </div>
+            <p className="text-muted">Loading page...</p>
+        </div>
+    </div>
+);
 
 function ProtectedRoute({ children, requiredPermission }) {
     const { isAuthenticated, hasPermission, loading } = useAuth();
 
     if (loading) {
-        return (
-            <div className="min-vh-100 d-flex align-items-center justify-content-center">
-                <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                </div>
-            </div>
-        );
+        return <PageLoader />;
     }
 
     if (!isAuthenticated) {
@@ -41,7 +50,7 @@ function ProtectedRoute({ children, requiredPermission }) {
         );
     }
 
-    return children;
+    return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
 }
 
 function Navbar() {
@@ -213,54 +222,56 @@ function AppContent() {
             <div className="min-vh-100 bg-light d-flex flex-column">
                 <Navbar />
                 <div className="flex-grow-1">
-                    <Routes>
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/" element={
-                            <ProtectedRoute requiredPermission="invoices.read">
-                                <Navigate to="/generateinvoice" replace />
-                            </ProtectedRoute>
-                        } />
-                        <Route path="/generateinvoice" element={
-                            <ProtectedRoute requiredPermission="invoices.write">
-                                <GenerateInvoice />
-                            </ProtectedRoute>
-                        } />
-                        <Route path="/open-invoices" element={
-                            <ProtectedRoute requiredPermission="invoices.read">
-                                <OpenInvoices />
-                            </ProtectedRoute>
-                        } />
-                        <Route path="/closed-invoices" element={
-                            <ProtectedRoute requiredPermission="invoices.read">
-                                <ClosedInvoices />
-                            </ProtectedRoute>
-                        } />
-                        <Route path="/calendar" element={
-                            <ProtectedRoute requiredPermission="invoices.read">
-                                <CalendarView />
-                            </ProtectedRoute>
-                        } />
-                        <Route path="/bank-statement" element={
-                            <ProtectedRoute requiredPermission="transactions.read">
-                                <BankStatement />
-                            </ProtectedRoute>
-                        } />
-                        <Route path="/services" element={
-                            <ProtectedRoute requiredPermission="services.read">
-                                <Services />
-                            </ProtectedRoute>
-                        } />
-                        <Route path="/accounts" element={
-                            <ProtectedRoute requiredPermission="accounts.read">
-                                <ChartOfAccounts />
-                            </ProtectedRoute>
-                        } />
-                        <Route path="/admin" element={
-                            <ProtectedRoute requiredPermission="users.read">
-                                <Admin />
-                            </ProtectedRoute>
-                        } />
-                    </Routes>
+                    <Suspense fallback={<PageLoader />}>
+                        <Routes>
+                            <Route path="/login" element={<Login />} />
+                            <Route path="/" element={
+                                <ProtectedRoute requiredPermission="invoices.read">
+                                    <Navigate to="/generateinvoice" replace />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/generateinvoice" element={
+                                <ProtectedRoute requiredPermission="invoices.write">
+                                    <GenerateInvoice />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/open-invoices" element={
+                                <ProtectedRoute requiredPermission="invoices.read">
+                                    <OpenInvoices />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/closed-invoices" element={
+                                <ProtectedRoute requiredPermission="invoices.read">
+                                    <ClosedInvoices />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/calendar" element={
+                                <ProtectedRoute requiredPermission="invoices.read">
+                                    <CalendarView />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/bank-statement" element={
+                                <ProtectedRoute requiredPermission="transactions.read">
+                                    <BankStatement />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/services" element={
+                                <ProtectedRoute requiredPermission="services.read">
+                                    <Services />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/accounts" element={
+                                <ProtectedRoute requiredPermission="accounts.read">
+                                    <ChartOfAccounts />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/admin" element={
+                                <ProtectedRoute requiredPermission="users.read">
+                                    <Admin />
+                                </ProtectedRoute>
+                            } />
+                        </Routes>
+                    </Suspense>
                 </div>
             </div>
         </DataProvider>
