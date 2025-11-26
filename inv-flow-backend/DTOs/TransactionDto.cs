@@ -3,7 +3,7 @@ namespace inv_flow_backend.DTOs;
 public class TransactionDto
 {
     public int Id { get; set; }
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public string Description { get; set; } = string.Empty;
     public int? InvoiceId { get; set; }
     public string? InvoiceNumber { get; set; }

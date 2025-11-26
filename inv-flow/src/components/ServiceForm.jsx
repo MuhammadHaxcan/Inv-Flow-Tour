@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import SearchableSelect from './SearchableSelect';
 
 const ServiceForm = ({ servicesList, onSave, onCancel, invoice, service }) => {
     // Initialize state from props
@@ -39,17 +40,13 @@ const ServiceForm = ({ servicesList, onSave, onCancel, invoice, service }) => {
         <form onSubmit={handleSubmit}>
             <div className="mb-3">
                 <label className="form-label">Service</label>
-                <select
+                <SearchableSelect
                     value={selectedService}
                     onChange={handleServiceChange}
-                    className="form-select"
+                    options={servicesList.map(s => ({ value: s.name, label: s.name }))}
+                    placeholder="Select Service"
                     required
-                >
-                    <option value="">Select Service</option>
-                    {servicesList.map((s) => (
-                        <option key={s.id} value={s.name}>{s.name}</option>
-                    ))}
-                </select>
+                />
             </div>
             <div className="mb-3">
                 <label className="form-label">Rate (AED with VAT)</label>

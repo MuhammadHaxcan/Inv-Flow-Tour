@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import SearchableSelect from './SearchableSelect';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const PaymentForm = ({ accounts, onSave, onCancel, invoice }) => {
@@ -32,14 +33,15 @@ const PaymentForm = ({ accounts, onSave, onCancel, invoice }) => {
             </div>
             <div className="mb-3">
                 <label className="form-label">Payment Account</label>
-                <select value={method} onChange={(e) => setMethod(e.target.value)} className="form-select">
-                    <option value="">Select account</option>
-                    {accounts.map((account, i) => (
-                        <option key={i} value={account.name}>
-                            {account.name} {account.type === 'cash' ? '(No VAT)' : '(5% VAT)'}
-                        </option>
-                    ))}
-                </select>
+                <SearchableSelect
+                    value={method}
+                    onChange={(e) => setMethod(e.target.value)}
+                    options={accounts.map((account, i) => ({
+                        value: account.name,
+                        label: `${account.name} ${account.type === 'cash' ? '(No VAT)' : '(5% VAT)'}`
+                    }))}
+                    placeholder="Select account"
+                />
             </div>
             <div className="mb-3">
                 <label className="form-label">Payment Date</label>

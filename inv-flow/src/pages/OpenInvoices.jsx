@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, ChevronUp, Plus, DollarSign, Truck, Receipt, Edit2, Printer, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
 import PaymentForm from '../components/PaymentForm';
@@ -57,6 +57,22 @@ const OpenInvoices = () => {
 
     // Show loading state if data is being loaded
     const isLoading = loadingStates.openInvoices || loadingStates.drivers || loadingStates.services || loadingStates.accounts || loadingStates.expenses;
+
+    // Show loading state
+    if (isLoading) {
+        return (
+            <div className="content-wrapper py-3 px-4">
+                <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                    <div className="text-center">
+                        <div className="spinner-border text-primary mb-3" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                        <p className="text-muted">Loading invoices...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const toggleExpand = (id) => {
         setExpandedInvoice(expandedInvoice === id ? null : id);

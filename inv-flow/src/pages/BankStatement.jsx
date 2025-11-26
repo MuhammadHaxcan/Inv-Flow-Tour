@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Filter, ChevronDown, ChevronUp, DollarSign } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
+import SearchableSelect from '../components/SearchableSelect';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const BankStatement = () => {
@@ -88,16 +89,16 @@ const BankStatement = () => {
                         <div className="row align-items-end">
                             <div className="col-md-4">
                                 <label className="form-label small fw-medium">Account</label>
-                                <select
+                                <SearchableSelect
                                     value={selectedAccount}
                                     onChange={(e) => setSelectedAccount(e.target.value)}
-                                    className="form-select form-select-sm"
-                                >
-                                    <option value="all">All Accounts</option>
-                                    {accounts.map(account => (
-                                        <option key={account.id} value={account.name}>{account.name}</option>
-                                    ))}
-                                </select>
+                                    options={[
+                                        { value: 'all', label: 'All Accounts' },
+                                        ...accounts.map(account => ({ value: account.name, label: account.name }))
+                                    ]}
+                                    placeholder="All Accounts"
+                                    size="sm"
+                                />
                             </div>
 
                             <div className="col-md-4">

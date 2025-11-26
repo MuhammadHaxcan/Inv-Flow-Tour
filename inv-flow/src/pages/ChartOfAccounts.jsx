@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Truck, Receipt, CreditCard, Plus, Edit2, Trash2 } from 'lucide-react';
 import CustomerModal from '../components/CustomerModal';
 import Modal from '../components/Modal';
+import SearchableSelect from '../components/SearchableSelect';
 import { useData } from '../contexts/DataContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -205,15 +206,16 @@ const ChartOfAccounts = () => {
                             </div>
                             <div className="mb-3">
                                 <label className="form-label">Account Type</label>
-                                <select
+                                <SearchableSelect
                                     value={formData.accountType || 'bank'}
                                     onChange={(e) => setFormData({ ...formData, accountType: e.target.value })}
-                                    className="form-select"
+                                    options={[
+                                        { value: 'bank', label: 'Bank Account (5% VAT applies)' },
+                                        { value: 'cash', label: 'Cash Account (No VAT)' }
+                                    ]}
+                                    placeholder="Select Account Type"
                                     required
-                                >
-                                    <option value="bank">Bank Account (5% VAT applies)</option>
-                                    <option value="cash">Cash Account (No VAT)</option>
-                                </select>
+                                />
                             </div>
                             <div className="mb-3">
                                 <label className="form-label">Account Number</label>

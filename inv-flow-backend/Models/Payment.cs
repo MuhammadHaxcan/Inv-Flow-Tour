@@ -19,7 +19,7 @@ public class Payment
     public decimal Amount { get; set; }
 
     [Required]
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
 
     [MaxLength(100)]
     public string? Reference { get; set; }

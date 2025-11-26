@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
+import SearchableSelect from './SearchableSelect';
 
 const ExpenseForm = ({ expenseTypes, onSave, onCancel, invoice, expense }) => {
     // Get expense default values from context
@@ -60,18 +61,13 @@ const ExpenseForm = ({ expenseTypes, onSave, onCancel, invoice, expense }) => {
         <form onSubmit={handleSubmit}>
             <div className="mb-3">
                 <label className="form-label">Expense Type</label>
-                <select
-                    name="type"
+                <SearchableSelect
                     value={formData.type}
-                    onChange={handleChange}
-                    className="form-select"
+                    onChange={(e) => handleChange({ target: { name: 'type', value: e.target.value } })}
+                    options={expenseTypes.map((type, index) => ({ value: type, label: type }))}
+                    placeholder="Select Expense Type"
                     required
-                >
-                    <option value="">Select Expense Type</option>
-                    {expenseTypes.map((type, index) => (
-                        <option key={index} value={type}>{type}</option>
-                    ))}
-                </select>
+                />
             </div>
             <div className="mb-3">
                 <label className="form-label">Amount (AED)</label>

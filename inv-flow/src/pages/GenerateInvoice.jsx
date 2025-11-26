@@ -7,6 +7,7 @@ import PaymentForm from '../components/PaymentForm';
 import ExpenseForm from '../components/ExpenseForm';
 import DriverModal from '../components/DriverModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import SearchableSelect from '../components/SearchableSelect';
 import { useData } from '../contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -340,17 +341,17 @@ const GenerateInvoice = () => {
                                 <div className="col-md-6">
                                     <label className="form-label small fw-medium">Customer Information <span className="text-danger">*</span></label>
                                     <div className="d-flex gap-2">
-                                        <select
-                                            value={selectedCustomer}
-                                            onChange={(e) => setSelectedCustomer(e.target.value)}
-                                            className={`form-select form-select-sm flex-grow-1 ${!selectedCustomer && 'is-invalid'}`}
-                                            required
-                                        >
-                                            <option value="">Select Customer</option>
-                                            {customers.map((customer) => (
-                                                <option key={customer.id} value={customer.name}>{customer.name}</option>
-                                            ))}
-                                        </select>
+                                        <div className="flex-grow-1">
+                                            <SearchableSelect
+                                                value={selectedCustomer}
+                                                onChange={(e) => setSelectedCustomer(e.target.value)}
+                                                options={customers.map(customer => ({ value: customer.name, label: customer.name }))}
+                                                placeholder="Select Customer"
+                                                className={`${!selectedCustomer && 'is-invalid'}`}
+                                                required
+                                                size="sm"
+                                            />
+                                        </div>
                                         <button
                                             type="button"
                                             onClick={() => setShowCustomerModal(true)}
@@ -453,17 +454,14 @@ const GenerateInvoice = () => {
                                             {invoiceServices.map((service, index) => (
                                                 <tr key={index}>
                                                     <td className="px-3 py-2">
-                                                        <select
+                                                        <SearchableSelect
                                                             value={service.service}
                                                             onChange={(e) => updateService(index, 'service', e.target.value)}
-                                                            className={`form-select ${(!service.service && index === 0) && 'is-invalid'}`}
+                                                            options={services.map(s => ({ value: s.name, label: s.name }))}
+                                                            placeholder="Select Service"
+                                                            className={`${(!service.service && index === 0) && 'is-invalid'}`}
                                                             required={index === 0}
-                                                        >
-                                                            <option value="">Select Service</option>
-                                                            {services.map((s) => (
-                                                                <option key={s.id} value={s.name}>{s.name}</option>
-                                                            ))}
-                                                        </select>
+                                                        />
                                                     </td>
                                                     <td className="px-3 py-2">
                                                         <input

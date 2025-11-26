@@ -13,7 +13,7 @@ public class Invoice
     public string Number { get; set; } = string.Empty;
 
     [Required]
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
 
     [Required]
     public int CustomerId { get; set; }

@@ -73,8 +73,16 @@ const apiCall = async (endpoint, options = {}, retries = 0) => {
         }
 
         if (!response.ok) {
-            const error = await response.json().catch(() => ({ message: 'An error occurred' }));
-            throw new Error(error.message || `HTTP error! status: ${response.status}`);
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch {
+                errorData = { message: `HTTP error! status: ${response.status}` };
+            }
+            const errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
+            const error = new Error(errorMessage);
+            error.response = errorData;
+            throw error;
         }
 
         return response.json();
@@ -213,4 +221,24 @@ export const rolesAPI = {
 export const permissionsAPI = {
     getAll: () => apiCall('/permissions'),
     getById: (id) => apiCall(`/permissions/${id}`),
+};
+
+// Reports API
+export const reportsAPI = {
+    getServiceReport: (filters) => apiCall('/reports/service', {
+        method: 'POST',
+        body: JSON.stringify(filters)
+    }),
+    getCustomerReport: (filters) => apiCall('/reports/customer', {
+        method: 'POST',
+        body: JSON.stringify(filters)
+    }),
+    getDriverReport: (filters) => apiCall('/reports/driver', {
+        method: 'POST',
+        body: JSON.stringify(filters)
+    }),
+    getSummaryReport: (filters) => apiCall('/reports/summary', {
+        method: 'POST',
+        body: JSON.stringify(filters)
+    }),
 };

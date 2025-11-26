@@ -13,19 +13,34 @@ using inv_flow_backend.Validators;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        // Configure DateOnly serialization to use ISO date format (YYYY-MM-DD)
+        options.JsonSerializerOptions.Converters.Add(new inv_flow_backend.Converters.DateOnlyJsonConverter());
+        options.JsonSerializerOptions.Converters.Add(new inv_flow_backend.Converters.NullableDateOnlyJsonConverter());
+    });
 
 // Configure CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:3000", "http://localhost:5174", "https://localhost:5173")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        policy.WithOrigins(
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://localhost:5174",
+            "https://localhost:5173",
+            "https://34a47127ec8b.ngrok-free.app"   
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
     });
 });
+
 
 // Configure Database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -77,6 +92,7 @@ builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

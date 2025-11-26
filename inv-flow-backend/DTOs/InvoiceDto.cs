@@ -4,7 +4,7 @@ public class InvoiceDto
 {
     public int Id { get; set; }
     public string Number { get; set; } = string.Empty;
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public int CustomerId { get; set; }
     public string Customer { get; set; } = string.Empty;
     public int? DriverId { get; set; }
@@ -33,7 +33,7 @@ public class InvoiceExpenseDto
     public int ExpenseTypeId { get; set; }
     public string Type { get; set; } = string.Empty;
     public decimal Amount { get; set; }
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
 }
 
 public class PaymentDto
@@ -42,7 +42,7 @@ public class PaymentDto
     public int AccountId { get; set; }
     public string Method { get; set; } = string.Empty;
     public decimal Amount { get; set; }
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public string? Reference { get; set; }
     public decimal Vat { get; set; }
     public string? Notes { get; set; }
@@ -50,7 +50,7 @@ public class PaymentDto
 
 public class CreateInvoiceDto
 {
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public int CustomerId { get; set; }
     public int? DriverId { get; set; }
     public int Persons { get; set; }
@@ -69,14 +69,14 @@ public class CreateInvoiceExpenseDto
 {
     public int ExpenseTypeId { get; set; }
     public decimal Amount { get; set; }
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
 }
 
 public class CreatePaymentDto
 {
     public int AccountId { get; set; }
     public decimal Amount { get; set; }
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public string? Reference { get; set; }
     public string? Notes { get; set; }
 }
@@ -85,7 +85,7 @@ public class AddPaymentDto
 {
     public int AccountId { get; set; }
     public decimal Amount { get; set; }
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public string? Reference { get; set; }
     public string? Notes { get; set; }
 }
@@ -94,7 +94,7 @@ public class AddExpenseDto
 {
     public int ExpenseTypeId { get; set; }
     public decimal Amount { get; set; }
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
 }
 
 public class AddInvoiceServiceDto
@@ -114,7 +114,7 @@ public class UpdateExpenseDto
 {
     public int ExpenseTypeId { get; set; }
     public decimal Amount { get; set; }
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
 }
 
 public class AssignDriverDto

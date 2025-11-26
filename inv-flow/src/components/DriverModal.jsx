@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
+import SearchableSelect from './SearchableSelect';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const DriverModal = ({ show, onClose, onSave, drivers, currentDriver = '' }) => {
@@ -25,16 +26,12 @@ const DriverModal = ({ show, onClose, onSave, drivers, currentDriver = '' }) => 
         <Modal show={show} onClose={onClose} title="Assign Driver">
             <div className="mb-3">
                 <label className="form-label">Select Driver</label>
-                <select
+                <SearchableSelect
                     value={assignedDriver}
                     onChange={(e) => setAssignedDriver(e.target.value)}
-                    className="form-select"
-                >
-                    <option value="">Choose a driver</option>
-                    {drivers.map((driver) => (
-                        <option key={driver.id} value={driver.name}>{driver.name}</option>
-                    ))}
-                </select>
+                    options={drivers.map(driver => ({ value: driver.name, label: driver.name }))}
+                    placeholder="Choose a driver"
+                />
             </div>
             <div className="mb-3">
                 <label className="form-label">Assignment Date</label>

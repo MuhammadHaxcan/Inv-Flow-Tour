@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { FileText, Building2, FileCheck2, CheckCircle, CreditCard, Tag, Calendar, Users, LogOut } from 'lucide-react'
+import { FileText, Building2, FileCheck2, CheckCircle, CreditCard, Tag, Calendar, Users, LogOut, BarChart3 } from 'lucide-react'
 import './App.css'
 import { DataProvider } from './contexts/DataContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -16,6 +16,7 @@ const BankStatement = lazy(() => import('./pages/BankStatement'));
 const Services = lazy(() => import('./pages/Services'));
 const CalendarView = lazy(() => import('./pages/CalendarView'));
 const Admin = lazy(() => import('./pages/Admin'));
+const Reports = lazy(() => import('./pages/Reports'));
 
 // Loading component
 const PageLoader = () => (
@@ -180,6 +181,20 @@ function Navbar() {
                                     Chart of Accounts
                                 </NavLink>
                             )}
+                            {hasPermission('invoices.read') && (
+                                <NavLink
+                                    to="/reports"
+                                    className={({ isActive }) =>
+                                        `px-4 py-2 text-decoration-none d-flex align-items-center gap-2 ${isActive
+                                            ? 'text-primary border-bottom border-2 border-primary'
+                                            : 'text-secondary'
+                                        }`
+                                    }
+                                >
+                                    <BarChart3 size={18} />
+                                    Reports
+                                </NavLink>
+                            )}
                             {canAccessAdmin && (
                                 <NavLink
                                     to="/admin"
@@ -268,6 +283,11 @@ function AppContent() {
                             <Route path="/admin" element={
                                 <ProtectedRoute requiredPermission="users.read">
                                     <Admin />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/reports" element={
+                                <ProtectedRoute requiredPermission="invoices.read">
+                                    <Reports />
                                 </ProtectedRoute>
                             } />
                         </Routes>
