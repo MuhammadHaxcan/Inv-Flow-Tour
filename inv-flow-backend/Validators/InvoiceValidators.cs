@@ -114,6 +114,21 @@ public class AddInvoiceServiceDtoValidator : AbstractValidator<AddInvoiceService
     }
 }
 
+public class UpdateInvoiceServiceDtoValidator : AbstractValidator<UpdateInvoiceServiceDto>
+{
+    public UpdateInvoiceServiceDtoValidator()
+    {
+        RuleFor(x => x.Id)
+            .GreaterThan(0).WithMessage("Service ID is required");
+
+        RuleFor(x => x.ServiceId)
+            .GreaterThan(0).WithMessage("Service is required");
+
+        RuleFor(x => x.Rate)
+            .GreaterThan(0).WithMessage("Service rate must be greater than 0");
+    }
+}
+
 public class UpdateExpenseDtoValidator : AbstractValidator<UpdateExpenseDto>
 {
     public UpdateExpenseDtoValidator()

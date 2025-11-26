@@ -185,7 +185,7 @@ export const invoicesAPI = {
     addService: (id, data) => apiCall(`/invoices/${id}/services`, { method: 'POST', body: JSON.stringify(data) }),
     updateService: (id, data) => apiCall(`/invoices/${id}/services`, { method: 'PUT', body: JSON.stringify(data) }),
     removeService: (id, serviceId) => apiCall(`/invoices/${id}/services/${serviceId}`, { method: 'DELETE' }),
-    assignDriver: (id, driverId) => apiCall(`/invoices/${id}/driver`, { method: 'PUT', body: JSON.stringify({ driverId }) }),
+    assignDriver: (id, data) => apiCall(`/invoices/${id}/driver`, { method: 'PUT', body: JSON.stringify(data) }),
     updateExpense: (id, expenseId, data) => apiCall(`/invoices/${id}/expenses/${expenseId}`, { method: 'PUT', body: JSON.stringify(data) }),
     removeExpense: (id, expenseId) => apiCall(`/invoices/${id}/expenses/${expenseId}`, { method: 'DELETE' }),
 };

@@ -413,16 +413,29 @@ export function DataProvider({ children }) {
 
     const addInvoiceService = async (invoiceId, serviceData) => {
         try {
+            // Resolve serviceId from service name if not provided
+            let serviceId = serviceData.serviceId;
+            if (!serviceId && serviceData.service) {
+                const service = services.find(s => s.name === serviceData.service);
+                serviceId = service?.id;
+            }
+            
+            if (!serviceId) {
+                throw new Error('Service not found');
+            }
+
             let updatedInvoice;
             if (serviceData.id) {
+                // Update existing service
                 updatedInvoice = await invoicesAPI.updateService(invoiceId, {
                     id: serviceData.id,
-                    serviceId: serviceData.serviceId,
+                    serviceId: serviceId,
                     rate: serviceData.rate
                 });
             } else {
+                // Add new service
                 updatedInvoice = await invoicesAPI.addService(invoiceId, {
-                    serviceId: serviceData.serviceId,
+                    serviceId: serviceId,
                     rate: serviceData.rate
                 });
             }

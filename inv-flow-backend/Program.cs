@@ -17,6 +17,8 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        // Use camelCase for JSON serialization (customer, services, etc.)
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
         // Configure DateOnly serialization to use ISO date format (YYYY-MM-DD)
         options.JsonSerializerOptions.Converters.Add(new inv_flow_backend.Converters.DateOnlyJsonConverter());

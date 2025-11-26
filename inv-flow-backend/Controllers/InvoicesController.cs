@@ -42,24 +42,52 @@ public class InvoicesController : ControllerBase
     [RequirePermission("invoices.read")]
     public async Task<ActionResult<List<InvoiceDto>>> GetOpenInvoices()
     {
-        var invoices = await _invoiceService.GetOpenInvoicesAsync();
-        return Ok(invoices);
+        try
+        {
+            var invoices = await _invoiceService.GetOpenInvoicesAsync();
+            return Ok(invoices);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in GetOpenInvoices: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
+        }
     }
 
     [HttpGet("closed")]
     [RequirePermission("invoices.read")]
     public async Task<ActionResult<List<InvoiceDto>>> GetClosedInvoices()
     {
-        var invoices = await _invoiceService.GetClosedInvoicesAsync();
-        return Ok(invoices);
+        try
+        {
+            var invoices = await _invoiceService.GetClosedInvoicesAsync();
+            return Ok(invoices);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in GetClosedInvoices: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
+        }
     }
 
     [HttpGet("next-number")]
     [RequirePermission("invoices.read")]
-    public async Task<ActionResult<string>> GetNextInvoiceNumber()
+    public async Task<ActionResult<object>> GetNextInvoiceNumber()
     {
-        var number = await _invoiceService.GetNextInvoiceNumberAsync();
-        return Ok(new { number });
+        try
+        {
+            var number = await _invoiceService.GetNextInvoiceNumberAsync();
+            return Ok(new { number });
+        }
+        catch (Exception ex)
+        {
+            // Log the error for debugging
+            Console.WriteLine($"Error in GetNextInvoiceNumber: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
+        }
     }
 
     [HttpGet("{id}")]
@@ -78,14 +106,23 @@ public class InvoicesController : ControllerBase
     [RequirePermission("invoices.write")]
     public async Task<ActionResult<InvoiceDto>> Create([FromBody] CreateInvoiceDto dto)
     {
-        var validationResult = await _createValidator.ValidateAsync(dto);
-        if (!validationResult.IsValid)
+        try
         {
-            return BadRequest(validationResult.Errors);
-        }
+            var validationResult = await _createValidator.ValidateAsync(dto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(validationResult.Errors);
+            }
 
-        var invoice = await _invoiceService.CreateAsync(dto);
-        return CreatedAtAction(nameof(GetById), new { id = invoice.Id }, invoice);
+            var invoice = await _invoiceService.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id = invoice.Id }, invoice);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in Create Invoice: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
+        }
     }
 
     [HttpPost("{id}/payments")]
