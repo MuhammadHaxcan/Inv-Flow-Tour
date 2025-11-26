@@ -20,36 +20,50 @@ public class InvoiceService : IInvoiceService
 
     public async Task<List<InvoiceDto>> GetOpenInvoicesAsync()
     {
-        var invoices = await _context.Invoices
+        // Get invoices that are in progress - unpaid or partially paid (not fully paid yet)
+        // Load all invoices with includes first, then filter in memory to avoid DateOnly query issues
+        var allInvoices = await _context.Invoices
             .Include(i => i.Customer)
             .Include(i => i.Driver)
             .Include(i => i.InvoiceServices)
-                .ThenInclude(isr => isr.Service)
             .Include(i => i.InvoiceExpenses)
-                .ThenInclude(ie => ie.ExpenseType)
             .Include(i => i.Payments)
                 .ThenInclude(p => p.Account)
+            .ToListAsync();
+
+        // Filter in memory - only invoices that are not fully paid
+        var invoices = allInvoices
             .Where(i => i.Status != "paid")
             .OrderByDescending(i => i.Date)
-            .ToListAsync();
+            .ToList();
+
+        if (!invoices.Any())
+            return new List<InvoiceDto>();
 
         return _mapper.Map<List<InvoiceDto>>(invoices);
     }
 
     public async Task<List<InvoiceDto>> GetClosedInvoicesAsync()
     {
-        var invoices = await _context.Invoices
+        // Get all fully paid and completed invoices
+        // Load all invoices with includes first, then filter in memory to avoid DateOnly query issues
+        var allInvoices = await _context.Invoices
             .Include(i => i.Customer)
             .Include(i => i.Driver)
             .Include(i => i.InvoiceServices)
-                .ThenInclude(isr => isr.Service)
             .Include(i => i.InvoiceExpenses)
-                .ThenInclude(ie => ie.ExpenseType)
             .Include(i => i.Payments)
                 .ThenInclude(p => p.Account)
+            .ToListAsync();
+
+        // Filter in memory - only fully paid invoices
+        var invoices = allInvoices
             .Where(i => i.Status == "paid")
             .OrderByDescending(i => i.Date)
-            .ToListAsync();
+            .ToList();
+
+        if (!invoices.Any())
+            return new List<InvoiceDto>();
 
         return _mapper.Map<List<InvoiceDto>>(invoices);
     }
@@ -72,24 +86,23 @@ public class InvoiceService : IInvoiceService
 
     public async Task<string> GetNextInvoiceNumberAsync()
     {
-        var lastInvoice = await _context.Invoices
-            .OrderByDescending(i => i.Number)
-            .FirstOrDefaultAsync();
+        var currentYear = DateTime.Now.Year;
+        var invoices = await _context.Invoices
+            .Where(i => !string.IsNullOrEmpty(i.Number) && i.Number.StartsWith($"INV-{currentYear}-"))
+            .ToListAsync();
 
-        if (lastInvoice == null)
+        if (!invoices.Any())
+            return $"INV-{currentYear}-0001";
+
+        int maxNum = 0;
+        foreach (var invoice in invoices)
         {
-            return $"INV-{DateTime.Now.Year}-0001";
+            var parts = invoice.Number.Split('-');
+            if (parts.Length == 3 && int.TryParse(parts[2], out int num) && num > maxNum)
+                maxNum = num;
         }
 
-        var parts = lastInvoice.Number.Split('-');
-        if (parts.Length == 3 && int.TryParse(parts[2], out int num))
-        {
-            var year = parts[1];
-            var newNum = (num + 1).ToString().PadLeft(4, '0');
-            return $"INV-{year}-{newNum}";
-        }
-
-        return $"INV-{DateTime.Now.Year}-0001";
+        return $"INV-{currentYear}-{(maxNum + 1).ToString().PadLeft(4, '0')}";
     }
 
     public async Task<InvoiceDto> CreateAsync(CreateInvoiceDto dto)

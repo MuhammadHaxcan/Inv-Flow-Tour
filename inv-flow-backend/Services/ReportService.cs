@@ -14,7 +14,6 @@ public class ReportService : IReportService
         _context = context;
     }
 
-
     public async Task<ServiceReportDto> GetServiceReportAsync(ReportFilterDto filter)
     {
         if (filter == null)
@@ -24,42 +23,42 @@ public class ReportService : IReportService
             .Include(i => i.InvoiceServices)
             .AsQueryable();
 
-        // Apply filters
         if (filter.StartDate.HasValue)
-        {
             query = query.Where(i => i.Date >= filter.StartDate.Value);
-        }
         if (filter.EndDate.HasValue)
-        {
             query = query.Where(i => i.Date <= filter.EndDate.Value);
-        }
-        if (filter.ServiceId.HasValue)
-            query = query.Where(i => i.InvoiceServices.Any(isr => isr.ServiceId == filter.ServiceId.Value));
         if (filter.CustomerId.HasValue)
             query = query.Where(i => i.CustomerId == filter.CustomerId.Value);
         if (filter.DriverId.HasValue)
             query = query.Where(i => i.DriverId == filter.DriverId.Value);
 
-        var invoices = await query.ToListAsync();
+        var allInvoices = await query.ToListAsync();
 
-        if (!invoices.Any())
-        {
+        if (filter.ServiceId.HasValue)
+            allInvoices = allInvoices.Where(i => i.InvoiceServices != null && i.InvoiceServices.Any(isr => isr.ServiceId == filter.ServiceId.Value)).ToList();
+
+        if (!allInvoices.Any())
             return new ServiceReportDto { Services = new List<ServiceReportItemDto>() };
-        }
 
-        var serviceGroups = invoices
-            .Where(i => i.InvoiceServices != null)
+        var serviceItems = allInvoices
+            .Where(i => i.InvoiceServices != null && i.InvoiceServices.Any())
             .SelectMany(i => i.InvoiceServices!)
-            .Where(isr => isr != null && !string.IsNullOrEmpty(isr.ServiceName))
-            .GroupBy(isr => new { isr.ServiceId, ServiceName = isr.ServiceName })
+            .Where(isr => isr != null && !string.IsNullOrEmpty(isr.ServiceName) && isr.ServiceId > 0);
+
+        if (filter.ServiceId.HasValue)
+            serviceItems = serviceItems.Where(isr => isr.ServiceId == filter.ServiceId.Value);
+
+        var serviceGroups = serviceItems
+            .GroupBy(isr => new { isr.ServiceId, ServiceName = isr.ServiceName ?? "Unknown" })
             .Select(g => new ServiceReportItemDto
             {
                 ServiceName = g.Key.ServiceName ?? "Unknown",
                 Quantity = g.Count(),
-                TotalRevenue = g.Sum(s => s.Rate),
-                AveragePrice = g.Any() ? g.Average(s => s.Rate) : 0,
-                InvoiceCount = g.Select(s => s.InvoiceId).Distinct().Count()
+                TotalRevenue = g.Sum(s => s?.Rate ?? 0),
+                AveragePrice = g.Any() ? g.Average(s => s?.Rate ?? 0) : 0,
+                InvoiceCount = g.Where(s => s != null).Select(s => s.InvoiceId).Distinct().Count()
             })
+            .Where(s => s.Quantity > 0)
             .OrderByDescending(s => s.TotalRevenue)
             .ToList();
 
@@ -76,30 +75,24 @@ public class ReportService : IReportService
             .Include(i => i.InvoiceServices)
             .AsQueryable();
 
-        // Apply filters
         if (filter.StartDate.HasValue)
-        {
             query = query.Where(i => i.Date >= filter.StartDate.Value);
-        }
         if (filter.EndDate.HasValue)
-        {
             query = query.Where(i => i.Date <= filter.EndDate.Value);
-        }
-        if (filter.ServiceId.HasValue)
-            query = query.Where(i => i.InvoiceServices.Any(isr => isr.ServiceId == filter.ServiceId.Value));
         if (filter.CustomerId.HasValue)
             query = query.Where(i => i.CustomerId == filter.CustomerId.Value);
         if (filter.DriverId.HasValue)
             query = query.Where(i => i.DriverId == filter.DriverId.Value);
 
-        var invoices = await query.ToListAsync();
+        var allInvoices = await query.ToListAsync();
 
-        if (!invoices.Any())
-        {
+        if (filter.ServiceId.HasValue)
+            allInvoices = allInvoices.Where(i => i.InvoiceServices != null && i.InvoiceServices.Any(isr => isr.ServiceId == filter.ServiceId.Value)).ToList();
+
+        if (!allInvoices.Any())
             return new CustomerReportDto { Customers = new List<CustomerReportItemDto>() };
-        }
 
-        var customerGroups = invoices
+        var customerGroups = allInvoices
             .Where(i => i.Customer != null)
             .GroupBy(i => new { i.CustomerId, CustomerName = i.Customer!.Name, i.Customer.Email, i.Customer.Phone })
             .Select(g => new CustomerReportItemDto
@@ -126,31 +119,26 @@ public class ReportService : IReportService
         var query = _context.Invoices
             .Include(i => i.Driver)
             .Include(i => i.InvoiceServices)
-            .Where(i => i.DriverId != null)
             .AsQueryable();
 
-        // Apply filters
         if (filter.StartDate.HasValue)
-        {
             query = query.Where(i => i.Date >= filter.StartDate.Value);
-        }
         if (filter.EndDate.HasValue)
-        {
             query = query.Where(i => i.Date <= filter.EndDate.Value);
-        }
-        if (filter.ServiceId.HasValue)
-            query = query.Where(i => i.InvoiceServices.Any(isr => isr.ServiceId == filter.ServiceId.Value));
         if (filter.CustomerId.HasValue)
             query = query.Where(i => i.CustomerId == filter.CustomerId.Value);
         if (filter.DriverId.HasValue)
             query = query.Where(i => i.DriverId == filter.DriverId.Value);
 
-        var invoices = await query.ToListAsync();
+        var allInvoices = await query.ToListAsync();
+
+        if (filter.ServiceId.HasValue)
+            allInvoices = allInvoices.Where(i => i.InvoiceServices != null && i.InvoiceServices.Any(isr => isr.ServiceId == filter.ServiceId.Value)).ToList();
+
+        var invoices = allInvoices.Where(i => i.DriverId != null).ToList();
 
         if (!invoices.Any())
-        {
             return new DriverReportDto { Drivers = new List<DriverReportItemDto>() };
-        }
 
         var driverGroups = invoices
             .Where(i => i.Driver != null)
@@ -178,30 +166,26 @@ public class ReportService : IReportService
             .Include(i => i.InvoiceServices)
             .AsQueryable();
 
-        // Apply filters
         if (filter.StartDate.HasValue)
-        {
             query = query.Where(i => i.Date >= filter.StartDate.Value);
-        }
         if (filter.EndDate.HasValue)
-        {
             query = query.Where(i => i.Date <= filter.EndDate.Value);
-        }
-        if (filter.ServiceId.HasValue)
-            query = query.Where(i => i.InvoiceServices.Any(isr => isr.ServiceId == filter.ServiceId.Value));
         if (filter.CustomerId.HasValue)
             query = query.Where(i => i.CustomerId == filter.CustomerId.Value);
         if (filter.DriverId.HasValue)
             query = query.Where(i => i.DriverId == filter.DriverId.Value);
 
-        var invoices = await query.ToListAsync();
+        var allInvoices = await query.ToListAsync();
 
-        var totalRevenue = invoices.Any() ? invoices.Sum(i => i.Total) : 0;
-        var totalPaid = invoices.Any() ? invoices.Sum(i => i.Paid) : 0;
+        if (filter.ServiceId.HasValue)
+            allInvoices = allInvoices.Where(i => i.InvoiceServices != null && i.InvoiceServices.Any(isr => isr.ServiceId == filter.ServiceId.Value)).ToList();
+
+        var totalRevenue = allInvoices.Any() ? allInvoices.Sum(i => i.Total) : 0;
+        var totalPaid = allInvoices.Any() ? allInvoices.Sum(i => i.Paid) : 0;
         var totalOutstanding = totalRevenue - totalPaid;
-        var totalInvoices = invoices.Count;
+        var totalInvoices = allInvoices.Count;
 
-        var statusBreakdown = invoices
+        var statusBreakdown = allInvoices
             .GroupBy(i => i.Status)
             .Select(g => new StatusBreakdownDto
             {
@@ -211,15 +195,20 @@ public class ReportService : IReportService
             })
             .ToList();
 
-        var topServices = invoices
-            .Where(i => i.InvoiceServices != null)
+        var topServicesItems = allInvoices
+            .Where(i => i.InvoiceServices != null && i.InvoiceServices.Any())
             .SelectMany(i => i.InvoiceServices!)
-            .Where(isr => isr != null && !string.IsNullOrEmpty(isr.ServiceName))
+            .Where(isr => isr != null && !string.IsNullOrEmpty(isr.ServiceName));
+
+        if (filter.ServiceId.HasValue)
+            topServicesItems = topServicesItems.Where(isr => isr.ServiceId == filter.ServiceId.Value);
+
+        var topServices = topServicesItems
             .GroupBy(isr => isr.ServiceName)
             .Select(g => new TopServiceDto
             {
                 ServiceName = g.Key ?? "Unknown",
-                Revenue = g.Sum(s => s.Rate)
+                Revenue = g.Sum(s => s?.Rate ?? 0)
             })
             .OrderByDescending(s => s.Revenue)
             .Take(10)
@@ -236,4 +225,3 @@ public class ReportService : IReportService
         };
     }
 }
-

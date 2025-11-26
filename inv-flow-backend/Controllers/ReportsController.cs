@@ -20,74 +20,46 @@ public class ReportsController : ControllerBase
 
     [HttpPost("service")]
     [RequirePermission("invoices.read")]
-    public async Task<ActionResult<ServiceReportDto>> GetServiceReport([FromBody] ReportFilterDto filter)
+    public async Task<ActionResult<ServiceReportDto>> GetServiceReport([FromBody] ReportFilterDto? filter)
     {
-        try
-        {
-            if (filter == null)
-                filter = new ReportFilterDto();
-            
-            var report = await _reportService.GetServiceReportAsync(filter);
-            return Ok(report);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "An error occurred while generating the service report", error = ex.Message });
-        }
+        if (filter == null)
+            filter = new ReportFilterDto();
+        
+        var report = await _reportService.GetServiceReportAsync(filter);
+        return Ok(report);
     }
 
     [HttpPost("customer")]
     [RequirePermission("invoices.read")]
-    public async Task<ActionResult<CustomerReportDto>> GetCustomerReport([FromBody] ReportFilterDto filter)
+    public async Task<ActionResult<CustomerReportDto>> GetCustomerReport([FromBody] ReportFilterDto? filter)
     {
-        try
-        {
-            if (filter == null)
-                filter = new ReportFilterDto();
-            
-            var report = await _reportService.GetCustomerReportAsync(filter);
-            return Ok(report);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "An error occurred while generating the customer report", error = ex.Message });
-        }
+        if (filter == null)
+            filter = new ReportFilterDto();
+        
+        var report = await _reportService.GetCustomerReportAsync(filter);
+        return Ok(report);
     }
 
     [HttpPost("driver")]
     [RequirePermission("invoices.read")]
-    public async Task<ActionResult<DriverReportDto>> GetDriverReport([FromBody] ReportFilterDto filter)
+    public async Task<ActionResult<DriverReportDto>> GetDriverReport([FromBody] ReportFilterDto? filter)
     {
-        try
-        {
-            if (filter == null)
-                filter = new ReportFilterDto();
-            
-            var report = await _reportService.GetDriverReportAsync(filter);
-            return Ok(report);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "An error occurred while generating the driver report", error = ex.Message });
-        }
+        if (filter == null)
+            filter = new ReportFilterDto();
+        
+        var report = await _reportService.GetDriverReportAsync(filter);
+        return Ok(report);
     }
 
     [HttpPost("summary")]
     [RequirePermission("invoices.read")]
-    public async Task<ActionResult<SummaryReportDto>> GetSummaryReport([FromBody] ReportFilterDto filter)
+    public async Task<ActionResult<SummaryReportDto>> GetSummaryReport([FromBody] ReportFilterDto? filter)
     {
-        try
-        {
-            if (filter == null)
-                filter = new ReportFilterDto();
-            
-            var report = await _reportService.GetSummaryReportAsync(filter);
-            return Ok(report);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "An error occurred while generating the summary report", error = ex.Message });
-        }
+        if (filter == null)
+            filter = new ReportFilterDto();
+        
+        var report = await _reportService.GetSummaryReportAsync(filter);
+        return Ok(report);
     }
 }
 

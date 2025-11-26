@@ -165,7 +165,7 @@ namespace inv_flow_backend.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("date");
 
                     b.Property<int?>("DriverId")
                         .HasColumnType("integer");
@@ -222,7 +222,7 @@ namespace inv_flow_backend.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("date");
 
                     b.Property<int>("ExpenseTypeId")
                         .HasColumnType("integer");
@@ -299,7 +299,7 @@ namespace inv_flow_backend.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("date");
 
                     b.Property<int>("InvoiceId")
                         .HasColumnType("integer");
@@ -469,7 +469,7 @@ namespace inv_flow_backend.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("date");
 
                     b.Property<decimal>("Debit")
                         .HasColumnType("decimal(18,2)");

@@ -130,10 +130,12 @@ export function DataProvider({ children }) {
         setLoadingStates(prev => ({ ...prev, openInvoices: true }));
         try {
             const data = await invoicesAPI.getOpen();
-            setOpenInvoices(data);
+            console.log('Open invoices loaded:', data);
+            setOpenInvoices(Array.isArray(data) ? data : []);
             setLoaded(prev => ({ ...prev, openInvoices: true }));
         } catch (error) {
             console.error('Error loading open invoices:', error);
+            console.error('Error details:', error.response || error.message);
             setOpenInvoices([]);
         } finally {
             setLoadingStates(prev => ({ ...prev, openInvoices: false }));
@@ -146,10 +148,12 @@ export function DataProvider({ children }) {
         setLoadingStates(prev => ({ ...prev, closedInvoices: true }));
         try {
             const data = await invoicesAPI.getClosed();
-            setClosedInvoices(data);
+            console.log('Closed invoices loaded:', data);
+            setClosedInvoices(Array.isArray(data) ? data : []);
             setLoaded(prev => ({ ...prev, closedInvoices: true }));
         } catch (error) {
             console.error('Error loading closed invoices:', error);
+            console.error('Error details:', error.response || error.message);
             setClosedInvoices([]);
         } finally {
             setLoadingStates(prev => ({ ...prev, closedInvoices: false }));

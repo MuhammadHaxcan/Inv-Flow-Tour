@@ -35,11 +35,11 @@ public class MappingProfile : Profile
 
         // Invoice mappings
         CreateMap<Invoice, InvoiceDto>()
-            .ForMember(dest => dest.Customer, opt => opt.MapFrom(src => src.Customer.Name))
+            .ForMember(dest => dest.Customer, opt => opt.MapFrom(src => src.Customer != null ? src.Customer.Name : string.Empty))
             .ForMember(dest => dest.Driver, opt => opt.MapFrom(src => src.Driver != null ? src.Driver.Name : null))
-            .ForMember(dest => dest.Services, opt => opt.MapFrom(src => src.InvoiceServices))
-            .ForMember(dest => dest.Expenses, opt => opt.MapFrom(src => src.InvoiceExpenses))
-            .ForMember(dest => dest.Payments, opt => opt.MapFrom(src => src.Payments));
+            .ForMember(dest => dest.Services, opt => opt.MapFrom(src => src.InvoiceServices != null ? src.InvoiceServices : new List<InvoiceServiceItem>()))
+            .ForMember(dest => dest.Expenses, opt => opt.MapFrom(src => src.InvoiceExpenses != null ? src.InvoiceExpenses : new List<InvoiceExpense>()))
+            .ForMember(dest => dest.Payments, opt => opt.MapFrom(src => src.Payments != null ? src.Payments : new List<Payment>()));
 
         CreateMap<InvoiceServiceItem, InvoiceServiceDto>()
             .ForMember(dest => dest.Service, opt => opt.MapFrom(src => src.ServiceName))
@@ -50,11 +50,11 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.ExpenseTypeId, opt => opt.MapFrom(src => src.ExpenseTypeId));
 
         CreateMap<Payment, PaymentDto>()
-            .ForMember(dest => dest.Method, opt => opt.MapFrom(src => src.Account.Name));
+            .ForMember(dest => dest.Method, opt => opt.MapFrom(src => src.Account != null ? src.Account.Name : string.Empty));
 
         // Transaction mappings
         CreateMap<Transaction, TransactionDto>()
-            .ForMember(dest => dest.Account, opt => opt.MapFrom(src => src.Account.Name));
+            .ForMember(dest => dest.Account, opt => opt.MapFrom(src => src.Account != null ? src.Account.Name : string.Empty));
 
         // User mappings
         CreateMap<User, UserDto>()

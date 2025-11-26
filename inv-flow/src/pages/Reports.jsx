@@ -27,14 +27,13 @@ const Reports = () => {
 
     useEffect(() => {
         loadReportData();
-    }, [activeTab, dateRange, selectedService, selectedCustomer, selectedDriver]);
+    }, [activeTab, dateRange.startDate, dateRange.endDate, selectedService, selectedCustomer, selectedDriver]);
 
     const loadReportData = async () => {
         setLoading(true);
         setError(null);
         try {
             let data;
-            // Build filters object, only including non-null values
             const filters = {};
             
             if (dateRange.startDate) {
@@ -83,7 +82,6 @@ const Reports = () => {
             console.error('Error loading report:', err);
             const errorMessage = err.message || 'Failed to load report data';
             setError(errorMessage);
-            // Log full error for debugging
             if (err.response || err.data) {
                 console.error('Full error details:', err.response || err.data);
             }
@@ -98,9 +96,8 @@ const Reports = () => {
 
     const formatDate = (date) => {
         if (!date) return '';
-        // Handle both Date objects and date strings (YYYY-MM-DD)
         if (typeof date === 'string') {
-            const dateObj = new Date(date + 'T00:00:00'); // Add time to avoid timezone issues
+            const dateObj = new Date(date + 'T00:00:00');
             return dateObj.toLocaleDateString();
         }
         return new Date(date).toLocaleDateString();
@@ -212,7 +209,7 @@ const Reports = () => {
                             </div>
                         )}
 
-                        <div className="col-md-3">
+                        <div className="col-md-3 d-flex gap-2">
                             <button
                                 onClick={loadReportData}
                                 className="btn btn-sm btn-primary d-flex align-items-center gap-2"
@@ -220,6 +217,21 @@ const Reports = () => {
                             >
                                 <Filter size={16} />
                                 {loading ? 'Loading...' : 'Apply Filters'}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setDateRange({
+                                        startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+                                        endDate: new Date().toISOString().split('T')[0]
+                                    });
+                                    setSelectedService('all');
+                                    setSelectedCustomer('all');
+                                    setSelectedDriver('all');
+                                }}
+                                className="btn btn-sm btn-outline-secondary"
+                                disabled={loading}
+                            >
+                                Reset
                             </button>
                         </div>
                     </div>
@@ -264,16 +276,36 @@ const Reports = () => {
                     {!error && reportData && (
                         <>
                             {activeTab === 'service' && (
-                                <ServiceReport data={reportData} formatCurrency={formatCurrency} />
+                                <ServiceReport 
+                                    data={reportData} 
+                                    formatCurrency={formatCurrency}
+                                    selectedService={selectedService}
+                                    services={services}
+                                />
                             )}
                             {activeTab === 'customer' && (
-                                <CustomerReport data={reportData} formatCurrency={formatCurrency} />
+                                <CustomerReport 
+                                    data={reportData} 
+                                    formatCurrency={formatCurrency}
+                                    selectedCustomer={selectedCustomer}
+                                    customers={customers}
+                                />
                             )}
                             {activeTab === 'driver' && (
-                                <DriverReport data={reportData} formatCurrency={formatCurrency} />
+                                <DriverReport 
+                                    data={reportData} 
+                                    formatCurrency={formatCurrency}
+                                    selectedDriver={selectedDriver}
+                                    drivers={drivers}
+                                />
                             )}
                             {activeTab === 'summary' && (
-                                <SummaryReport data={reportData} formatCurrency={formatCurrency} />
+                                <SummaryReport 
+                                    data={reportData} 
+                                    formatCurrency={formatCurrency}
+                                    dateRange={dateRange}
+                                    formatDate={formatDate}
+                                />
                             )}
                         </>
                     )}
@@ -282,6 +314,7 @@ const Reports = () => {
                         <div className="text-center py-5 text-muted">
                             <BarChart3 size={48} className="mb-3 opacity-50" />
                             <p>No data available for the selected filters</p>
+                            <p className="small">Try adjusting your date range or filter criteria</p>
                         </div>
                     )}
                 </div>
@@ -291,8 +324,12 @@ const Reports = () => {
 };
 
 // Service Report Component
-const ServiceReport = ({ data, formatCurrency }) => {
+const ServiceReport = ({ data, formatCurrency, selectedService, services }) => {
     if (!data || !data.services) return null;
+    
+    const activeFilter = selectedService && selectedService !== 'all' 
+        ? services?.find(s => s.id.toString() === selectedService)?.name 
+        : null;
 
     const totalRevenue = data.services.reduce((sum, s) => sum + (s.totalRevenue || 0), 0);
     const totalInvoices = data.services.reduce((sum, s) => sum + (s.invoiceCount || 0), 0);
@@ -300,6 +337,12 @@ const ServiceReport = ({ data, formatCurrency }) => {
 
     return (
         <>
+            {activeFilter && (
+                <div className="alert alert-info d-flex align-items-center gap-2 mb-3">
+                    <Filter size={16} />
+                    <span>Showing results for: <strong>{activeFilter}</strong></span>
+                </div>
+            )}
             <div className="row mb-4">
                 <div className="col-md-4">
                     <div className="card bg-primary text-white">
@@ -365,14 +408,24 @@ const ServiceReport = ({ data, formatCurrency }) => {
 };
 
 // Customer Report Component
-const CustomerReport = ({ data, formatCurrency }) => {
+const CustomerReport = ({ data, formatCurrency, selectedCustomer, customers }) => {
     if (!data || !data.customers) return null;
+    
+    const activeFilter = selectedCustomer && selectedCustomer !== 'all' 
+        ? customers?.find(c => c.id.toString() === selectedCustomer)?.name 
+        : null;
 
     const totalRevenue = data.customers.reduce((sum, c) => sum + (c.totalRevenue || 0), 0);
     const totalInvoices = data.customers.reduce((sum, c) => sum + (c.invoiceCount || 0), 0);
 
     return (
         <>
+            {activeFilter && (
+                <div className="alert alert-info d-flex align-items-center gap-2 mb-3">
+                    <Filter size={16} />
+                    <span>Showing results for: <strong>{activeFilter}</strong></span>
+                </div>
+            )}
             <div className="row mb-4">
                 <div className="col-md-6">
                     <div className="card bg-primary text-white">
@@ -436,14 +489,24 @@ const CustomerReport = ({ data, formatCurrency }) => {
 };
 
 // Driver Report Component
-const DriverReport = ({ data, formatCurrency }) => {
+const DriverReport = ({ data, formatCurrency, selectedDriver, drivers }) => {
     if (!data || !data.drivers) return null;
+    
+    const activeFilter = selectedDriver && selectedDriver !== 'all' 
+        ? drivers?.find(d => d.id.toString() === selectedDriver)?.name 
+        : null;
 
     const totalInvoices = data.drivers.reduce((sum, d) => sum + (d.invoiceCount || 0), 0);
     const totalRevenue = data.drivers.reduce((sum, d) => sum + (d.totalRevenue || 0), 0);
 
     return (
         <>
+            {activeFilter && (
+                <div className="alert alert-info d-flex align-items-center gap-2 mb-3">
+                    <Filter size={16} />
+                    <span>Showing results for: <strong>{activeFilter}</strong></span>
+                </div>
+            )}
             <div className="row mb-4">
                 <div className="col-md-6">
                     <div className="card bg-primary text-white">
@@ -500,11 +563,19 @@ const DriverReport = ({ data, formatCurrency }) => {
 };
 
 // Summary Report Component
-const SummaryReport = ({ data, formatCurrency }) => {
+const SummaryReport = ({ data, formatCurrency, dateRange, formatDate }) => {
     if (!data) return null;
 
     return (
         <>
+            {dateRange && (
+                <div className="alert alert-info d-flex align-items-center gap-2 mb-3">
+                    <Calendar size={16} />
+                    <span>
+                        Period: <strong>{formatDate(dateRange.startDate)}</strong> to <strong>{formatDate(dateRange.endDate)}</strong>
+                    </span>
+                </div>
+            )}
             <div className="row mb-4">
                 <div className="col-md-3">
                     <div className="card bg-primary text-white">
@@ -599,4 +670,3 @@ const SummaryReport = ({ data, formatCurrency }) => {
 };
 
 export default Reports;
-

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using inv_flow_backend.Models;
 
 namespace inv_flow_backend.Data;
@@ -29,6 +30,23 @@ public class ApplicationDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // Configure DateOnly to map to PostgreSQL 'date' type (not timestamp)
+        // This is the proper way - DateOnly maps directly to PostgreSQL 'date' type
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateOnly))
+                {
+                    property.SetColumnType("date");
+                }
+                else if (property.ClrType == typeof(DateOnly?))
+                {
+                    property.SetColumnType("date");
+                }
+            }
+        }
 
         // Configure relationships
         modelBuilder.Entity<Invoice>()

@@ -30,12 +30,18 @@ const OpenInvoices = () => {
 
     // Load only needed data when component mounts
     useEffect(() => {
-        loadOpenInvoices();
+        loadOpenInvoices(true); // Force reload
         loadDrivers();
         loadServices();
         loadAccounts();
         loadExpenses();
     }, [loadOpenInvoices, loadDrivers, loadServices, loadAccounts, loadExpenses]);
+
+    // Debug: Log invoices when they change
+    useEffect(() => {
+        console.log('OpenInvoices - Current invoices:', openInvoices);
+        console.log('OpenInvoices - Count:', openInvoices?.length || 0);
+    }, [openInvoices]);
 
     const [expandedInvoice, setExpandedInvoice] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -433,7 +439,7 @@ const OpenInvoices = () => {
                         <div className="d-flex justify-content-between align-items-center">
                             <h3 className="h5 fw-bold text-primary mb-0">Open Invoices</h3>
                             <p className="text-muted small mb-0">
-                                Manage your pending invoices, record payments and track expenses
+                                Invoices in progress - unpaid or partially paid invoices
                             </p>
                         </div>
                     </div>

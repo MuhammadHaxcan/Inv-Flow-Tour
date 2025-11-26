@@ -43,6 +43,7 @@ builder.Services.AddCors(options =>
 
 
 // Configure Database
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", false);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 

@@ -17,10 +17,16 @@ const ClosedInvoices = () => {
 
     // Load only needed data when component mounts
     useEffect(() => {
-        loadClosedInvoices();
+        loadClosedInvoices(true); // Force reload
         loadAccounts();
         loadDrivers();
     }, [loadClosedInvoices, loadAccounts, loadDrivers]);
+
+    // Debug: Log invoices when they change
+    useEffect(() => {
+        console.log('ClosedInvoices - Current invoices:', closedInvoices);
+        console.log('ClosedInvoices - Count:', closedInvoices?.length || 0);
+    }, [closedInvoices]);
 
     const toggleExpand = (id) => {
         setExpandedInvoice(expandedInvoice === id ? null : id);
@@ -251,7 +257,7 @@ const ClosedInvoices = () => {
                         <div className="d-flex justify-content-between align-items-center">
                             <h3 className="h5 fw-bold text-primary mb-0">Closed Invoices</h3>
                             <p className="text-muted small mb-0">
-                                View all completed and paid invoices
+                                All fully paid and completed invoices
                             </p>
                         </div>
                     </div>
