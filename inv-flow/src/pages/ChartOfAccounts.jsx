@@ -269,7 +269,7 @@ const ChartOfAccounts = () => {
                             </p>
                         </div>
                     </div>  
-                    {/* Category Tabs - Update the styling */}
+                    {/* Category Tabs */}
                     <div className="card-header p-0 border-0">
                         <ul className="nav nav-tabs card-header-tabs">
                             {categories.map(cat => {
@@ -281,11 +281,11 @@ const ChartOfAccounts = () => {
                                             className={`nav-link d-flex align-items-center gap-2 px-3 py-2 ${
                                                 activeCategory === cat.id ? 'active' : 'text-secondary'
                                             }`}
-                                            style={{ 
-                                                fontSize: '0.85rem', 
+                                            style={{
+                                                fontSize: '0.85rem',
                                                 fontWeight: activeCategory === cat.id ? '500' : '400',
-                                                transition: 'none', // Prevent animation
-                                                transform: 'none' // Prevent scaling
+                                                border: 'none',
+                                                background: 'none'
                                             }}
                                         >
                                             <Icon size={16} />

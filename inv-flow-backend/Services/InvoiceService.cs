@@ -20,74 +20,42 @@ public class InvoiceService : IInvoiceService
 
     public async Task<List<InvoiceDto>> GetOpenInvoicesAsync()
     {
-        try
-        {
-            // Get invoices that are in progress - unpaid or partially paid (not fully paid yet)
-            // Load all invoices with includes first, then filter in memory to avoid DateOnly query issues
-            var allInvoices = await _context.Invoices
-                .Include(i => i.Customer)
-                .Include(i => i.Driver)
-                .Include(i => i.InvoiceServices)
-                    .ThenInclude(isr => isr.Service)
-                .Include(i => i.InvoiceExpenses)
-                    .ThenInclude(ie => ie.ExpenseType)
-                .Include(i => i.Payments)
-                    .ThenInclude(p => p.Account)
-                .ToListAsync();
+        // Get invoices that are in progress - unpaid or partially paid
+        var invoices = await _context.Invoices
+            .Where(i => i.Status != "paid")
+            .Include(i => i.Customer)
+            .Include(i => i.Driver)
+            .Include(i => i.InvoiceServices)
+                .ThenInclude(isr => isr.Service)
+            .Include(i => i.InvoiceExpenses)
+                .ThenInclude(ie => ie.ExpenseType)
+            .Include(i => i.Payments)
+                .ThenInclude(p => p.Account)
+            .OrderByDescending(i => i.Date)
+            .AsNoTracking() // Performance optimization for read-only queries
+            .ToListAsync();
 
-            // Filter in memory - only invoices that are not fully paid
-            var invoices = allInvoices
-                .Where(i => i.Status != "paid")
-                .OrderByDescending(i => i.Date)
-                .ToList();
-
-            if (!invoices.Any())
-                return new List<InvoiceDto>();
-
-            return _mapper.Map<List<InvoiceDto>>(invoices);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in GetOpenInvoicesAsync: {ex.Message}");
-            Console.WriteLine($"Stack trace: {ex.StackTrace}");
-            throw;
-        }
+        return _mapper.Map<List<InvoiceDto>>(invoices);
     }
 
     public async Task<List<InvoiceDto>> GetClosedInvoicesAsync()
     {
-        try
-        {
-            // Get all fully paid and completed invoices
-            // Load all invoices with includes first, then filter in memory to avoid DateOnly query issues
-            var allInvoices = await _context.Invoices
-                .Include(i => i.Customer)
-                .Include(i => i.Driver)
-                .Include(i => i.InvoiceServices)
-                    .ThenInclude(isr => isr.Service)
-                .Include(i => i.InvoiceExpenses)
-                    .ThenInclude(ie => ie.ExpenseType)
-                .Include(i => i.Payments)
-                    .ThenInclude(p => p.Account)
-                .ToListAsync();
+        // Get all fully paid and completed invoices
+        var invoices = await _context.Invoices
+            .Where(i => i.Status == "paid")
+            .Include(i => i.Customer)
+            .Include(i => i.Driver)
+            .Include(i => i.InvoiceServices)
+                .ThenInclude(isr => isr.Service)
+            .Include(i => i.InvoiceExpenses)
+                .ThenInclude(ie => ie.ExpenseType)
+            .Include(i => i.Payments)
+                .ThenInclude(p => p.Account)
+            .OrderByDescending(i => i.Date)
+            .AsNoTracking() // Performance optimization for read-only queries
+            .ToListAsync();
 
-            // Filter in memory - only fully paid invoices
-            var invoices = allInvoices
-                .Where(i => i.Status == "paid")
-                .OrderByDescending(i => i.Date)
-                .ToList();
-
-            if (!invoices.Any())
-                return new List<InvoiceDto>();
-
-            return _mapper.Map<List<InvoiceDto>>(invoices);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in GetClosedInvoicesAsync: {ex.Message}");
-            Console.WriteLine($"Stack trace: {ex.StackTrace}");
-            throw;
-        }
+        return _mapper.Map<List<InvoiceDto>>(invoices);
     }
 
     public async Task<InvoiceDto?> GetByIdAsync(int id)
@@ -111,27 +79,23 @@ public class InvoiceService : IInvoiceService
         var currentYear = DateTime.Now.Year;
         var prefix = $"INV-{currentYear}-";
         
-        // Load all invoices and filter in memory to avoid SQL translation issues
-        var allInvoices = await _context.Invoices
+        // Use SQL LIKE for better performance (PostgreSQL compatible)
+        var lastInvoice = await _context.Invoices
+            .Where(i => EF.Functions.Like(i.Number, $"{prefix}%"))
+            .OrderByDescending(i => i.Number)
             .Select(i => i.Number)
-            .ToListAsync();
+            .FirstOrDefaultAsync();
 
-        var invoices = allInvoices
-            .Where(number => !string.IsNullOrEmpty(number) && number.StartsWith(prefix))
-            .ToList();
+        if (string.IsNullOrEmpty(lastInvoice))
+            return $"{prefix}0001";
 
-        if (!invoices.Any())
-            return $"INV-{currentYear}-0001";
-
-        int maxNum = 0;
-        foreach (var number in invoices)
+        var parts = lastInvoice.Split('-');
+        if (parts.Length == 3 && int.TryParse(parts[2], out int lastNum))
         {
-            var parts = number.Split('-');
-            if (parts.Length == 3 && int.TryParse(parts[2], out int num) && num > maxNum)
-                maxNum = num;
+            return $"{prefix}{(lastNum + 1).ToString().PadLeft(4, '0')}";
         }
 
-        return $"INV-{currentYear}-{(maxNum + 1).ToString().PadLeft(4, '0')}";
+        return $"{prefix}0001";
     }
 
     public async Task<InvoiceDto> CreateAsync(CreateInvoiceDto dto)

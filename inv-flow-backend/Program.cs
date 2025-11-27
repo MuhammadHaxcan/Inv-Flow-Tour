@@ -9,33 +9,43 @@ using inv_flow_backend.Services;
 using inv_flow_backend.Services.Interfaces;
 using inv_flow_backend.Mappings;
 using inv_flow_backend.Validators;
+using inv_flow_backend.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+// Configure Logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+if (builder.Environment.IsDevelopment())
+{
+    builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Information);
+}
+
+// ============= Controllers and JSON Configuration =============
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
+        // Case-insensitive deserialization for better API flexibility
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-        // Use camelCase for JSON serialization (customer, services, etc.)
+        // Use camelCase for JSON responses (JavaScript convention)
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        // Serialize enums as strings instead of numbers
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-        // Configure DateOnly serialization to use ISO date format (YYYY-MM-DD)
+        // Custom DateOnly serialization (YYYY-MM-DD format)
         options.JsonSerializerOptions.Converters.Add(new inv_flow_backend.Converters.DateOnlyJsonConverter());
         options.JsonSerializerOptions.Converters.Add(new inv_flow_backend.Converters.NullableDateOnlyJsonConverter());
     });
 
-// Configure CORS
+// ============= CORS Configuration =============
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
         policy.WithOrigins(
-            "http://localhost:5173",
-            "http://localhost:3000",
-            "http://localhost:5174",
-            "https://localhost:5173",
-            "https://34a47127ec8b.ngrok-free.app"   
+            "http://localhost:5173",   // Vite default
+            "http://localhost:3000",   // React default
+            "http://localhost:5174"    // Vite alternative
         )
         .AllowAnyHeader()
         .AllowAnyMethod()
@@ -44,15 +54,27 @@ builder.Services.AddCors(options =>
 });
 
 
-// Configure Database
+// ============= Database Configuration =============
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", false);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    
+    // Enable sensitive data logging in development only
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging();
+        options.EnableDetailedErrors();
+    }
+});
 
-// Configure JWT Authentication
-var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured");
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer not configured");
-var jwtAudience = builder.Configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience not configured");
+// ============= Authentication & Authorization =============
+var jwtKey = builder.Configuration["Jwt:Key"] 
+    ?? throw new InvalidOperationException("JWT Key not configured");
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] 
+    ?? throw new InvalidOperationException("JWT Issuer not configured");
+var jwtAudience = builder.Configuration["Jwt:Audience"] 
+    ?? throw new InvalidOperationException("JWT Audience not configured");
 
 builder.Services.AddAuthentication(options =>
 {
@@ -70,43 +92,53 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidAudience = jwtAudience,
         ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero // No tolerance for expired tokens
     };
 });
 
 builder.Services.AddAuthorization();
 
-// Add AutoMapper
+// ============= AutoMapper Configuration =============
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
-// Add FluentValidation
+// ============= FluentValidation Configuration =============
 builder.Services.AddValidatorsFromAssemblyContaining<CreateCustomerDtoValidator>();
 
-// Add Services
+// ============= Dependency Injection - Application Services =============
+// Authentication & Authorization
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
+
+// Core Business Services
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IDriverService, DriverService>();
 builder.Services.AddScoped<IServiceService, ServiceService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IExpenseTypeService, ExpenseTypeService>();
+
+// Invoice & Transaction Services
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IRoleService, RoleService>();
-builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// ============= Swagger/OpenAPI Configuration =============
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Inv-Flow API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo 
+    { 
+        Title = "Invoice Flow Tour API", 
+        Version = "v1",
+        Description = "A comprehensive invoice and financial management system API"
+    });
     
-    // Add JWT authentication to Swagger
+    // JWT Authentication for Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.",
+        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token.",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
@@ -131,44 +163,69 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// ============= HTTP Request Pipeline Configuration =============
+
+// Global Exception Handler (must be first in pipeline)
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+
+// Swagger (Development only)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Invoice Flow Tour API v1");
+        c.RoutePrefix = "swagger";
+    });
 }
 
+// HTTPS Redirection
 app.UseHttpsRedirection();
 
-// Use CORS
+// CORS - Must be before Authentication/Authorization
 app.UseCors("AllowReactApp");
 
+// Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Map Controllers
 app.MapControllers();
 
-// Apply migrations and seed data
+// ============= Database Migration & Seeding =============
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
         
-        // Apply pending migrations
-        if (context.Database.GetPendingMigrations().Any())
-        {
-            context.Database.Migrate();
-        }
+        logger.LogInformation("Checking for pending migrations...");
         
+        // Apply pending migrations
+        var pendingMigrations = context.Database.GetPendingMigrations().ToList();
+        if (pendingMigrations.Any())
+        {
+            logger.LogInformation("Applying {Count} pending migration(s)...", pendingMigrations.Count);
+            context.Database.Migrate();
+            logger.LogInformation("Migrations applied successfully");
+        }
+        else
+        {
+            logger.LogInformation("No pending migrations");
+        }
+
         // Seed initial data
+        logger.LogInformation("Seeding initial data...");
         await SeedData.SeedAsync(context);
+        logger.LogInformation("Data seeding completed successfully");
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating or seeding the database.");
+        logger.LogError(ex, "An error occurred while migrating or seeding the database");
+        throw; // Re-throw to prevent application startup with invalid database state
     }
 }
 

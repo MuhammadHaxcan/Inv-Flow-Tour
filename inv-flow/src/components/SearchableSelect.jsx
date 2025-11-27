@@ -12,7 +12,8 @@ const SearchableSelect = ({
     getOptionLabel = (option) => option.label || option.name || option,
     getOptionValue = (option) => option.value || option.name || option,
     disabled = false,
-    size = 'md' // 'sm' or 'md'
+    size = 'md', // 'sm' or 'md'
+    keepFocusAfterSelect = true // Keep focus on input after selection
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -133,9 +134,13 @@ const SearchableSelect = ({
         setIsOpen(false);
         setSearchTerm('');
         setHighlightedIndex(-1);
-        // Blur the input to remove focus
-        if (inputRef.current) {
+        
+        // Optionally blur the input to remove focus
+        if (!keepFocusAfterSelect && inputRef.current) {
             inputRef.current.blur();
+        } else if (keepFocusAfterSelect && inputRef.current) {
+            // Keep focus on the input for quick consecutive selections
+            inputRef.current.focus();
         }
     };
 

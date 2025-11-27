@@ -269,7 +269,6 @@ const CalendarView = () => {
             <FullCalendar
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
-              initialDate="2025-10-15"
               headerToolbar={false}
               events={events}
               dateClick={handleDateClick}
