@@ -125,6 +125,10 @@ builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 
+// Signature & Company Settings Services
+builder.Services.AddScoped<ISignatureService, SignatureService>();
+builder.Services.AddScoped<ICompanySettingsService, CompanySettingsService>();
+
 // ============= Swagger/OpenAPI Configuration =============
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

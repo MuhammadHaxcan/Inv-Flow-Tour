@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useCallback } from 'react';
 import {
     customersAPI, driversAPI, servicesAPI, accountsAPI, expenseTypesAPI,
-    vendorsAPI, invoicesAPI, transactionsAPI
+    vendorsAPI, invoicesAPI, transactionsAPI, companySettingsAPI
 } from '../services/api';
 
 const DataContext = createContext();
@@ -18,6 +18,7 @@ export function DataProvider({ children }) {
     const [closedInvoices, setClosedInvoices] = useState([]);
     const [transactions, setTransactions] = useState([]);
     const [nextInvoiceNumber, setNextInvoiceNumber] = useState('');
+    const [companySettings, setCompanySettings] = useState(null);
     
     // Loading states for each resource
     const [loadingStates, setLoadingStates] = useState({
@@ -30,7 +31,8 @@ export function DataProvider({ children }) {
         openInvoices: false,
         closedInvoices: false,
         transactions: false,
-        nextInvoiceNumber: false
+        nextInvoiceNumber: false,
+        companySettings: false
     });
 
     // Cache to track what's been loaded
@@ -44,7 +46,8 @@ export function DataProvider({ children }) {
         openInvoices: false,
         closedInvoices: false,
         transactions: false,
-        nextInvoiceNumber: false
+        nextInvoiceNumber: false,
+        companySettings: false
     });
 
     // Load customers only when needed
@@ -210,6 +213,22 @@ export function DataProvider({ children }) {
             setLoadingStates(prev => ({ ...prev, nextInvoiceNumber: false }));
         }
     }, [loaded.nextInvoiceNumber]);
+
+    // Load company settings only when needed
+    const loadCompanySettings = useCallback(async (force = false) => {
+        if (loaded.companySettings && !force) return;
+        setLoadingStates(prev => ({ ...prev, companySettings: true }));
+        try {
+            const data = await companySettingsAPI.get();
+            setCompanySettings(data);
+            setLoaded(prev => ({ ...prev, companySettings: true }));
+        } catch (error) {
+            console.error('Error loading company settings:', error);
+            setCompanySettings(null);
+        } finally {
+            setLoadingStates(prev => ({ ...prev, companySettings: false }));
+        }
+    }, [loaded.companySettings]);
 
     // Customer functions
     const addCustomer = async (customer) => {
@@ -584,6 +603,7 @@ export function DataProvider({ children }) {
             closedInvoices,
             transactions,
             nextInvoiceNumber,
+            companySettings,
             
             // Loading states
             loadingStates,
@@ -599,6 +619,7 @@ export function DataProvider({ children }) {
             loadClosedInvoices,
             loadTransactions,
             loadNextInvoiceNumber,
+            loadCompanySettings,
             
             // CRUD functions
             addCustomer,

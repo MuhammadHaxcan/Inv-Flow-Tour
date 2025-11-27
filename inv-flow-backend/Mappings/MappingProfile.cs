@@ -82,6 +82,14 @@ public class MappingProfile : Profile
 
         // Permission mappings
         CreateMap<Permission, PermissionDto>();
+
+        // Signature mappings
+        CreateMap<Signature, SignatureDto>();
+        CreateMap<CreateSignatureDto, Signature>();
+
+        // CompanySettings mappings
+        CreateMap<CompanySettings, CompanySettingsDto>()
+            .ForMember(dest => dest.ActiveSignature, opt => opt.MapFrom(src => src.ActiveSignature));
     }
 }
 

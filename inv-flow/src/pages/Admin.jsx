@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Lock, User as UserIcon } from 'lucide-react';
-import { usersAPI, rolesAPI, permissionsAPI } from '../services/api';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Edit, Trash2, Lock, User as UserIcon, Image, PenTool, Check, Upload, X } from 'lucide-react';
+import { usersAPI, rolesAPI, permissionsAPI, signaturesAPI, companySettingsAPI } from '../services/api';
+import SignatureCanvas from '../components/SignatureCanvas';
+import Modal from '../components/Modal';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Admin = () => {
@@ -8,9 +10,12 @@ const Admin = () => {
     const [users, setUsers] = useState([]);
     const [roles, setRoles] = useState([]);
     const [permissions, setPermissions] = useState([]);
+    const [signatures, setSignatures] = useState([]);
+    const [companySettings, setCompanySettings] = useState(null);
     const [loading, setLoading] = useState(false);
     const [showUserModal, setShowUserModal] = useState(false);
     const [showRoleModal, setShowRoleModal] = useState(false);
+    const [showSignatureModal, setShowSignatureModal] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [currentRole, setCurrentRole] = useState(null);
     const [userForm, setUserForm] = useState({
@@ -25,6 +30,7 @@ const Admin = () => {
         description: '',
         permissionIds: []
     });
+    const logoInputRef = useRef(null);
 
     useEffect(() => {
         loadData();
@@ -47,6 +53,13 @@ const Admin = () => {
                 ]);
                 setRoles(rolesData);
                 setPermissions(permissionsData);
+            } else if (activeTab === 'invoice-settings') {
+                const [signaturesData, settingsData] = await Promise.all([
+                    signaturesAPI.getAll(),
+                    companySettingsAPI.get()
+                ]);
+                setSignatures(signaturesData);
+                setCompanySettings(settingsData);
             }
         } catch (error) {
             console.error('Error loading data:', error);
@@ -156,6 +169,81 @@ const Admin = () => {
         });
     };
 
+    // Signature handlers
+    const handleSaveSignature = async (name, imageData) => {
+        try {
+            await signaturesAPI.create({ name, imageData });
+            setShowSignatureModal(false);
+            loadData();
+        } catch (error) {
+            alert('Error saving signature: ' + error.message);
+        }
+    };
+
+    const handleSetActiveSignature = async (id) => {
+        try {
+            await signaturesAPI.setActive(id);
+            loadData();
+        } catch (error) {
+            alert('Error setting active signature: ' + error.message);
+        }
+    };
+
+    const handleDeleteSignature = async (id) => {
+        if (window.confirm('Are you sure you want to delete this signature?')) {
+            try {
+                await signaturesAPI.delete(id);
+                loadData();
+            } catch (error) {
+                alert('Error deleting signature: ' + error.message);
+            }
+        }
+    };
+
+    // Logo handlers
+    const handleLogoUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file');
+            return;
+        }
+
+        // Validate file size (max 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            alert('Image size should be less than 2MB');
+            return;
+        }
+
+        try {
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const imageData = reader.result;
+                await companySettingsAPI.updateLogo({
+                    logoImageData: imageData,
+                    fileName: file.name
+                });
+                loadData();
+            };
+            reader.readAsDataURL(file);
+        } catch (error) {
+            alert('Error uploading logo: ' + error.message);
+        }
+    };
+
+    const handleClearLogo = async () => {
+        if (window.confirm('Are you sure you want to remove the logo?')) {
+            try {
+                await companySettingsAPI.clearLogo();
+                loadData();
+            } catch (error) {
+                alert('Error removing logo: ' + error.message);
+            }
+        }
+    };
+
     return (
         <div className="content-wrapper py-3 px-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -168,6 +256,7 @@ const Admin = () => {
                         className={`nav-link ${activeTab === 'users' ? 'active' : ''}`}
                         onClick={() => setActiveTab('users')}
                     >
+                        <UserIcon size={16} className="me-2" />
                         Users
                     </button>
                 </li>
@@ -176,7 +265,17 @@ const Admin = () => {
                         className={`nav-link ${activeTab === 'roles' ? 'active' : ''}`}
                         onClick={() => setActiveTab('roles')}
                     >
+                        <Lock size={16} className="me-2" />
                         Roles
+                    </button>
+                </li>
+                <li className="nav-item">
+                    <button
+                        className={`nav-link ${activeTab === 'invoice-settings' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('invoice-settings')}
+                    >
+                        <PenTool size={16} className="me-2" />
+                        Invoice Settings
                     </button>
                 </li>
             </ul>
@@ -310,6 +409,177 @@ const Admin = () => {
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'invoice-settings' && (
+                        <div>
+                            <div className="row">
+                                {/* Logo Section */}
+                                <div className="col-md-6 mb-4">
+                                    <div className="card h-100">
+                                        <div className="card-header d-flex justify-content-between align-items-center">
+                                            <h5 className="mb-0">
+                                                <Image size={18} className="me-2" />
+                                                Company Logo
+                                            </h5>
+                                        </div>
+                                        <div className="card-body">
+                                            <div className="text-center mb-3">
+                                                {companySettings?.logoImageData ? (
+                                                    <div className="position-relative d-inline-block">
+                                                        <img
+                                                            src={companySettings.logoImageData}
+                                                            alt="Company Logo"
+                                                            style={{ 
+                                                                maxWidth: '200px', 
+                                                                maxHeight: '100px',
+                                                                objectFit: 'contain'
+                                                            }}
+                                                            className="border rounded p-2"
+                                                        />
+                                                        <button
+                                                            className="btn btn-sm btn-danger position-absolute top-0 end-0 translate-middle"
+                                                            onClick={handleClearLogo}
+                                                            title="Remove Logo"
+                                                        >
+                                                            <X size={14} />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div 
+                                                        className="border rounded p-4 text-muted"
+                                                        style={{ backgroundColor: '#f8f9fa' }}
+                                                    >
+                                                        <Image size={48} className="mb-2 opacity-50" />
+                                                        <p className="mb-0">No logo uploaded</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="text-center">
+                                                <input
+                                                    type="file"
+                                                    ref={logoInputRef}
+                                                    onChange={handleLogoUpload}
+                                                    accept="image/*"
+                                                    style={{ display: 'none' }}
+                                                />
+                                                <button
+                                                    className="btn btn-primary d-flex align-items-center gap-2 mx-auto"
+                                                    onClick={() => logoInputRef.current?.click()}
+                                                >
+                                                    <Upload size={16} />
+                                                    {companySettings?.logoImageData ? 'Change Logo' : 'Upload Logo'}
+                                                </button>
+                                                <small className="text-muted d-block mt-2">
+                                                    Max size: 2MB. Supported formats: PNG, JPG, GIF
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Signatures Section */}
+                                <div className="col-md-6 mb-4">
+                                    <div className="card h-100">
+                                        <div className="card-header d-flex justify-content-between align-items-center">
+                                            <h5 className="mb-0">
+                                                <PenTool size={18} className="me-2" />
+                                                Authorized Signatures
+                                            </h5>
+                                            <button
+                                                className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                                                onClick={() => setShowSignatureModal(true)}
+                                            >
+                                                <Plus size={16} />
+                                                Add Signature
+                                            </button>
+                                        </div>
+                                        <div className="card-body">
+                                            {signatures.length === 0 ? (
+                                                <div className="text-center text-muted py-4">
+                                                    <PenTool size={48} className="mb-2 opacity-50" />
+                                                    <p className="mb-0">No signatures added yet</p>
+                                                    <small>Click "Add Signature" to draw a new signature</small>
+                                                </div>
+                                            ) : (
+                                                <div className="signatures-list">
+                                                    {signatures.map(signature => (
+                                                        <div 
+                                                            key={signature.id} 
+                                                            className={`d-flex align-items-center justify-content-between p-2 border rounded mb-2 ${signature.isActive ? 'border-primary bg-light' : ''}`}
+                                                        >
+                                                            <div className="d-flex align-items-center gap-3">
+                                                                <img
+                                                                    src={signature.imageData}
+                                                                    alt={signature.name}
+                                                                    style={{ 
+                                                                        width: '80px', 
+                                                                        height: '40px',
+                                                                        objectFit: 'contain',
+                                                                        backgroundColor: '#fff',
+                                                                        borderRadius: '4px'
+                                                                    }}
+                                                                />
+                                                                <div>
+                                                                    <div className="fw-medium">{signature.name}</div>
+                                                                    {signature.isActive && (
+                                                                        <span className="badge bg-success">
+                                                                            <Check size={12} className="me-1" />
+                                                                            Active
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="d-flex gap-2">
+                                                                {!signature.isActive && (
+                                                                    <button
+                                                                        className="btn btn-sm btn-outline-success"
+                                                                        onClick={() => handleSetActiveSignature(signature.id)}
+                                                                        title="Set as Active"
+                                                                    >
+                                                                        <Check size={16} />
+                                                                    </button>
+                                                                )}
+                                                                <button
+                                                                    className="btn btn-sm btn-outline-danger"
+                                                                    onClick={() => handleDeleteSignature(signature.id)}
+                                                                    title="Delete Signature"
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Company Information Section */}
+                            {companySettings && (
+                                <div className="card">
+                                    <div className="card-header">
+                                        <h5 className="mb-0">Company Information</h5>
+                                    </div>
+                                    <div className="card-body">
+                                        <div className="row">
+                                            <div className="col-md-6">
+                                                <p><strong>Company Name:</strong> {companySettings.companyName}</p>
+                                                <p><strong>Address:</strong> {companySettings.address || '-'}</p>
+                                                <p><strong>Phone:</strong> {companySettings.phone || '-'}</p>
+                                            </div>
+                                            <div className="col-md-6">
+                                                <p><strong>Email:</strong> {companySettings.email || '-'}</p>
+                                                <p><strong>Website:</strong> {companySettings.website || '-'}</p>
+                                                <p><strong>TRN:</strong> {companySettings.trn || '-'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </>
@@ -478,9 +748,21 @@ const Admin = () => {
                     </div>
                 </div>
             )}
+
+            {/* Signature Modal */}
+            <Modal
+                show={showSignatureModal}
+                onClose={() => setShowSignatureModal(false)}
+                title="Add New Signature"
+                size="lg"
+            >
+                <SignatureCanvas
+                    onSave={handleSaveSignature}
+                    onCancel={() => setShowSignatureModal(false)}
+                />
+            </Modal>
         </div>
     );
 };
 
 export default Admin;
-

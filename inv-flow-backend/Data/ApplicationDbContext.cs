@@ -27,6 +27,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Permission> Permissions { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
     public DbSet<RolePermission> RolePermissions { get; set; }
+    public DbSet<Signature> Signatures { get; set; }
+    public DbSet<CompanySettings> CompanySettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -160,6 +162,18 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Permission>()
             .HasIndex(p => p.Name)
             .IsUnique();
+
+        // Signature unique name
+        modelBuilder.Entity<Signature>()
+            .HasIndex(s => s.Name)
+            .IsUnique();
+
+        // CompanySettings - ActiveSignature relationship
+        modelBuilder.Entity<CompanySettings>()
+            .HasOne(cs => cs.ActiveSignature)
+            .WithMany()
+            .HasForeignKey(cs => cs.ActiveSignatureId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
 

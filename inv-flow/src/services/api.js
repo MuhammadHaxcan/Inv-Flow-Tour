@@ -253,3 +253,23 @@ export const reportsAPI = {
         body: JSON.stringify(filters)
     }),
 };
+
+// Signatures API
+export const signaturesAPI = {
+    getAll: () => apiCall('/signatures'),
+    getById: (id) => apiCall(`/signatures/${id}`),
+    getActive: () => apiCall('/signatures/active'),
+    create: (data) => apiCall('/signatures', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => apiCall(`/signatures/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    setActive: (id) => apiCall(`/signatures/${id}/set-active`, { method: 'POST' }),
+    delete: (id) => apiCall(`/signatures/${id}`, { method: 'DELETE' }),
+};
+
+// Company Settings API
+export const companySettingsAPI = {
+    get: () => apiCall('/companysettings'),
+    update: (data) => apiCall('/companysettings', { method: 'PUT', body: JSON.stringify(data) }),
+    updateLogo: (data) => apiCall('/companysettings/logo', { method: 'POST', body: JSON.stringify(data) }),
+    clearLogo: () => apiCall('/companysettings/logo', { method: 'DELETE' }),
+    setActiveSignature: (signatureId) => apiCall(`/companysettings/signature/${signatureId}`, { method: 'POST' }),
+};

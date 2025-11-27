@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, FileText, DollarSign, Receipt, Printer } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import logoImg from '../assets/SiyyadKhanLogo.png';
+import defaultLogoImg from '../assets/SiyyadKhanLogo.png';
 
 const ClosedInvoices = () => {
     const [expandedInvoice, setExpandedInvoice] = useState(null);
@@ -12,7 +12,8 @@ const ClosedInvoices = () => {
         closedInvoices,
         accounts,
         drivers,
-        loadClosedInvoices, loadAccounts, loadDrivers,
+        companySettings,
+        loadClosedInvoices, loadAccounts, loadDrivers, loadCompanySettings,
         loadingStates
     } = useData();
 
@@ -21,7 +22,8 @@ const ClosedInvoices = () => {
         loadClosedInvoices(true); // Force reload
         loadAccounts();
         loadDrivers();
-    }, [loadClosedInvoices, loadAccounts, loadDrivers]);
+        loadCompanySettings(true); // Force reload to get latest logo and signature
+    }, [loadClosedInvoices, loadAccounts, loadDrivers, loadCompanySettings]);
 
     // Debug: Log invoices when they change
     useEffect(() => {
@@ -110,6 +112,21 @@ const ClosedInvoices = () => {
 
         const goldColor = '#c9a227';
 
+        // Get dynamic logo and signature from company settings
+        const logoSrc = companySettings?.logoImageData || (defaultLogoImg.startsWith('http') ? defaultLogoImg : window.location.origin + defaultLogoImg);
+        const signatureData = companySettings?.activeSignature?.imageData;
+        const companyName = companySettings?.companyName || 'SIYYAD KHAN TOURISM LLC';
+        const companyAddress = companySettings?.address || '1513, 15th floor, Tamani Art Building, Dubai, UAE';
+        const companyPhone = companySettings?.phone || '+971 55 752 3374';
+        const companyEmail = companySettings?.email || 'info@skt.ae';
+        const companyWebsite = companySettings?.website || 'www.skt.ae';
+        const companyTRN = companySettings?.trn || '104082040700003';
+
+        // Build signature HTML with error handling
+        const signatureHTML = signatureData 
+            ? `<img src="${signatureData}" alt="Authorized Signature" style="height: 50px; width: auto; margin-bottom: 5px;" onerror="this.style.display='none'" />`
+            : '';
+
         // Write the HTML content to the iframe
         iframeDoc.write(`<!DOCTYPE html>
         <html>
@@ -137,13 +154,13 @@ const ClosedInvoices = () => {
                 <!-- Header -->
                 <div class="d-flex justify-content-between align-items-start mb-3 pb-2 border-bottom" style="border-color: ${goldColor}">
                     <div class="d-flex align-items-start gap-3">
-                        <img src="${logoImg.startsWith('http') ? logoImg : window.location.origin + logoImg}" alt="SKT Logo" style="height: 70px; width: auto;" onerror="this.style.display='none'"/>
+                        <img src="${logoSrc}" alt="Company Logo" style="height: 70px; width: auto;" onerror="this.style.display='none'"/>
                         <div>
-                        <h5 class="fw-bold mb-1 gold">SIYYAD KHAN TOURISM LLC</h5>
-                        <p class="mb-0 text-muted" style="font-size: 10pt">1513, 15th floor, Tamani Art Building</p>
-                        <p class="mb-0 text-muted" style="font-size: 10pt">Dubai, UAE | Mob: +971 55 752 3374</p>
-                        <p class="mb-0 text-muted" style="font-size: 10pt">Email: info@skt.ae | Website: www.skt.ae</p>
-                        <p class="mb-0 fw-medium" style="font-size: 10pt">TRN: 104082040700003</p>
+                        <h5 class="fw-bold mb-1 gold">${companyName}</h5>
+                        <p class="mb-0 text-muted" style="font-size: 10pt">${companyAddress}</p>
+                        <p class="mb-0 text-muted" style="font-size: 10pt">Mob: ${companyPhone}</p>
+                        <p class="mb-0 text-muted" style="font-size: 10pt">Email: ${companyEmail} | Website: ${companyWebsite}</p>
+                        <p class="mb-0 fw-medium" style="font-size: 10pt">TRN: ${companyTRN}</p>
                         </div>
                     </div>
                     <div class="text-end">
@@ -204,6 +221,7 @@ const ClosedInvoices = () => {
                     </div>
                     <div class="col-6 text-end">
                         <div class="mt-3 pt-3">
+                            ${signatureHTML}
                             <div class="border-top pt-1 w-75 ms-auto" style="border-color: ${goldColor}">
                                 <p class="mb-0" style="font-size: 10pt">Authorized Signature</p>
                             </div>
@@ -227,10 +245,10 @@ const ClosedInvoices = () => {
                 
                 <!-- Footer -->
                 <div class="text-center pt-2 border-top" style="border-color: ${goldColor}">
-                    <p class="mb-1 fw-bold gold">Thank you for choosing Siyyad Khan Tourism!</p>
+                    <p class="mb-1 fw-bold gold">Thank you for choosing ${companyName}!</p>
                     <div class="mb-1">
                         <a href="https://www.instagram.com/sktuae/" class="social-link" style="color: #E4405F">${instagramSvg} @sktuae</a>
-                        <a href="https://api.whatsapp.com/send/?phone=971557523374" class="social-link" style="color: #25D366">${whatsappSvg} +971 55 752 3374</a>
+                        <a href="https://api.whatsapp.com/send/?phone=971557523374" class="social-link" style="color: #25D366">${whatsappSvg} ${companyPhone}</a>
                         <a href="https://www.facebook.com/sktuae" class="social-link" style="color: #1877F2">${facebookSvg} /sktuae</a>
                     </div>
                     <p class="mb-0 text-muted" style="font-size: 9pt">This is a computer-generated document.</p>
