@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useCallback } from 'react';
 import {
     customersAPI, driversAPI, servicesAPI, accountsAPI, expenseTypesAPI,
-    invoicesAPI, transactionsAPI
+    vendorsAPI, invoicesAPI, transactionsAPI
 } from '../services/api';
 
 const DataContext = createContext();
@@ -13,6 +13,7 @@ export function DataProvider({ children }) {
     const [services, setServices] = useState([]);
     const [accounts, setAccounts] = useState([]);
     const [expenses, setExpenses] = useState([]);
+    const [vendors, setVendors] = useState([]);
     const [openInvoices, setOpenInvoices] = useState([]);
     const [closedInvoices, setClosedInvoices] = useState([]);
     const [transactions, setTransactions] = useState([]);
@@ -25,6 +26,7 @@ export function DataProvider({ children }) {
         services: false,
         accounts: false,
         expenses: false,
+        vendors: false,
         openInvoices: false,
         closedInvoices: false,
         transactions: false,
@@ -38,6 +40,7 @@ export function DataProvider({ children }) {
         services: false,
         accounts: false,
         expenses: false,
+        vendors: false,
         openInvoices: false,
         closedInvoices: false,
         transactions: false,
@@ -123,6 +126,22 @@ export function DataProvider({ children }) {
             setLoadingStates(prev => ({ ...prev, expenses: false }));
         }
     }, [loaded.expenses]);
+
+    // Load vendors only when needed
+    const loadVendors = useCallback(async (force = false) => {
+        if (loaded.vendors && !force) return;
+        setLoadingStates(prev => ({ ...prev, vendors: true }));
+        try {
+            const data = await vendorsAPI.getAll();
+            setVendors(data);
+            setLoaded(prev => ({ ...prev, vendors: true }));
+        } catch (error) {
+            console.error('Error loading vendors:', error);
+            setVendors([]);
+        } finally {
+            setLoadingStates(prev => ({ ...prev, vendors: false }));
+        }
+    }, [loaded.vendors]);
 
     // Load open invoices only when needed
     const loadOpenInvoices = useCallback(async (force = false) => {
@@ -342,6 +361,36 @@ export function DataProvider({ children }) {
         }
     };
 
+    // Vendor functions
+    const addVendor = async (vendor) => {
+        try {
+            const newVendor = await vendorsAPI.create(vendor);
+            setVendors([...vendors, newVendor]);
+            return newVendor;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const updateVendor = async (updatedVendor) => {
+        try {
+            const vendor = await vendorsAPI.update(updatedVendor.id, updatedVendor);
+            setVendors(vendors.map(v => v.id === updatedVendor.id ? vendor : v));
+            return vendor;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const deleteVendor = async (id) => {
+        try {
+            await vendorsAPI.delete(id);
+            setVendors(vendors.filter(v => v.id !== id));
+        } catch (error) {
+            throw error;
+        }
+    };
+
     // Invoice functions
     const generateInvoice = async (invoiceData) => {
         try {
@@ -397,7 +446,10 @@ export function DataProvider({ children }) {
             const updatedInvoice = await invoicesAPI.addExpense(invoiceId, {
                 expenseTypeId: expenseData.expenseTypeId || expenses.find(e => e.name === expenseData.type)?.id,
                 amount: expenseData.amount,
-                date: expenseData.date
+                date: expenseData.date,
+                accountId: expenseData.accountId || accounts.find(a => a.name === expenseData.accountName)?.id,
+                vendorId: expenseData.vendorId || (expenseData.vendorName ? vendors.find(v => v.name === expenseData.vendorName)?.id : null),
+                pax: expenseData.pax || null
             });
 
             await Promise.all([
@@ -487,7 +539,10 @@ export function DataProvider({ children }) {
             const updatedInvoice = await invoicesAPI.updateExpense(invoiceId, expenseId, {
                 expenseTypeId: updatedExpense.expenseTypeId || expenses.find(e => e.name === updatedExpense.type)?.id,
                 amount: updatedExpense.amount,
-                date: updatedExpense.date
+                date: updatedExpense.date,
+                accountId: updatedExpense.accountId || accounts.find(a => a.name === updatedExpense.accountName)?.id,
+                vendorId: updatedExpense.vendorId || (updatedExpense.vendorName ? vendors.find(v => v.name === updatedExpense.vendorName)?.id : null),
+                pax: updatedExpense.pax || null
             });
 
             await Promise.all([
@@ -524,6 +579,7 @@ export function DataProvider({ children }) {
             services,
             accounts,
             expenses,
+            vendors,
             openInvoices,
             closedInvoices,
             transactions,
@@ -538,6 +594,7 @@ export function DataProvider({ children }) {
             loadServices,
             loadAccounts,
             loadExpenses,
+            loadVendors,
             loadOpenInvoices,
             loadClosedInvoices,
             loadTransactions,
@@ -559,6 +616,9 @@ export function DataProvider({ children }) {
             addExpenseType,
             updateExpenseType,
             deleteExpenseType,
+            addVendor,
+            updateVendor,
+            deleteVendor,
             generateInvoice,
             addPayment,
             addExpense,

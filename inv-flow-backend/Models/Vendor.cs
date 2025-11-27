@@ -1,9 +1,8 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace inv_flow_backend.Models;
 
-public class ExpenseType
+public class Vendor
 {
     [Key]
     public int Id { get; set; }
@@ -12,14 +11,18 @@ public class ExpenseType
     [MaxLength(200)]
     public string Name { get; set; } = string.Empty;
 
-    [Column(TypeName = "decimal(18,2)")]
-    public decimal DefaultValue { get; set; }
+    [MaxLength(50)]
+    public string? Phone { get; set; }
 
-    /// <summary>
-    /// Indicates if this expense type is charged per person (pax-based).
-    /// When true, the pax field should be shown and populated with invoice persons by default.
-    /// </summary>
-    public bool IsPaxBased { get; set; } = false;
+    [MaxLength(200)]
+    [EmailAddress]
+    public string? Email { get; set; }
+
+    [MaxLength(500)]
+    public string? Address { get; set; }
+
+    [MaxLength(500)]
+    public string? Notes { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

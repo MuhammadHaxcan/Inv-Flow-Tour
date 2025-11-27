@@ -16,6 +16,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Service> Services { get; set; }
     public DbSet<Account> Accounts { get; set; }
     public DbSet<ExpenseType> ExpenseTypes { get; set; }
+    public DbSet<Vendor> Vendors { get; set; }
     public DbSet<Invoice> Invoices { get; set; }
     public DbSet<InvoiceServiceItem> InvoiceServices { get; set; }
     public DbSet<InvoiceExpense> InvoiceExpenses { get; set; }
@@ -84,6 +85,12 @@ public class ApplicationDbContext : DbContext
             .WithMany(et => et.InvoiceExpenses)
             .HasForeignKey(ie => ie.ExpenseTypeId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<InvoiceExpense>()
+            .HasOne(ie => ie.Vendor)
+            .WithMany(v => v.InvoiceExpenses)
+            .HasForeignKey(ie => ie.VendorId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Payment>()
             .HasOne(p => p.Invoice)

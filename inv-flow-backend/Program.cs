@@ -118,6 +118,7 @@ builder.Services.AddScoped<IDriverService, DriverService>();
 builder.Services.AddScoped<IServiceService, ServiceService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IExpenseTypeService, ExpenseTypeService>();
+builder.Services.AddScoped<IVendorService, VendorService>();
 
 // Invoice & Transaction Services
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
@@ -218,9 +219,9 @@ using (var scope = app.Services.CreateScope())
         }
 
         // Seed initial data
-        logger.LogInformation("Seeding initial data...");
-        await SeedData.SeedAsync(context);
-        logger.LogInformation("Data seeding completed successfully");
+        //logger.LogInformation("Seeding initial data...");
+        //await SeedData.SeedAsync(context);
+        //logger.LogInformation("Data seeding completed successfully");
     }
     catch (Exception ex)
     {

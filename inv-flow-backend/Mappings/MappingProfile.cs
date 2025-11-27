@@ -1,5 +1,6 @@
 using AutoMapper;
 using inv_flow_backend.Models;
+using inv_flow_backend.Models.Enums;
 using inv_flow_backend.DTOs;
 
 namespace inv_flow_backend.Mappings;
@@ -33,10 +34,16 @@ public class MappingProfile : Profile
         CreateMap<CreateExpenseTypeDto, ExpenseType>();
         CreateMap<UpdateExpenseTypeDto, ExpenseType>();
 
+        // Vendor mappings
+        CreateMap<Vendor, VendorDto>();
+        CreateMap<CreateVendorDto, Vendor>();
+        CreateMap<UpdateVendorDto, Vendor>();
+
         // Invoice mappings
         CreateMap<Invoice, InvoiceDto>()
             .ForMember(dest => dest.Customer, opt => opt.MapFrom(src => src.Customer != null ? src.Customer.Name : string.Empty))
             .ForMember(dest => dest.Driver, opt => opt.MapFrom(src => src.Driver != null ? src.Driver.Name : null))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString().ToLower()))
             .ForMember(dest => dest.Services, opt => opt.MapFrom(src => src.InvoiceServices != null ? src.InvoiceServices : new List<InvoiceServiceItem>()))
             .ForMember(dest => dest.Expenses, opt => opt.MapFrom(src => src.InvoiceExpenses != null ? src.InvoiceExpenses : new List<InvoiceExpense>()))
             .ForMember(dest => dest.Payments, opt => opt.MapFrom(src => src.Payments != null ? src.Payments : new List<Payment>()));
@@ -47,7 +54,13 @@ public class MappingProfile : Profile
 
         CreateMap<InvoiceExpense, InvoiceExpenseDto>()
             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type))
-            .ForMember(dest => dest.ExpenseTypeId, opt => opt.MapFrom(src => src.ExpenseTypeId));
+            .ForMember(dest => dest.ExpenseTypeId, opt => opt.MapFrom(src => src.ExpenseTypeId))
+            .ForMember(dest => dest.AccountId, opt => opt.MapFrom(src => src.AccountId))
+            .ForMember(dest => dest.AccountName, opt => opt.MapFrom(src => src.Account != null ? src.Account.Name : null))
+            .ForMember(dest => dest.VendorId, opt => opt.MapFrom(src => src.VendorId))
+            .ForMember(dest => dest.VendorName, opt => opt.MapFrom(src => src.VendorName ?? (src.Vendor != null ? src.Vendor.Name : null)))
+            .ForMember(dest => dest.PaymentStatus, opt => opt.MapFrom(src => src.PaymentStatus.ToString().ToLower()))
+            .ForMember(dest => dest.PaidDate, opt => opt.MapFrom(src => src.PaidDate));
 
         CreateMap<Payment, PaymentDto>()
             .ForMember(dest => dest.Method, opt => opt.MapFrom(src => src.Account != null ? src.Account.Name : string.Empty));

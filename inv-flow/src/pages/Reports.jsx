@@ -94,15 +94,6 @@ const Reports = () => {
         return `AED ${parseFloat(amount || 0).toFixed(2)}`;
     };
 
-    const formatDate = (date) => {
-        if (!date) return '';
-        if (typeof date === 'string') {
-            const dateObj = new Date(date + 'T00:00:00');
-            return dateObj.toLocaleDateString();
-        }
-        return new Date(date).toLocaleDateString();
-    };
-
     const tabs = [
         { id: 'service', label: 'Service Report', icon: Package },
         { id: 'customer', label: 'Customer Report', icon: Users },
@@ -128,9 +119,9 @@ const Reports = () => {
     }
 
     return (
-        <div className="content-wrapper py-3 px-4">
+        <div className="content-wrapper">
             <div className="card shadow">
-                <div className="card-header bg-light py-3">
+                <div className="card-header bg-light py-2">
                     <div className="d-flex justify-content-between align-items-center">
                         <h3 className="h5 fw-bold text-primary mb-0">Master Reports</h3>
                         <p className="text-muted small mb-0">
@@ -142,8 +133,8 @@ const Reports = () => {
                 {/* Filters Section */}
                 <div className="card-body border-bottom bg-light py-3">
                     <div className="row align-items-end g-3">
-                        <div className="col-md-3">
-                            <label className="form-label small fw-medium">Date Range</label>
+                        <div className="col-md-2">
+                            <label className="form-label small fw-medium">From Date</label>
                             <div className="input-group input-group-sm">
                                 <input
                                     type="date"
@@ -151,13 +142,24 @@ const Reports = () => {
                                     onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
                                     className="form-control"
                                 />
-                                <span className="input-group-text">to</span>
+                                <span className="input-group-text">
+                                    <Calendar size={14} className="text-muted" />
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="col-md-2">
+                            <label className="form-label small fw-medium">To Date</label>
+                            <div className="input-group input-group-sm">
                                 <input
                                     type="date"
                                     value={dateRange.endDate}
                                     onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
                                     className="form-control"
                                 />
+                                <span className="input-group-text">
+                                    <Calendar size={14} className="text-muted" />
+                                </span>
                             </div>
                         </div>
 
@@ -212,11 +214,11 @@ const Reports = () => {
                         <div className="col-md-3 d-flex gap-2">
                             <button
                                 onClick={loadReportData}
-                                className="btn btn-sm btn-primary d-flex align-items-center gap-2"
+                                className="btn btn-sm btn-primary d-flex align-items-center gap-1"
                                 disabled={loading}
                             >
-                                <Filter size={16} />
-                                {loading ? 'Loading...' : 'Apply Filters'}
+                                <Filter size={14} />
+                                {loading ? 'Loading...' : 'Apply'}
                             </button>
                             <button
                                 onClick={() => {
@@ -246,7 +248,7 @@ const Reports = () => {
                                 <li className="nav-item" key={tab.id}>
                                     <button
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`nav-link d-flex align-items-center gap-2 px-3 py-2 ${
+                                        className={`nav-link d-flex align-items-center gap-2 px-4 py-2 ${
                                             activeTab === tab.id ? 'active' : 'text-secondary'
                                         }`}
                                         style={{
@@ -266,9 +268,9 @@ const Reports = () => {
                 </div>
 
                 {/* Report Content */}
-                <div className="card-body p-4">
+                <div className="card-body p-0">
                     {error && (
-                        <div className="alert alert-danger" role="alert">
+                        <div className="alert alert-danger m-4" role="alert">
                             {error}
                         </div>
                     )}
@@ -279,32 +281,24 @@ const Reports = () => {
                                 <ServiceReport 
                                     data={reportData} 
                                     formatCurrency={formatCurrency}
-                                    selectedService={selectedService}
-                                    services={services}
                                 />
                             )}
                             {activeTab === 'customer' && (
                                 <CustomerReport 
                                     data={reportData} 
                                     formatCurrency={formatCurrency}
-                                    selectedCustomer={selectedCustomer}
-                                    customers={customers}
                                 />
                             )}
                             {activeTab === 'driver' && (
                                 <DriverReport 
                                     data={reportData} 
                                     formatCurrency={formatCurrency}
-                                    selectedDriver={selectedDriver}
-                                    drivers={drivers}
                                 />
                             )}
                             {activeTab === 'summary' && (
                                 <SummaryReport 
                                     data={reportData} 
                                     formatCurrency={formatCurrency}
-                                    dateRange={dateRange}
-                                    formatDate={formatDate}
                                 />
                             )}
                         </>
@@ -324,12 +318,8 @@ const Reports = () => {
 };
 
 // Service Report Component
-const ServiceReport = ({ data, formatCurrency, selectedService, services }) => {
+const ServiceReport = ({ data, formatCurrency }) => {
     if (!data || !data.services) return null;
-    
-    const activeFilter = selectedService && selectedService !== 'all' 
-        ? services?.find(s => s.id.toString() === selectedService)?.name 
-        : null;
 
     const totalRevenue = data.services.reduce((sum, s) => sum + (s.totalRevenue || 0), 0);
     const totalInvoices = data.services.reduce((sum, s) => sum + (s.invoiceCount || 0), 0);
@@ -337,70 +327,91 @@ const ServiceReport = ({ data, formatCurrency, selectedService, services }) => {
 
     return (
         <>
-            {activeFilter && (
-                <div className="alert alert-info d-flex align-items-center gap-2 mb-3">
-                    <Filter size={16} />
-                    <span>Showing results for: <strong>{activeFilter}</strong></span>
-                </div>
-            )}
-            <div className="row mb-4">
+            {/* Summary Cards */}
+            <div className="row g-3 p-4 pb-3">
                 <div className="col-md-4">
-                    <div className="card bg-primary text-white">
-                        <div className="card-body">
-                            <h6 className="card-title">Total Revenue</h6>
-                            <h3 className="mb-0">{formatCurrency(totalRevenue)}</h3>
+                    <div className="card border-0 bg-primary bg-opacity-10">
+                        <div className="card-body py-3">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Total Revenue</p>
+                                    <h4 className="mb-0 text-primary fw-bold">{formatCurrency(totalRevenue)}</h4>
+                                </div>
+                                <DollarSign size={32} className="text-primary opacity-50" />
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div className="col-md-4">
-                    <div className="card bg-success text-white">
-                        <div className="card-body">
-                            <h6 className="card-title">Total Invoices</h6>
-                            <h3 className="mb-0">{totalInvoices}</h3>
+                    <div className="card border-0 bg-success bg-opacity-10">
+                        <div className="card-body py-3">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Total Invoices</p>
+                                    <h4 className="mb-0 text-success fw-bold">{totalInvoices}</h4>
+                                </div>
+                                <TrendingUp size={32} className="text-success opacity-50" />
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div className="col-md-4">
-                    <div className="card bg-info text-white">
-                        <div className="card-body">
-                            <h6 className="card-title">Total Quantity</h6>
-                            <h3 className="mb-0">{totalQuantity}</h3>
+                    <div className="card border-0 bg-info bg-opacity-10">
+                        <div className="card-body py-3">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Total Quantity</p>
+                                    <h4 className="mb-0 text-info fw-bold">{totalQuantity}</h4>
+                                </div>
+                                <Package size={32} className="text-info opacity-50" />
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
+            {/* Table */}
             <div className="table-responsive">
-                <table className="table table-hover table-striped">
+                <table className="table table-hover mb-0">
                     <thead className="table-light">
                         <tr>
-                            <th>Service Name</th>
-                            <th className="text-end">Quantity</th>
-                            <th className="text-end">Total Revenue</th>
-                            <th className="text-end">Average Price</th>
-                            <th className="text-end">Invoice Count</th>
+                            <th className="px-4 py-3">Service Name</th>
+                            <th className="px-4 py-3 text-end">Quantity</th>
+                            <th className="px-4 py-3 text-end">Total Revenue</th>
+                            <th className="px-4 py-3 text-end">Average Price</th>
+                            <th className="px-4 py-3 text-end">Invoices</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {data.services.map((service, index) => (
-                            <tr key={index}>
-                                <td className="fw-medium">{service.serviceName}</td>
-                                <td className="text-end">{service.quantity || 0}</td>
-                                <td className="text-end fw-bold">{formatCurrency(service.totalRevenue)}</td>
-                                <td className="text-end">{formatCurrency(service.averagePrice)}</td>
-                                <td className="text-end">{service.invoiceCount || 0}</td>
+                        {data.services.length === 0 ? (
+                            <tr>
+                                <td colSpan="5" className="text-center py-4 text-muted">
+                                    No services found for the selected period
+                                </td>
                             </tr>
-                        ))}
+                        ) : (
+                            data.services.map((service, index) => (
+                                <tr key={index}>
+                                    <td className="px-4 py-3 fw-medium">{service.serviceName}</td>
+                                    <td className="px-4 py-3 text-end">{service.quantity || 0}</td>
+                                    <td className="px-4 py-3 text-end fw-bold">{formatCurrency(service.totalRevenue)}</td>
+                                    <td className="px-4 py-3 text-end text-muted">{formatCurrency(service.averagePrice)}</td>
+                                    <td className="px-4 py-3 text-end">{service.invoiceCount || 0}</td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
-                    <tfoot className="table-light fw-bold">
-                        <tr>
-                            <td>Total</td>
-                            <td className="text-end">{totalQuantity}</td>
-                            <td className="text-end">{formatCurrency(totalRevenue)}</td>
-                            <td className="text-end">{formatCurrency(totalRevenue / totalQuantity || 0)}</td>
-                            <td className="text-end">{totalInvoices}</td>
-                        </tr>
-                    </tfoot>
+                    {data.services.length > 0 && (
+                        <tfoot className="table-light fw-bold">
+                            <tr>
+                                <td className="px-4 py-3">Total</td>
+                                <td className="px-4 py-3 text-end">{totalQuantity}</td>
+                                <td className="px-4 py-3 text-end">{formatCurrency(totalRevenue)}</td>
+                                <td className="px-4 py-3 text-end">{formatCurrency(totalRevenue / totalQuantity || 0)}</td>
+                                <td className="px-4 py-3 text-end">{totalInvoices}</td>
+                            </tr>
+                        </tfoot>
+                    )}
                 </table>
             </div>
         </>
@@ -408,80 +419,114 @@ const ServiceReport = ({ data, formatCurrency, selectedService, services }) => {
 };
 
 // Customer Report Component
-const CustomerReport = ({ data, formatCurrency, selectedCustomer, customers }) => {
+const CustomerReport = ({ data, formatCurrency }) => {
     if (!data || !data.customers) return null;
-    
-    const activeFilter = selectedCustomer && selectedCustomer !== 'all' 
-        ? customers?.find(c => c.id.toString() === selectedCustomer)?.name 
-        : null;
 
     const totalRevenue = data.customers.reduce((sum, c) => sum + (c.totalRevenue || 0), 0);
     const totalInvoices = data.customers.reduce((sum, c) => sum + (c.invoiceCount || 0), 0);
+    const totalOutstanding = data.customers.reduce((sum, c) => sum + (c.outstanding || 0), 0);
 
     return (
         <>
-            {activeFilter && (
-                <div className="alert alert-info d-flex align-items-center gap-2 mb-3">
-                    <Filter size={16} />
-                    <span>Showing results for: <strong>{activeFilter}</strong></span>
-                </div>
-            )}
-            <div className="row mb-4">
-                <div className="col-md-6">
-                    <div className="card bg-primary text-white">
-                        <div className="card-body">
-                            <h6 className="card-title">Total Revenue</h6>
-                            <h3 className="mb-0">{formatCurrency(totalRevenue)}</h3>
+            {/* Summary Cards */}
+            <div className="row g-3 p-4 pb-3">
+                <div className="col-md-4">
+                    <div className="card border-0 bg-primary bg-opacity-10">
+                        <div className="card-body py-3">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Total Revenue</p>
+                                    <h4 className="mb-0 text-primary fw-bold">{formatCurrency(totalRevenue)}</h4>
+                                </div>
+                                <DollarSign size={32} className="text-primary opacity-50" />
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div className="col-md-6">
-                    <div className="card bg-success text-white">
-                        <div className="card-body">
-                            <h6 className="card-title">Total Invoices</h6>
-                            <h3 className="mb-0">{totalInvoices}</h3>
+                <div className="col-md-4">
+                    <div className="card border-0 bg-success bg-opacity-10">
+                        <div className="card-body py-3">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Total Invoices</p>
+                                    <h4 className="mb-0 text-success fw-bold">{totalInvoices}</h4>
+                                </div>
+                                <Users size={32} className="text-success opacity-50" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-4">
+                    <div className="card border-0 bg-danger bg-opacity-10">
+                        <div className="card-body py-3">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Outstanding</p>
+                                    <h4 className="mb-0 text-danger fw-bold">{formatCurrency(totalOutstanding)}</h4>
+                                </div>
+                                <TrendingUp size={32} className="text-danger opacity-50" />
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
+            {/* Table */}
             <div className="table-responsive">
-                <table className="table table-hover table-striped">
+                <table className="table table-hover mb-0">
                     <thead className="table-light">
                         <tr>
-                            <th>Customer Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th className="text-end">Total Revenue</th>
-                            <th className="text-end">Invoice Count</th>
-                            <th className="text-end">Average Invoice</th>
-                            <th className="text-end">Outstanding</th>
+                            <th className="px-4 py-3">Customer Name</th>
+                            <th className="px-4 py-3">Contact</th>
+                            <th className="px-4 py-3 text-end">Revenue</th>
+                            <th className="px-4 py-3 text-end">Invoices</th>
+                            <th className="px-4 py-3 text-end">Avg. Invoice</th>
+                            <th className="px-4 py-3 text-end">Outstanding</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {data.customers.map((customer, index) => (
-                            <tr key={index}>
-                                <td className="fw-medium">{customer.customerName}</td>
-                                <td>{customer.email || '-'}</td>
-                                <td>{customer.phone || '-'}</td>
-                                <td className="text-end fw-bold">{formatCurrency(customer.totalRevenue)}</td>
-                                <td className="text-end">{customer.invoiceCount || 0}</td>
-                                <td className="text-end">{formatCurrency(customer.averageInvoice)}</td>
-                                <td className="text-end text-danger">{formatCurrency(customer.outstanding || 0)}</td>
+                        {data.customers.length === 0 ? (
+                            <tr>
+                                <td colSpan="6" className="text-center py-4 text-muted">
+                                    No customers found for the selected period
+                                </td>
                             </tr>
-                        ))}
+                        ) : (
+                            data.customers.map((customer, index) => (
+                                <tr key={index}>
+                                    <td className="px-4 py-3 fw-medium">{customer.customerName}</td>
+                                    <td className="px-4 py-3">
+                                        <div className="small">
+                                            {customer.email && <div className="text-muted">{customer.email}</div>}
+                                            {customer.phone && <div className="text-muted">{customer.phone}</div>}
+                                            {!customer.email && !customer.phone && <span className="text-muted">-</span>}
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-end fw-bold">{formatCurrency(customer.totalRevenue)}</td>
+                                    <td className="px-4 py-3 text-end">{customer.invoiceCount || 0}</td>
+                                    <td className="px-4 py-3 text-end text-muted">{formatCurrency(customer.averageInvoice)}</td>
+                                    <td className="px-4 py-3 text-end">
+                                        {customer.outstanding > 0 ? (
+                                            <span className="text-danger fw-medium">{formatCurrency(customer.outstanding)}</span>
+                                        ) : (
+                                            <span className="text-success">-</span>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
-                    <tfoot className="table-light fw-bold">
-                        <tr>
-                            <td colSpan="3">Total</td>
-                            <td className="text-end">{formatCurrency(totalRevenue)}</td>
-                            <td className="text-end">{totalInvoices}</td>
-                            <td className="text-end">{formatCurrency(totalRevenue / totalInvoices || 0)}</td>
-                            <td className="text-end text-danger">
-                                {formatCurrency(data.customers.reduce((sum, c) => sum + (c.outstanding || 0), 0))}
-                            </td>
-                        </tr>
-                    </tfoot>
+                    {data.customers.length > 0 && (
+                        <tfoot className="table-light fw-bold">
+                            <tr>
+                                <td className="px-4 py-3" colSpan="2">Total</td>
+                                <td className="px-4 py-3 text-end">{formatCurrency(totalRevenue)}</td>
+                                <td className="px-4 py-3 text-end">{totalInvoices}</td>
+                                <td className="px-4 py-3 text-end">{formatCurrency(totalRevenue / totalInvoices || 0)}</td>
+                                <td className="px-4 py-3 text-end text-danger">{formatCurrency(totalOutstanding)}</td>
+                            </tr>
+                        </tfoot>
+                    )}
                 </table>
             </div>
         </>
@@ -489,73 +534,85 @@ const CustomerReport = ({ data, formatCurrency, selectedCustomer, customers }) =
 };
 
 // Driver Report Component
-const DriverReport = ({ data, formatCurrency, selectedDriver, drivers }) => {
+const DriverReport = ({ data, formatCurrency }) => {
     if (!data || !data.drivers) return null;
-    
-    const activeFilter = selectedDriver && selectedDriver !== 'all' 
-        ? drivers?.find(d => d.id.toString() === selectedDriver)?.name 
-        : null;
 
     const totalInvoices = data.drivers.reduce((sum, d) => sum + (d.invoiceCount || 0), 0);
     const totalRevenue = data.drivers.reduce((sum, d) => sum + (d.totalRevenue || 0), 0);
 
     return (
         <>
-            {activeFilter && (
-                <div className="alert alert-info d-flex align-items-center gap-2 mb-3">
-                    <Filter size={16} />
-                    <span>Showing results for: <strong>{activeFilter}</strong></span>
-                </div>
-            )}
-            <div className="row mb-4">
+            {/* Summary Cards */}
+            <div className="row g-3 p-4 pb-3">
                 <div className="col-md-6">
-                    <div className="card bg-primary text-white">
-                        <div className="card-body">
-                            <h6 className="card-title">Total Revenue</h6>
-                            <h3 className="mb-0">{formatCurrency(totalRevenue)}</h3>
+                    <div className="card border-0 bg-primary bg-opacity-10">
+                        <div className="card-body py-3">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Total Revenue</p>
+                                    <h4 className="mb-0 text-primary fw-bold">{formatCurrency(totalRevenue)}</h4>
+                                </div>
+                                <DollarSign size={32} className="text-primary opacity-50" />
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div className="col-md-6">
-                    <div className="card bg-success text-white">
-                        <div className="card-body">
-                            <h6 className="card-title">Total Invoices</h6>
-                            <h3 className="mb-0">{totalInvoices}</h3>
+                    <div className="card border-0 bg-success bg-opacity-10">
+                        <div className="card-body py-3">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Total Invoices</p>
+                                    <h4 className="mb-0 text-success fw-bold">{totalInvoices}</h4>
+                                </div>
+                                <Users size={32} className="text-success opacity-50" />
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
+            {/* Table */}
             <div className="table-responsive">
-                <table className="table table-hover table-striped">
+                <table className="table table-hover mb-0">
                     <thead className="table-light">
                         <tr>
-                            <th>Driver Name</th>
-                            <th>Phone</th>
-                            <th className="text-end">Total Revenue</th>
-                            <th className="text-end">Invoice Count</th>
-                            <th className="text-end">Average Invoice</th>
+                            <th className="px-4 py-3">Driver Name</th>
+                            <th className="px-4 py-3">Phone</th>
+                            <th className="px-4 py-3 text-end">Total Revenue</th>
+                            <th className="px-4 py-3 text-end">Invoices</th>
+                            <th className="px-4 py-3 text-end">Avg. Invoice</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {data.drivers.map((driver, index) => (
-                            <tr key={index}>
-                                <td className="fw-medium">{driver.driverName}</td>
-                                <td>{driver.phone || '-'}</td>
-                                <td className="text-end fw-bold">{formatCurrency(driver.totalRevenue)}</td>
-                                <td className="text-end">{driver.invoiceCount || 0}</td>
-                                <td className="text-end">{formatCurrency(driver.averageInvoice)}</td>
+                        {data.drivers.length === 0 ? (
+                            <tr>
+                                <td colSpan="5" className="text-center py-4 text-muted">
+                                    No drivers found for the selected period
+                                </td>
                             </tr>
-                        ))}
+                        ) : (
+                            data.drivers.map((driver, index) => (
+                                <tr key={index}>
+                                    <td className="px-4 py-3 fw-medium">{driver.driverName}</td>
+                                    <td className="px-4 py-3 text-muted">{driver.phone || '-'}</td>
+                                    <td className="px-4 py-3 text-end fw-bold">{formatCurrency(driver.totalRevenue)}</td>
+                                    <td className="px-4 py-3 text-end">{driver.invoiceCount || 0}</td>
+                                    <td className="px-4 py-3 text-end text-muted">{formatCurrency(driver.averageInvoice)}</td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
-                    <tfoot className="table-light fw-bold">
-                        <tr>
-                            <td colSpan="2">Total</td>
-                            <td className="text-end">{formatCurrency(totalRevenue)}</td>
-                            <td className="text-end">{totalInvoices}</td>
-                            <td className="text-end">{formatCurrency(totalRevenue / totalInvoices || 0)}</td>
-                        </tr>
-                    </tfoot>
+                    {data.drivers.length > 0 && (
+                        <tfoot className="table-light fw-bold">
+                            <tr>
+                                <td className="px-4 py-3" colSpan="2">Total</td>
+                                <td className="px-4 py-3 text-end">{formatCurrency(totalRevenue)}</td>
+                                <td className="px-4 py-3 text-end">{totalInvoices}</td>
+                                <td className="px-4 py-3 text-end">{formatCurrency(totalRevenue / totalInvoices || 0)}</td>
+                            </tr>
+                        </tfoot>
+                    )}
                 </table>
             </div>
         </>
@@ -563,103 +620,105 @@ const DriverReport = ({ data, formatCurrency, selectedDriver, drivers }) => {
 };
 
 // Summary Report Component
-const SummaryReport = ({ data, formatCurrency, dateRange, formatDate }) => {
+const SummaryReport = ({ data, formatCurrency }) => {
     if (!data) return null;
 
     return (
         <>
-            {dateRange && (
-                <div className="alert alert-info d-flex align-items-center gap-2 mb-3">
-                    <Calendar size={16} />
-                    <span>
-                        Period: <strong>{formatDate(dateRange.startDate)}</strong> to <strong>{formatDate(dateRange.endDate)}</strong>
-                    </span>
-                </div>
-            )}
-            <div className="row mb-4">
+            {/* Summary Cards */}
+            <div className="row g-3 p-4 pb-3">
                 <div className="col-md-3">
-                    <div className="card bg-primary text-white">
-                        <div className="card-body">
-                            <h6 className="card-title">Total Revenue</h6>
-                            <h3 className="mb-0">{formatCurrency(data.totalRevenue || 0)}</h3>
+                    <div className="card border-0 bg-primary bg-opacity-10">
+                        <div className="card-body py-3">
+                            <p className="text-muted small mb-1">Total Revenue</p>
+                            <h4 className="mb-0 text-primary fw-bold">{formatCurrency(data.totalRevenue || 0)}</h4>
                         </div>
                     </div>
                 </div>
                 <div className="col-md-3">
-                    <div className="card bg-success text-white">
-                        <div className="card-body">
-                            <h6 className="card-title">Total Invoices</h6>
-                            <h3 className="mb-0">{data.totalInvoices || 0}</h3>
+                    <div className="card border-0 bg-success bg-opacity-10">
+                        <div className="card-body py-3">
+                            <p className="text-muted small mb-1">Total Invoices</p>
+                            <h4 className="mb-0 text-success fw-bold">{data.totalInvoices || 0}</h4>
                         </div>
                     </div>
                 </div>
                 <div className="col-md-3">
-                    <div className="card bg-warning text-dark">
-                        <div className="card-body">
-                            <h6 className="card-title">Paid Amount</h6>
-                            <h3 className="mb-0">{formatCurrency(data.totalPaid || 0)}</h3>
+                    <div className="card border-0 bg-warning bg-opacity-10">
+                        <div className="card-body py-3">
+                            <p className="text-muted small mb-1">Paid Amount</p>
+                            <h4 className="mb-0 text-warning fw-bold">{formatCurrency(data.totalPaid || 0)}</h4>
                         </div>
                     </div>
                 </div>
                 <div className="col-md-3">
-                    <div className="card bg-danger text-white">
-                        <div className="card-body">
-                            <h6 className="card-title">Outstanding</h6>
-                            <h3 className="mb-0">{formatCurrency(data.totalOutstanding || 0)}</h3>
+                    <div className="card border-0 bg-danger bg-opacity-10">
+                        <div className="card-body py-3">
+                            <p className="text-muted small mb-1">Outstanding</p>
+                            <h4 className="mb-0 text-danger fw-bold">{formatCurrency(data.totalOutstanding || 0)}</h4>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="row">
-                <div className="col-md-6 mb-4">
-                    <h5 className="fw-bold mb-3">Status Breakdown</h5>
-                    <div className="table-responsive">
-                        <table className="table table-sm">
-                            <thead>
+            {/* Two Column Layout */}
+            <div className="row g-0 border-top">
+                <div className="col-md-6 border-end">
+                    <div className="p-4">
+                        <h6 className="fw-bold text-muted text-uppercase small mb-3">Status Breakdown</h6>
+                        <table className="table table-sm mb-0">
+                            <thead className="table-light">
                                 <tr>
-                                    <th>Status</th>
-                                    <th className="text-end">Count</th>
-                                    <th className="text-end">Amount</th>
+                                    <th className="py-2">Status</th>
+                                    <th className="py-2 text-end">Count</th>
+                                    <th className="py-2 text-end">Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.statusBreakdown?.map((status, index) => (
-                                    <tr key={index}>
-                                        <td>
-                                            <span className={`badge ${
-                                                status.status === 'paid' ? 'bg-success' :
-                                                status.status === 'partial' ? 'bg-warning' : 'bg-danger'
-                                            }`}>
-                                                {status.status}
-                                            </span>
-                                        </td>
-                                        <td className="text-end">{status.count}</td>
-                                        <td className="text-end">{formatCurrency(status.amount)}</td>
-                                    </tr>
-                                ))}
+                                {data.statusBreakdown?.length === 0 ? (
+                                    <tr><td colSpan="3" className="text-center text-muted py-3">No data</td></tr>
+                                ) : (
+                                    data.statusBreakdown?.map((status, index) => (
+                                        <tr key={index}>
+                                            <td className="py-2">
+                                                <span className={`badge ${
+                                                    status.status === 'paid' ? 'bg-success' :
+                                                    status.status === 'partial' ? 'bg-warning text-dark' : 'bg-danger'
+                                                }`}>
+                                                    {status.status.charAt(0).toUpperCase() + status.status.slice(1)}
+                                                </span>
+                                            </td>
+                                            <td className="py-2 text-end">{status.count}</td>
+                                            <td className="py-2 text-end fw-medium">{formatCurrency(status.amount)}</td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <div className="col-md-6 mb-4">
-                    <h5 className="fw-bold mb-3">Top Services</h5>
-                    <div className="table-responsive">
-                        <table className="table table-sm">
-                            <thead>
+                <div className="col-md-6">
+                    <div className="p-4">
+                        <h6 className="fw-bold text-muted text-uppercase small mb-3">Top Services</h6>
+                        <table className="table table-sm mb-0">
+                            <thead className="table-light">
                                 <tr>
-                                    <th>Service</th>
-                                    <th className="text-end">Revenue</th>
+                                    <th className="py-2">Service</th>
+                                    <th className="py-2 text-end">Revenue</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.topServices?.slice(0, 5).map((service, index) => (
-                                    <tr key={index}>
-                                        <td>{service.serviceName}</td>
-                                        <td className="text-end">{formatCurrency(service.revenue)}</td>
-                                    </tr>
-                                ))}
+                                {data.topServices?.length === 0 ? (
+                                    <tr><td colSpan="2" className="text-center text-muted py-3">No data</td></tr>
+                                ) : (
+                                    data.topServices?.slice(0, 5).map((service, index) => (
+                                        <tr key={index}>
+                                            <td className="py-2">{service.serviceName}</td>
+                                            <td className="py-2 text-end fw-medium">{formatCurrency(service.revenue)}</td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>

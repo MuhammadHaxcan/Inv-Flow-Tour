@@ -2,6 +2,7 @@ using AutoMapper;
 using inv_flow_backend.Data;
 using inv_flow_backend.DTOs;
 using inv_flow_backend.Models;
+using inv_flow_backend.Models.Enums;
 using inv_flow_backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,13 +23,17 @@ public class InvoiceService : IInvoiceService
     {
         // Get invoices that are in progress - unpaid or partially paid
         var invoices = await _context.Invoices
-            .Where(i => i.Status != "paid")
+            .Where(i => i.Status != InvoiceStatus.Paid)
             .Include(i => i.Customer)
             .Include(i => i.Driver)
             .Include(i => i.InvoiceServices)
                 .ThenInclude(isr => isr.Service)
             .Include(i => i.InvoiceExpenses)
                 .ThenInclude(ie => ie.ExpenseType)
+            .Include(i => i.InvoiceExpenses)
+                .ThenInclude(ie => ie.Account)
+            .Include(i => i.InvoiceExpenses)
+                .ThenInclude(ie => ie.Vendor)
             .Include(i => i.Payments)
                 .ThenInclude(p => p.Account)
             .OrderByDescending(i => i.Date)
@@ -42,13 +47,17 @@ public class InvoiceService : IInvoiceService
     {
         // Get all fully paid and completed invoices
         var invoices = await _context.Invoices
-            .Where(i => i.Status == "paid")
+            .Where(i => i.Status == InvoiceStatus.Paid)
             .Include(i => i.Customer)
             .Include(i => i.Driver)
             .Include(i => i.InvoiceServices)
                 .ThenInclude(isr => isr.Service)
             .Include(i => i.InvoiceExpenses)
                 .ThenInclude(ie => ie.ExpenseType)
+            .Include(i => i.InvoiceExpenses)
+                .ThenInclude(ie => ie.Account)
+            .Include(i => i.InvoiceExpenses)
+                .ThenInclude(ie => ie.Vendor)
             .Include(i => i.Payments)
                 .ThenInclude(p => p.Account)
             .OrderByDescending(i => i.Date)
@@ -67,6 +76,10 @@ public class InvoiceService : IInvoiceService
                 .ThenInclude(isr => isr.Service)
             .Include(i => i.InvoiceExpenses)
                 .ThenInclude(ie => ie.ExpenseType)
+            .Include(i => i.InvoiceExpenses)
+                .ThenInclude(ie => ie.Account)
+            .Include(i => i.InvoiceExpenses)
+                .ThenInclude(ie => ie.Vendor)
             .Include(i => i.Payments)
                 .ThenInclude(p => p.Account)
             .FirstOrDefaultAsync(i => i.Id == id);
@@ -103,7 +116,7 @@ public class InvoiceService : IInvoiceService
         var invoiceNumber = await GetNextInvoiceNumberAsync();
         var total = dto.Services.Sum(s => s.Rate);
         var paid = dto.Payments.Sum(p => p.Amount);
-        var status = paid >= total ? "paid" : paid > 0 ? "partial" : "unpaid";
+        var status = CalculateInvoiceStatus(paid, total);
 
         var invoice = new Invoice
         {
@@ -148,7 +161,8 @@ public class InvoiceService : IInvoiceService
                     ExpenseTypeId = expenseDto.ExpenseTypeId,
                     Type = expenseType.Name,
                     Amount = expenseDto.Amount,
-                    Date = expenseDto.Date
+                    Date = expenseDto.Date,
+                    Pax = expenseDto.Pax
                 };
                 _context.InvoiceExpenses.Add(invoiceExpense);
 
@@ -213,6 +227,7 @@ public class InvoiceService : IInvoiceService
     {
         var invoice = await _context.Invoices
             .Include(i => i.Payments)
+            .Include(i => i.InvoiceExpenses)
             .FirstOrDefaultAsync(i => i.Id == invoiceId);
 
         if (invoice == null) return null;
@@ -234,10 +249,11 @@ public class InvoiceService : IInvoiceService
 
         _context.Payments.Add(payment);
         invoice.Paid += dto.Amount;
-        invoice.Status = invoice.Paid >= invoice.Total ? "paid" : invoice.Paid > 0 ? "partial" : "unpaid";
+        var previousStatus = invoice.Status;
+        invoice.Status = CalculateInvoiceStatus(invoice.Paid, invoice.Total);
         invoice.UpdatedAt = DateTime.UtcNow;
 
-        // Create transaction
+        // Create transaction for payment (credit)
         _context.Transactions.Add(new Transaction
         {
             Date = dto.Date,
@@ -249,6 +265,9 @@ public class InvoiceService : IInvoiceService
             Reference = dto.Reference,
             Notes = dto.Notes ?? "Invoice payment"
         });
+
+        // Note: Expenses are NOT automatically marked as paid when invoice is paid
+        // Users must manually mark expenses as paid through the Outstanding Expenses page
 
         await _context.SaveChangesAsync();
         return await GetByIdAsync(invoiceId);
@@ -265,26 +284,48 @@ public class InvoiceService : IInvoiceService
         var expenseType = await _context.ExpenseTypes.FindAsync(dto.ExpenseTypeId);
         if (expenseType == null) return null;
 
+        // Get the specified account or default to cash
+        Account? account;
+        if (dto.AccountId.HasValue)
+        {
+            account = await _context.Accounts.FindAsync(dto.AccountId.Value);
+        }
+        else
+        {
+            account = await _context.Accounts.FirstOrDefaultAsync(a => a.AccountType == "cash");
+        }
+
+        // Get vendor if specified
+        Vendor? vendor = null;
+        if (dto.VendorId.HasValue)
+        {
+            vendor = await _context.Vendors.FindAsync(dto.VendorId.Value);
+        }
+
         var invoiceExpense = new InvoiceExpense
         {
             InvoiceId = invoiceId,
             ExpenseTypeId = dto.ExpenseTypeId,
             Type = expenseType.Name,
             Amount = dto.Amount,
-            Date = dto.Date
+            Date = dto.Date,
+            AccountId = account?.Id,
+            VendorId = dto.VendorId,
+            VendorName = vendor?.Name,
+            Pax = dto.Pax,
+            PaymentStatus = ExpensePaymentStatus.Unpaid
         };
 
         _context.InvoiceExpenses.Add(invoiceExpense);
         invoice.UpdatedAt = DateTime.UtcNow;
 
-        // Create transaction
-        var account = await _context.Accounts.FirstOrDefaultAsync(a => a.AccountType == "cash");
+        // Create transaction for expense (debit)
         if (account != null)
         {
             _context.Transactions.Add(new Transaction
             {
                 Date = dto.Date,
-                Description = $"{expenseType.Name} expense for {invoice.Number}",
+                Description = $"{expenseType.Name} expense for {invoice.Number}" + (vendor != null ? $" - {vendor.Name}" : ""),
                 InvoiceId = invoiceId,
                 InvoiceNumber = invoice.Number,
                 AccountId = account.Id,
@@ -319,7 +360,7 @@ public class InvoiceService : IInvoiceService
 
         _context.InvoiceServices.Add(invoiceService);
         invoice.Total += dto.Rate;
-        invoice.Status = invoice.Paid >= invoice.Total ? "paid" : invoice.Paid > 0 ? "partial" : "unpaid";
+        invoice.Status = CalculateInvoiceStatus(invoice.Paid, invoice.Total);
         invoice.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -340,7 +381,7 @@ public class InvoiceService : IInvoiceService
         var oldRate = invoiceService.Rate;
         invoiceService.Rate = dto.Rate;
         invoice.Total = invoice.Total - oldRate + dto.Rate;
-        invoice.Status = invoice.Paid >= invoice.Total ? "paid" : invoice.Paid > 0 ? "partial" : "unpaid";
+        invoice.Status = CalculateInvoiceStatus(invoice.Paid, invoice.Total);
         invoice.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -359,7 +400,7 @@ public class InvoiceService : IInvoiceService
         if (invoiceService == null) return null;
 
         invoice.Total -= invoiceService.Rate;
-        invoice.Status = invoice.Paid >= invoice.Total ? "paid" : invoice.Paid > 0 ? "partial" : "unpaid";
+        invoice.Status = CalculateInvoiceStatus(invoice.Paid, invoice.Total);
         invoice.UpdatedAt = DateTime.UtcNow;
 
         _context.InvoiceServices.Remove(invoiceService);
@@ -393,10 +434,32 @@ public class InvoiceService : IInvoiceService
         var expenseType = await _context.ExpenseTypes.FindAsync(dto.ExpenseTypeId);
         if (expenseType == null) return null;
 
+        // Get the specified account or default to cash
+        Account? account;
+        if (dto.AccountId.HasValue)
+        {
+            account = await _context.Accounts.FindAsync(dto.AccountId.Value);
+        }
+        else
+        {
+            account = await _context.Accounts.FirstOrDefaultAsync(a => a.AccountType == "cash");
+        }
+
+        // Get vendor if specified
+        Vendor? vendor = null;
+        if (dto.VendorId.HasValue)
+        {
+            vendor = await _context.Vendors.FindAsync(dto.VendorId.Value);
+        }
+
         expense.ExpenseTypeId = dto.ExpenseTypeId;
         expense.Type = expenseType.Name;
         expense.Amount = dto.Amount;
         expense.Date = dto.Date;
+        expense.AccountId = account?.Id;
+        expense.VendorId = dto.VendorId;
+        expense.VendorName = vendor?.Name;
+        expense.Pax = dto.Pax;
         expense.UpdatedAt = DateTime.UtcNow;
 
         // Update transaction
@@ -406,9 +469,13 @@ public class InvoiceService : IInvoiceService
         if (transaction != null)
         {
             transaction.Date = dto.Date;
-            transaction.Description = $"{expenseType.Name} expense for {invoice.Number}";
+            transaction.Description = $"{expenseType.Name} expense for {invoice.Number}" + (vendor != null ? $" - {vendor.Name}" : "");
             transaction.Debit = dto.Amount;
             transaction.ExpenseType = expenseType.Name;
+            if (account != null)
+            {
+                transaction.AccountId = account.Id;
+            }
         }
 
         invoice.UpdatedAt = DateTime.UtcNow;
@@ -441,6 +508,80 @@ public class InvoiceService : IInvoiceService
         invoice.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
         return await GetByIdAsync(invoiceId);
+    }
+
+    public async Task<List<OutstandingExpenseDto>> GetOutstandingExpensesAsync()
+    {
+        var expenses = await _context.InvoiceExpenses
+            .Where(e => e.PaymentStatus == ExpensePaymentStatus.Unpaid)
+            .Include(e => e.Invoice)
+                .ThenInclude(i => i.Customer)
+            .Include(e => e.ExpenseType)
+            .Include(e => e.Vendor)
+            .OrderByDescending(e => e.Date)
+            .AsNoTracking()
+            .ToListAsync();
+
+        return expenses.Select(e => new OutstandingExpenseDto
+        {
+            Id = e.Id,
+            InvoiceId = e.InvoiceId,
+            InvoiceNumber = e.Invoice.Number,
+            Customer = e.Invoice.Customer?.Name ?? string.Empty,
+            ExpenseTypeId = e.ExpenseTypeId,
+            Type = e.Type,
+            Amount = e.Amount,
+            Date = e.Date,
+            VendorId = e.VendorId,
+            VendorName = e.VendorName ?? e.Vendor?.Name,
+            Pax = e.Pax,
+            PaymentStatus = e.PaymentStatus.ToString().ToLower()
+        }).ToList();
+    }
+
+    public async Task<bool> MarkExpensePaidAsync(int expenseId, MarkExpensePaidDto dto)
+    {
+        var expense = await _context.InvoiceExpenses
+            .Include(e => e.Invoice)
+            .Include(e => e.ExpenseType)
+            .FirstOrDefaultAsync(e => e.Id == expenseId);
+
+        if (expense == null) return false;
+
+        var account = await _context.Accounts.FindAsync(dto.AccountId);
+        if (account == null) return false;
+
+        // Mark expense as paid
+        expense.PaymentStatus = ExpensePaymentStatus.Paid;
+        expense.PaidDate = dto.Date;
+        expense.AccountId = dto.AccountId;
+        expense.UpdatedAt = DateTime.UtcNow;
+
+        // Create transaction for expense payment (debit from account)
+        _context.Transactions.Add(new Transaction
+        {
+            Date = dto.Date,
+            Description = $"{expense.Type} expense payment for {expense.Invoice.Number}",
+            InvoiceId = expense.InvoiceId,
+            InvoiceNumber = expense.Invoice.Number,
+            AccountId = dto.AccountId,
+            Debit = expense.Amount,
+            Reference = dto.Reference ?? $"EXP-PAY-{expense.Id}",
+            ExpenseType = expense.Type
+        });
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    /// <summary>
+    /// Calculates the invoice status based on paid and total amounts
+    /// </summary>
+    private static InvoiceStatus CalculateInvoiceStatus(decimal paid, decimal total)
+    {
+        if (paid >= total) return InvoiceStatus.Paid;
+        if (paid > 0) return InvoiceStatus.Partial;
+        return InvoiceStatus.Unpaid;
     }
 }
 

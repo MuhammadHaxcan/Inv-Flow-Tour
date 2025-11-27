@@ -173,6 +173,15 @@ export const expenseTypesAPI = {
     delete: (id) => apiCall(`/expensetypes/${id}`, { method: 'DELETE' }),
 };
 
+// Vendors API
+export const vendorsAPI = {
+    getAll: () => apiCall('/vendors'),
+    getById: (id) => apiCall(`/vendors/${id}`),
+    create: (data) => apiCall('/vendors', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => apiCall(`/vendors/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => apiCall(`/vendors/${id}`, { method: 'DELETE' }),
+};
+
 // Invoices API
 export const invoicesAPI = {
     getOpen: () => apiCall('/invoices/open'),
@@ -188,6 +197,8 @@ export const invoicesAPI = {
     assignDriver: (id, data) => apiCall(`/invoices/${id}/driver`, { method: 'PUT', body: JSON.stringify(data) }),
     updateExpense: (id, expenseId, data) => apiCall(`/invoices/${id}/expenses/${expenseId}`, { method: 'PUT', body: JSON.stringify(data) }),
     removeExpense: (id, expenseId) => apiCall(`/invoices/${id}/expenses/${expenseId}`, { method: 'DELETE' }),
+    getOutstandingExpenses: () => apiCall('/invoices/expenses/outstanding'),
+    markExpensePaid: (expenseId, data) => apiCall(`/invoices/expenses/${expenseId}/mark-paid`, { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // Transactions API

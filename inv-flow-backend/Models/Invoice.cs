@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using inv_flow_backend.Models.Enums;
 
 namespace inv_flow_backend.Models;
 
@@ -31,8 +32,7 @@ public class Invoice
     public decimal Paid { get; set; } = 0;
 
     [Required]
-    [MaxLength(50)]
-    public string Status { get; set; } = "unpaid"; // 'unpaid', 'partial', 'paid'
+    public InvoiceStatus Status { get; set; } = InvoiceStatus.Unpaid;
 
     [Column(TypeName = "decimal(18,2)")]
     public decimal? Vat { get; set; }

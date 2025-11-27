@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { X, ChevronDown, Check } from 'lucide-react';
 
 const SearchableSelect = ({
     value,
@@ -13,7 +13,7 @@ const SearchableSelect = ({
     getOptionValue = (option) => option.value || option.name || option,
     disabled = false,
     size = 'md', // 'sm' or 'md'
-    keepFocusAfterSelect = true // Keep focus on input after selection
+    keepFocusAfterSelect = false // Don't keep focus after selection by default
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -63,9 +63,11 @@ const SearchableSelect = ({
     const updateDropdownPosition = () => {
         if (containerRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
+            // Use viewport-relative coordinates directly since we use position: 'fixed'
+            // Don't add window.scrollY/scrollX as getBoundingClientRect already gives viewport coords
             setDropdownPosition({
-                top: rect.bottom + window.scrollY + 4, // 4px margin
-                left: rect.left + window.scrollX,
+                top: rect.bottom + 4, // 4px margin below the input
+                left: rect.left,
                 width: rect.width
             });
         }
@@ -253,28 +255,44 @@ const SearchableSelect = ({
                         readOnly={!isOpen}
                         style={{
                             cursor: disabled ? 'not-allowed' : isOpen ? 'text' : 'pointer',
-                            paddingRight: value && !disabled && !isOpen ? '2.5rem' : '0.75rem'
+                            paddingRight: '2.5rem',
+                            backgroundColor: disabled ? '#e9ecef' : '#fff'
                         }}
                         role="combobox"
                         aria-expanded={isOpen}
                         aria-haspopup="listbox"
                     />
-                    {value && !disabled && !isOpen && (
-                        <div style={{ 
+                    <div 
+                        style={{ 
                             position: 'absolute', 
-                            right: '0.75rem',
+                            right: '0.5rem',
                             top: '50%',
                             transform: 'translateY(-50%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
                             pointerEvents: 'auto'
-                        }}>
+                        }}
+                    >
+                        {value && !disabled && !isOpen && (
                             <X 
                                 size={14} 
                                 className="text-muted"
                                 onClick={handleClear}
                                 style={{ cursor: 'pointer' }}
                             />
-                        </div>
-                    )}
+                        )}
+                        <ChevronDown 
+                            size={16} 
+                            className="text-muted"
+                            style={{ 
+                                cursor: disabled ? 'not-allowed' : 'pointer',
+                                transition: 'transform 0.2s ease',
+                                transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+                            }}
+                            onClick={() => !disabled && setIsOpen(!isOpen)}
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -288,12 +306,12 @@ const SearchableSelect = ({
                         left: `${dropdownPosition.left}px`,
                         width: `${dropdownPosition.width}px`,
                         zIndex: 99999,
-                        maxHeight: '300px',
+                        maxHeight: '280px',
                         overflowY: 'auto'
                     }}
                 >
                     {filteredOptions.length === 0 ? (
-                        <div className="p-3 text-center text-muted">
+                        <div className="p-3 text-center text-muted small">
                             No options found
                         </div>
                     ) : (
@@ -306,15 +324,23 @@ const SearchableSelect = ({
                             return (
                                 <div
                                     key={optionValue}
-                                    className={`p-2 ${isHighlighted ? 'bg-primary text-white' : isSelected ? 'bg-light' : ''}`}
+                                    className={`px-3 py-2 d-flex align-items-center justify-content-between ${
+                                        isHighlighted ? 'bg-primary text-white' : 
+                                        isSelected ? 'bg-light fw-medium' : ''
+                                    }`}
                                     style={{
                                         cursor: 'pointer',
-                                        borderBottom: index < filteredOptions.length - 1 ? '1px solid #e9ecef' : 'none'
+                                        borderBottom: index < filteredOptions.length - 1 ? '1px solid #f0f0f0' : 'none',
+                                        fontSize: size === 'sm' ? '0.875rem' : '1rem',
+                                        transition: 'background-color 0.15s ease'
                                     }}
                                     onClick={() => handleSelect(option)}
                                     onMouseEnter={() => setHighlightedIndex(index)}
                                 >
-                                    {optionLabel}
+                                    <span>{optionLabel}</span>
+                                    {isSelected && (
+                                        <Check size={14} className={isHighlighted ? 'text-white' : 'text-primary'} />
+                                    )}
                                 </div>
                             );
                         })

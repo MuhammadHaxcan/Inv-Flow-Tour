@@ -213,5 +213,25 @@ public class InvoicesController : ControllerBase
         }
         return Ok(invoice);
     }
+
+    [HttpGet("expenses/outstanding")]
+    [RequirePermission("invoices.read")]
+    public async Task<ActionResult<List<OutstandingExpenseDto>>> GetOutstandingExpenses()
+    {
+        var expenses = await _invoiceService.GetOutstandingExpensesAsync();
+        return Ok(expenses);
+    }
+
+    [HttpPost("expenses/{expenseId}/mark-paid")]
+    [RequirePermission("invoices.write")]
+    public async Task<ActionResult> MarkExpensePaid(int expenseId, [FromBody] MarkExpensePaidDto dto)
+    {
+        var result = await _invoiceService.MarkExpensePaidAsync(expenseId, dto);
+        if (!result)
+        {
+            return NotFound();
+        }
+        return Ok(new { success = true, message = "Expense marked as paid" });
+    }
 }
 

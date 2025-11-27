@@ -194,7 +194,7 @@ public class ReportService : IReportService
             .GroupBy(i => i.Status)
             .Select(g => new StatusBreakdownDto
             {
-                Status = g.Key,
+                Status = g.Key.ToString().ToLower(),
                 Count = g.Count(),
                 Amount = g.Sum(i => i.Total)
             })

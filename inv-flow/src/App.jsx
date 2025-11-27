@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { FileText, Building2, FileCheck2, CheckCircle, CreditCard, Tag, Calendar, Users, LogOut, BarChart3 } from 'lucide-react'
+import { FileText, Building2, FileCheck2, CheckCircle, CreditCard, Tag, Calendar, Users, LogOut, BarChart3, Receipt } from 'lucide-react'
 import './App.css'
 import { DataProvider } from './contexts/DataContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -12,6 +12,7 @@ const GenerateInvoice = lazy(() => import('./pages/GenerateInvoice'));
 const ChartOfAccounts = lazy(() => import('./pages/ChartOfAccounts'));
 const OpenInvoices = lazy(() => import('./pages/OpenInvoices'));
 const ClosedInvoices = lazy(() => import('./pages/ClosedInvoices'));
+const OutstandingExpenses = lazy(() => import('./pages/OutstandingExpenses'));
 const BankStatement = lazy(() => import('./pages/BankStatement'));
 const Services = lazy(() => import('./pages/Services'));
 const CalendarView = lazy(() => import('./pages/CalendarView'));
@@ -118,6 +119,18 @@ function Navbar() {
                                                     >
                                                         <CheckCircle size={18} />
                                                         Closed Invoices
+                                                    </NavLink>
+                                                </li>
+                                                <li><hr className="dropdown-divider" /></li>
+                                                <li>
+                                                    <NavLink
+                                                        to="/outstanding-expenses"
+                                                        className={({ isActive }) =>
+                                                            `dropdown-item d-flex align-items-center gap-2${isActive ? ' text-primary' : ''}`
+                                                        }
+                                                    >
+                                                        <Receipt size={18} />
+                                                        Outstanding Expenses
                                                     </NavLink>
                                                 </li>
                                             </>
@@ -258,6 +271,11 @@ function AppContent() {
                             <Route path="/closed-invoices" element={
                                 <ProtectedRoute requiredPermission="invoices.read">
                                     <ClosedInvoices />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/outstanding-expenses" element={
+                                <ProtectedRoute requiredPermission="invoices.read">
+                                    <OutstandingExpenses />
                                 </ProtectedRoute>
                             } />
                             <Route path="/calendar" element={

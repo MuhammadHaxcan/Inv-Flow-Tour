@@ -5,17 +5,20 @@ public class ExpenseTypeDto
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public decimal DefaultValue { get; set; }
+    public bool IsPaxBased { get; set; }
 }
 
 public class CreateExpenseTypeDto
 {
     public string Name { get; set; } = string.Empty;
     public decimal DefaultValue { get; set; }
+    public bool IsPaxBased { get; set; }
 }
 
 public class UpdateExpenseTypeDto
 {
     public string Name { get; set; } = string.Empty;
     public decimal DefaultValue { get; set; }
+    public bool IsPaxBased { get; set; }
 }
 

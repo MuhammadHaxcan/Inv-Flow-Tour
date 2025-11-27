@@ -12,8 +12,8 @@ using inv_flow_backend.Data;
 namespace inv_flow_backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251126230941_init")]
-    partial class init
+    [Migration("20251127094154_expenseaccount")]
+    partial class expenseaccount
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -218,6 +218,9 @@ namespace inv_flow_backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("AccountId")
+                        .HasColumnType("integer");
+
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
 
@@ -242,6 +245,8 @@ namespace inv_flow_backend.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
 
                     b.HasIndex("ExpenseTypeId");
 
@@ -605,6 +610,10 @@ namespace inv_flow_backend.Migrations
 
             modelBuilder.Entity("inv_flow_backend.Models.InvoiceExpense", b =>
                 {
+                    b.HasOne("inv_flow_backend.Models.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId");
+
                     b.HasOne("inv_flow_backend.Models.ExpenseType", "ExpenseType")
                         .WithMany("InvoiceExpenses")
                         .HasForeignKey("ExpenseTypeId")
@@ -616,6 +625,8 @@ namespace inv_flow_backend.Migrations
                         .HasForeignKey("InvoiceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Account");
 
                     b.Navigation("ExpenseType");
 

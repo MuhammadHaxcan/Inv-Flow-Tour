@@ -18,9 +18,9 @@ const GenerateInvoice = () => {
     // Use data context
     const {
         customers, addCustomer,
-        drivers, services, accounts, expenses,
+        drivers, services, accounts, expenses, vendors,
         nextInvoiceNumber, generateInvoice,
-        loadCustomers, loadDrivers, loadServices, loadAccounts, loadExpenses, loadNextInvoiceNumber,
+        loadCustomers, loadDrivers, loadServices, loadAccounts, loadExpenses, loadVendors, loadNextInvoiceNumber,
         loadingStates
     } = useData();
 
@@ -31,8 +31,9 @@ const GenerateInvoice = () => {
         loadServices();
         loadAccounts();
         loadExpenses();
+        loadVendors();
         loadNextInvoiceNumber();
-    }, [loadCustomers, loadDrivers, loadServices, loadAccounts, loadExpenses, loadNextInvoiceNumber]);
+    }, [loadCustomers, loadDrivers, loadServices, loadAccounts, loadExpenses, loadVendors, loadNextInvoiceNumber]);
 
     // Invoice state
     const [showDriverModal, setShowDriverModal] = useState(false);
@@ -155,13 +156,15 @@ const GenerateInvoice = () => {
         setShowCustomerModal(false);
     };
 
-    const handleAddExpense = (type, amount, date, description) => {
+    const handleAddExpense = (type, amount, date, description, vendorName, pax) => {
         const newExpense = {
             id: Date.now(),
             type,
             amount: parseFloat(amount),
             date,
-            description
+            description,
+            vendorName,
+            pax: pax ? parseInt(pax) : null
         };
         setInvoiceExpenses([...invoiceExpenses, newExpense]);
         setShowExpenseModal(false);
@@ -276,7 +279,7 @@ const GenerateInvoice = () => {
 
     // Show loading state if data is being loaded
     const isLoading = loadingStates.customers || loadingStates.drivers || loadingStates.services || 
-                     loadingStates.accounts || loadingStates.expenses || loadingStates.nextInvoiceNumber;
+                     loadingStates.accounts || loadingStates.expenses || loadingStates.vendors || loadingStates.nextInvoiceNumber;
 
     if (isLoading) {
         return (
@@ -517,50 +520,60 @@ const GenerateInvoice = () => {
                                                 <tr>
                                                     <th className="px-3 py-2">Type</th>
                                                     <th className="px-3 py-2">Date</th>
-                                                    <th className="px-3 py-2">Amount</th>
-                                                    <th className="px-3 py-2 text-center" style={{ width: "60px" }}></th>
+                                                    <th className="px-3 py-2 text-center">Pax</th>
+                                                    <th className="px-3 py-2 text-end">Amount</th>
+                                                    <th className="px-3 py-2 text-center" style={{ width: "80px" }}></th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {invoiceExpenses.length === 0 ? (
                                                     <tr>
-                                                        <td colSpan="4" className="text-center py-3 text-muted">
+                                                        <td colSpan="5" className="text-center py-3 text-muted">
                                                             No expenses added
                                                         </td>
                                                     </tr>
                                                 ) : (
                                                     invoiceExpenses.map((expense, index) => (
-                                                        <tr key={expense.id}>
-                                                            <td className="px-3 py-2">{expense.type}</td>
-                                                            <td className="px-3 py-2">{expense.date}</td>
-                                                            <td className="px-3 py-2">{formatCurrency(expense.amount)}</td>
-                                                            <td className="px-3 py-2 text-center">
-                                                                <div className="d-flex justify-content-center gap-2">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => openExpenseModal(expense)}
-                                                                        className="btn btn-sm btn-outline-primary"
-                                                                    >
-                                                                        <Edit2 size={14} />
-                                                                    </button>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => requestDeleteExpense(index)}
-                                                                        className="btn btn-sm btn-outline-danger"
-                                                                    >
-                                                                        <Trash2 size={16} />
-                                                                    </button>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
+                                                            <tr key={expense.id}>
+                                                                <td className="px-3 py-2">{expense.type}</td>
+                                                                <td className="px-3 py-2">{expense.date}</td>
+                                                                <td className="px-3 py-2 text-center">
+                                                                    {expense.pax ? (
+                                                                        <span className="badge bg-info">{expense.pax}</span>
+                                                                    ) : (
+                                                                        <span className="text-muted">-</span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-3 py-2 text-end">
+                                                                    <strong>{formatCurrency(expense.amount)}</strong>
+                                                                </td>
+                                                                <td className="px-3 py-2 text-center">
+                                                                    <div className="d-flex justify-content-center gap-2">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => openExpenseModal(expense)}
+                                                                            className="btn btn-sm btn-outline-primary"
+                                                                        >
+                                                                            <Edit2 size={14} />
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => requestDeleteExpense(index)}
+                                                                            className="btn btn-sm btn-outline-danger"
+                                                                        >
+                                                                            <Trash2 size={16} />
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
                                                     ))
                                                 )}
                                             </tbody>
                                             {invoiceExpenses.length > 0 && (
                                                 <tfoot className="table-light">
                                                     <tr>
-                                                        <td colSpan="2" className="text-end fw-bold">Total Expenses:</td>
-                                                        <td colSpan="2" className="fw-bold">{formatCurrency(calculateExpensesTotal())}</td>
+                                                        <td colSpan="3" className="text-end fw-bold">Total Expenses:</td>
+                                                        <td colSpan="2" className="text-end fw-bold">{formatCurrency(calculateExpensesTotal())}</td>
                                                     </tr>
                                                 </tfoot>
                                             )}
@@ -664,7 +677,8 @@ const GenerateInvoice = () => {
             >
                 <ExpenseForm
                     expenseTypes={expenseTypes}
-                    onSave={(type, amount, date, description) => handleAddExpense(type, amount, date, description)}
+                    vendors={vendors}
+                    onSave={(type, amount, date, description, _accountName, vendorName, pax) => handleAddExpense(type, amount, date, description, vendorName, pax)}
                     onCancel={() => { setShowExpenseModal(false); setCurrentExpense(null); }}
                     invoice={currentInvoice}
                     expense={currentExpense}

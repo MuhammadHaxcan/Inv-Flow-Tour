@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Truck, Receipt, CreditCard, Plus, Edit2, Trash2 } from 'lucide-react';
+import { User, Truck, Receipt, CreditCard, Building2, Plus, Edit2, Trash2 } from 'lucide-react';
 import CustomerModal from '../components/CustomerModal';
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
@@ -18,7 +18,8 @@ const ChartOfAccounts = () => {
         drivers, addDriver, updateDriver, deleteDriver,
         expenses, addExpenseType, updateExpenseType, deleteExpenseType,
         accounts, addAccount, updateAccount, deleteAccount,
-        loadCustomers, loadDrivers, loadExpenses, loadAccounts,
+        vendors, addVendor, updateVendor, deleteVendor,
+        loadCustomers, loadDrivers, loadExpenses, loadAccounts, loadVendors,
         loadingStates
     } = useData();
 
@@ -28,7 +29,8 @@ const ChartOfAccounts = () => {
         loadDrivers();
         loadExpenses();
         loadAccounts();
-    }, [loadCustomers, loadDrivers, loadExpenses, loadAccounts]);
+        loadVendors();
+    }, [loadCustomers, loadDrivers, loadExpenses, loadAccounts, loadVendors]);
 
     // Handle deletion based on active category
     const handleDelete = (id) => {
@@ -41,6 +43,8 @@ const ChartOfAccounts = () => {
                 deleteExpenseType(id);
             } else if (activeCategory === 'bank') {
                 deleteAccount(id);
+            } else if (activeCategory === 'vendor') {
+                deleteVendor(id);
             }
         }
     };
@@ -87,6 +91,8 @@ const ChartOfAccounts = () => {
                 updateExpenseType({ ...editingItem, ...formData });
             } else if (activeCategory === 'bank') {
                 updateAccount({ ...editingItem, ...formData });
+            } else if (activeCategory === 'vendor') {
+                updateVendor({ ...editingItem, ...formData });
             }
         } else {
             // Add new item
@@ -97,6 +103,8 @@ const ChartOfAccounts = () => {
                 addExpenseType(newItem);
             } else if (activeCategory === 'bank') {
                 addAccount(newItem);
+            } else if (activeCategory === 'vendor') {
+                addVendor(newItem);
             }
         }
         setShowAddModal(false);
@@ -106,6 +114,7 @@ const ChartOfAccounts = () => {
     const categories = [
         { id: 'customer', label: 'Customer', icon: User },
         { id: 'driver', label: 'Driver', icon: Truck },
+        { id: 'vendor', label: 'Vendor', icon: Building2 },
         { id: 'expense', label: 'Expense', icon: Receipt },
         { id: 'bank', label: 'Bank Account', icon: CreditCard }
     ];
@@ -119,16 +128,34 @@ const ChartOfAccounts = () => {
     } else if (activeCategory === 'driver') {
         data = drivers;
         columns = ['Name', 'Phone'];
+    } else if (activeCategory === 'vendor') {
+        data = vendors;
+        columns = ['Name', 'Phone', 'Email', 'Address'];
     } else if (activeCategory === 'expense') {
         data = expenses;
-        columns = ['Name', 'Default Value (AED)'];
+        columns = ['Name', 'Default Value (AED)', 'Pax Based'];
     } else if (activeCategory === 'bank') {
         data = accounts;
         columns = ['Name', 'Account Number', 'Details'];
     }
 
     const AddEditModal = () => {
-        const [formData, setFormData] = useState(editingItem || {});
+        // Initialize formData with default values for bank accounts
+        const getInitialFormData = () => {
+            if (editingItem) return editingItem;
+            // Set default accountType for new bank accounts
+            if (activeCategory === 'bank') {
+                return { accountType: 'bank' };
+            }
+            return {};
+        };
+        
+        const [formData, setFormData] = useState(getInitialFormData());
+
+        // Re-initialize formData when modal opens or activeCategory changes
+        useEffect(() => {
+            setFormData(getInitialFormData());
+        }, [showAddModal, activeCategory, editingItem]);
 
         const handleSubmit = (e) => {
             e.preventDefault();
@@ -167,6 +194,57 @@ const ChartOfAccounts = () => {
                         </>
                     )}
 
+                    {activeCategory === 'vendor' && (
+                        <>
+                            <div className="mb-3">
+                                <label className="form-label">Vendor Name</label>
+                                <input
+                                    type="text"
+                                    value={formData.name || ''}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="form-control"
+                                    required
+                                />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label">Phone</label>
+                                <input
+                                    type="tel"
+                                    value={formData.phone || ''}
+                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    className="form-control"
+                                />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label">Email</label>
+                                <input
+                                    type="email"
+                                    value={formData.email || ''}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    className="form-control"
+                                />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label">Address</label>
+                                <textarea
+                                    value={formData.address || ''}
+                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                    className="form-control"
+                                    rows="2"
+                                />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label">Notes</label>
+                                <textarea
+                                    value={formData.notes || ''}
+                                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                    className="form-control"
+                                    rows="2"
+                                />
+                            </div>
+                        </>
+                    )}
+
                     {activeCategory === 'expense' && (
                         <>
                             <div className="mb-3">
@@ -188,6 +266,21 @@ const ChartOfAccounts = () => {
                                     className="form-control"
                                     required
                                 />
+                            </div>
+                            <div className="mb-3 form-check">
+                                <input
+                                    type="checkbox"
+                                    id="isPaxBased"
+                                    checked={formData.isPaxBased || false}
+                                    onChange={(e) => setFormData({ ...formData, isPaxBased: e.target.checked })}
+                                    className="form-check-input"
+                                />
+                                <label htmlFor="isPaxBased" className="form-check-label">
+                                    Pax Based (charged per person)
+                                </label>
+                                <small className="d-block text-muted">
+                                    Enable this for expenses like buggy rides that are charged per person
+                                </small>
                             </div>
                         </>
                     )}
@@ -261,12 +354,16 @@ const ChartOfAccounts = () => {
         <>
             <div className="content-wrapper">
                 <div className="card shadow">
-                    <div className="card-header bg-light py-3">
+                    <div className="card-header bg-light py-2">
                         <div className="d-flex justify-content-between align-items-center">
                             <h3 className="h5 fw-bold text-primary mb-0">Chart of Accounts</h3>
-                            <p className="text-muted small mb-0">
-                                Manage your customers, drivers, expenses, and bank accounts
-                            </p>
+                            <button
+                                onClick={handleAddNew}
+                                className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                            >
+                                <Plus size={16} />
+                                Add New
+                            </button>
                         </div>
                     </div>  
                     {/* Category Tabs */}
@@ -278,7 +375,7 @@ const ChartOfAccounts = () => {
                                     <li className="nav-item" key={cat.id}>
                                         <button
                                             onClick={() => setActiveCategory(cat.id)}
-                                            className={`nav-link d-flex align-items-center gap-2 px-3 py-2 ${
+                                            className={`nav-link d-flex align-items-center gap-2 px-4 py-2 ${
                                                 activeCategory === cat.id ? 'active' : 'text-secondary'
                                             }`}
                                             style={{
@@ -297,30 +394,16 @@ const ChartOfAccounts = () => {
                         </ul>
                     </div>
 
-                    {/* Content */}
-                    <div className="card-body p-4">
-                        <div className="d-flex justify-content-between align-items-center mb-4">
-                            <h3 className="h4 mb-0">
-                                {categories.find(c => c.id === activeCategory)?.label} Accounts
-                            </h3>
-                            <button
-                                onClick={handleAddNew}
-                                className="btn btn-primary d-flex align-items-center gap-2"
-                            >
-                                <Plus size={18} />
-                                Add New
-                            </button>
-                        </div>
-
-                        {/* Table */}
+                    {/* Table */}
+                    <div className="card-body p-0">
                         <div className="table-responsive">
-                            <table className="table table-hover table-striped">
-                                <thead>
+                            <table className="table table-hover mb-0">
+                                <thead className="table-light">
                                     <tr>
                                         {columns.map((col, i) => (
-                                            <th key={i} scope="col">{col}</th>
+                                            <th key={i} className="px-4 py-3">{col}</th>
                                         ))}
-                                        <th scope="col" className="text-center" style={{ width: '100px' }}>Actions</th>
+                                        <th className="px-4 py-3 text-center" style={{ width: '100px' }}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -335,46 +418,61 @@ const ChartOfAccounts = () => {
                                             <tr key={item.id}>
                                                 {activeCategory === 'customer' && (
                                                     <>
-                                                        <td>{item.name}</td>
-                                                        <td>{item.phone}</td>
-                                                        <td>{item.email}</td>
-                                                        <td>{item.origin}</td>
+                                                        <td className="px-4 py-3 fw-medium">{item.name}</td>
+                                                        <td className="px-4 py-3">{item.phone || '-'}</td>
+                                                        <td className="px-4 py-3">{item.email || '-'}</td>
+                                                        <td className="px-4 py-3">{item.origin || '-'}</td>
                                                     </>
                                                 )}
                                                 {activeCategory === 'driver' && (
                                                     <>
-                                                        <td>{item.name}</td>
-                                                        <td>{item.phone}</td>
+                                                        <td className="px-4 py-3 fw-medium">{item.name}</td>
+                                                        <td className="px-4 py-3">{item.phone || '-'}</td>
+                                                    </>
+                                                )}
+                                                {activeCategory === 'vendor' && (
+                                                    <>
+                                                        <td className="px-4 py-3 fw-medium">{item.name}</td>
+                                                        <td className="px-4 py-3">{item.phone || '-'}</td>
+                                                        <td className="px-4 py-3">{item.email || '-'}</td>
+                                                        <td className="px-4 py-3">{item.address || '-'}</td>
                                                     </>
                                                 )}
                                                 {activeCategory === 'expense' && (
                                                     <>
-                                                        <td>{item.name}</td>
-                                                        <td>AED {item.defaultValue}</td>
+                                                        <td className="px-4 py-3 fw-medium">{item.name}</td>
+                                                        <td className="px-4 py-3">AED {item.defaultValue}</td>
+                                                        <td className="px-4 py-3">
+                                                            {item.isPaxBased ? (
+                                                                <span className="badge bg-primary">Yes</span>
+                                                            ) : (
+                                                                <span className="badge bg-secondary">No</span>
+                                                            )}
+                                                        </td>
                                                     </>
                                                 )}
                                                 {activeCategory === 'bank' && (
                                                     <>
-                                                        <td>{item.name}</td>
-                                                        <td>{item.accountNumber}</td>
-                                                        <td>{item.details}</td>
+                                                        <td className="px-4 py-3 fw-medium">{item.name}</td>
+                                                        <td className="px-4 py-3">{item.accountNumber || '-'}</td>
+                                                        <td className="px-4 py-3">{item.details || '-'}</td>
                                                     </>
                                                 )}
-                                                <td>
+                                                <td className="px-4 py-3">
                                                     <div className="d-flex justify-content-center gap-2">
                                                         <button
                                                             onClick={() => handleEdit(item)}
                                                             className="btn btn-sm btn-outline-primary"
                                                             title="Edit"
                                                         >
-                                                            <Edit2 size={16} />
+                                                            <Edit2 size={14} />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDelete(item.id)}
                                                             className="btn btn-sm btn-outline-danger"
                                                             title="Delete"
                                                         >
-                                                            <Trash2 size={16} />
+                                                            <Trash2 size={14} />
                                                         </button>
                                                     </div>
                                                 </td>

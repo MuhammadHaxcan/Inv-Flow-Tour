@@ -34,6 +34,13 @@ public class InvoiceExpenseDto
     public string Type { get; set; } = string.Empty;
     public decimal Amount { get; set; }
     public DateOnly Date { get; set; }
+    public int? AccountId { get; set; }
+    public string? AccountName { get; set; }
+    public int? VendorId { get; set; }
+    public string? VendorName { get; set; }
+    public int? Pax { get; set; }
+    public string PaymentStatus { get; set; } = "unpaid";
+    public DateOnly? PaidDate { get; set; }
 }
 
 public class PaymentDto
@@ -70,6 +77,9 @@ public class CreateInvoiceExpenseDto
     public int ExpenseTypeId { get; set; }
     public decimal Amount { get; set; }
     public DateOnly Date { get; set; }
+    public int? AccountId { get; set; }
+    public int? VendorId { get; set; }
+    public int? Pax { get; set; }
 }
 
 public class CreatePaymentDto
@@ -95,6 +105,9 @@ public class AddExpenseDto
     public int ExpenseTypeId { get; set; }
     public decimal Amount { get; set; }
     public DateOnly Date { get; set; }
+    public int? AccountId { get; set; }
+    public int? VendorId { get; set; }
+    public int? Pax { get; set; }
 }
 
 public class AddInvoiceServiceDto
@@ -115,10 +128,36 @@ public class UpdateExpenseDto
     public int ExpenseTypeId { get; set; }
     public decimal Amount { get; set; }
     public DateOnly Date { get; set; }
+    public int? AccountId { get; set; }
+    public int? VendorId { get; set; }
+    public int? Pax { get; set; }
 }
 
 public class AssignDriverDto
 {
     public int? DriverId { get; set; }
+}
+
+public class MarkExpensePaidDto
+{
+    public int AccountId { get; set; }
+    public DateOnly Date { get; set; }
+    public string? Reference { get; set; }
+}
+
+public class OutstandingExpenseDto
+{
+    public int Id { get; set; }
+    public int InvoiceId { get; set; }
+    public string InvoiceNumber { get; set; } = string.Empty;
+    public string Customer { get; set; } = string.Empty;
+    public int ExpenseTypeId { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
+    public DateOnly Date { get; set; }
+    public int? VendorId { get; set; }
+    public string? VendorName { get; set; }
+    public int? Pax { get; set; }
+    public string PaymentStatus { get; set; } = "unpaid";
 }
 

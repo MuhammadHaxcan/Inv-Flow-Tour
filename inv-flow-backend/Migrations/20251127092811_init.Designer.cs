@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using inv_flow_backend.Data;
@@ -11,9 +12,11 @@ using inv_flow_backend.Data;
 namespace inv_flow_backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251127092811_init")]
+    partial class init
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -137,9 +140,6 @@ namespace inv_flow_backend.Migrations
                     b.Property<decimal>("DefaultValue")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<bool>("IsPaxBased")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -184,8 +184,10 @@ namespace inv_flow_backend.Migrations
                     b.Property<int>("Persons")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<decimal>("Total")
                         .HasColumnType("decimal(18,2)");
@@ -216,9 +218,6 @@ namespace inv_flow_backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("AccountId")
-                        .HasColumnType("integer");
-
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
 
@@ -234,15 +233,6 @@ namespace inv_flow_backend.Migrations
                     b.Property<int>("InvoiceId")
                         .HasColumnType("integer");
 
-                    b.Property<DateOnly?>("PaidDate")
-                        .HasColumnType("date");
-
-                    b.Property<int?>("Pax")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("PaymentStatus")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -251,22 +241,11 @@ namespace inv_flow_backend.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("VendorId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("VendorName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("AccountId");
 
                     b.HasIndex("ExpenseTypeId");
 
                     b.HasIndex("InvoiceId");
-
-                    b.HasIndex("VendorId");
 
                     b.ToTable("InvoiceExpenses");
                 });
@@ -606,46 +585,6 @@ namespace inv_flow_backend.Migrations
                     b.ToTable("UserRoles");
                 });
 
-            modelBuilder.Entity("inv_flow_backend.Models.Vendor", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Address")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("Phone")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Vendors");
-                });
-
             modelBuilder.Entity("inv_flow_backend.Models.Invoice", b =>
                 {
                     b.HasOne("inv_flow_backend.Models.Customer", "Customer")
@@ -666,10 +605,6 @@ namespace inv_flow_backend.Migrations
 
             modelBuilder.Entity("inv_flow_backend.Models.InvoiceExpense", b =>
                 {
-                    b.HasOne("inv_flow_backend.Models.Account", "Account")
-                        .WithMany()
-                        .HasForeignKey("AccountId");
-
                     b.HasOne("inv_flow_backend.Models.ExpenseType", "ExpenseType")
                         .WithMany("InvoiceExpenses")
                         .HasForeignKey("ExpenseTypeId")
@@ -682,18 +617,9 @@ namespace inv_flow_backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("inv_flow_backend.Models.Vendor", "Vendor")
-                        .WithMany("InvoiceExpenses")
-                        .HasForeignKey("VendorId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Account");
-
                     b.Navigation("ExpenseType");
 
                     b.Navigation("Invoice");
-
-                    b.Navigation("Vendor");
                 });
 
             modelBuilder.Entity("inv_flow_backend.Models.InvoiceServiceItem", b =>
@@ -843,11 +769,6 @@ namespace inv_flow_backend.Migrations
             modelBuilder.Entity("inv_flow_backend.Models.User", b =>
                 {
                     b.Navigation("UserRoles");
-                });
-
-            modelBuilder.Entity("inv_flow_backend.Models.Vendor", b =>
-                {
-                    b.Navigation("InvoiceExpenses");
                 });
 #pragma warning restore 612, 618
         }
