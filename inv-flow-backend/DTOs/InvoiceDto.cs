@@ -9,6 +9,7 @@ public class InvoiceDto
     public string Customer { get; set; } = string.Empty;
     public int? DriverId { get; set; }
     public string? Driver { get; set; }
+    public string? DriverNotes { get; set; }
     public int Persons { get; set; }
     public decimal Total { get; set; }
     public decimal Paid { get; set; }
@@ -60,6 +61,7 @@ public class CreateInvoiceDto
     public DateOnly Date { get; set; }
     public int CustomerId { get; set; }
     public int? DriverId { get; set; }
+    public string? DriverNotes { get; set; }
     public int Persons { get; set; }
     public List<CreateInvoiceServiceDto> Services { get; set; } = new();
     public List<CreateInvoiceExpenseDto> Expenses { get; set; } = new();
@@ -136,6 +138,7 @@ public class UpdateExpenseDto
 public class AssignDriverDto
 {
     public int? DriverId { get; set; }
+    public string? DriverNotes { get; set; }
 }
 
 public class MarkExpensePaidDto

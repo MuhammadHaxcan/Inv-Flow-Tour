@@ -54,6 +54,7 @@ const GenerateInvoice = () => {
     const [serviceDate, setServiceDate] = useState(formattedToday);
     const [selectedCustomer, setSelectedCustomer] = useState('');
     const [assignedDriver, setAssignedDriver] = useState('');
+    const [driverNotes, setDriverNotes] = useState('');
     const [accommodation, setAccommodation] = useState('');
     const [invoiceServices, setInvoiceServices] = useState([{ service: '', rate: '' }]);
     const [invoiceExpenses, setInvoiceExpenses] = useState([]);
@@ -282,6 +283,7 @@ const GenerateInvoice = () => {
             date: serviceDate,
             customerId: customer.id,
             driverId: driver?.id || null,
+            driverNotes: driverNotes || null,
             persons: parseInt(accommodation) || 1,
             services: servicesData,
             expenses: expensesData,
@@ -425,7 +427,10 @@ const GenerateInvoice = () => {
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={() => setAssignedDriver('')}
+                                                        onClick={() => {
+                                                            setAssignedDriver('');
+                                                            setDriverNotes('');
+                                                        }}
                                                         className="btn btn-sm btn-outline-danger py-0 px-1"
                                                         title="Remove Driver"
                                                     >
@@ -449,13 +454,18 @@ const GenerateInvoice = () => {
                                 <div className="col-md-6">
                                     <label className="form-label small fw-medium">Person Accommodation <span className="text-danger">*</span></label>
                                     <input
-                                        type="number"
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
                                         value={accommodation}
-                                        onChange={(e) => setAccommodation(e.target.value)}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (val === '' || /^\d+$/.test(val)) {
+                                                setAccommodation(val);
+                                            }
+                                        }}
                                         placeholder="Number of persons"
-                                        className={`form-control form-control-sm ${!accommodation && 'is-invalid'}`}
-                                        min="1"
-                                        required
+                                        className="form-control form-control-sm"
                                     />
                                 </div>
                             </div>
@@ -692,12 +702,14 @@ const GenerateInvoice = () => {
             <DriverModal
                 show={showDriverModal}
                 onClose={() => setShowDriverModal(false)}
-                onSave={(driver, date, notes) => {
+                onSave={(driver, notes) => {
                     setAssignedDriver(driver);
+                    setDriverNotes(notes || '');
                     setShowDriverModal(false);
                 }}
                 drivers={drivers}
                 currentDriver={assignedDriver}
+                currentNotes={driverNotes}
             />
 
             {/* Service Modal */}

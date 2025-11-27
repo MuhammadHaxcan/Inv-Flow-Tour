@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronDown, Check } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 
 const SearchableSelect = ({
     value,
@@ -243,7 +243,7 @@ const SearchableSelect = ({
                     <input
                         ref={inputRef}
                         type="text"
-                        className={`form-control ${inputSizeClass} ${!value && required ? 'is-invalid' : ''}`}
+                        className={`form-control ${inputSizeClass}`}
                         value={displayValue}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
@@ -255,7 +255,7 @@ const SearchableSelect = ({
                         readOnly={!isOpen}
                         style={{
                             cursor: disabled ? 'not-allowed' : isOpen ? 'text' : 'pointer',
-                            paddingRight: '2.5rem',
+                            paddingRight: '1.75rem',
                             backgroundColor: disabled ? '#e9ecef' : '#fff'
                         }}
                         role="combobox"
@@ -282,16 +282,6 @@ const SearchableSelect = ({
                                 style={{ cursor: 'pointer' }}
                             />
                         )}
-                        <ChevronDown 
-                            size={16} 
-                            className="text-muted"
-                            style={{ 
-                                cursor: disabled ? 'not-allowed' : 'pointer',
-                                transition: 'transform 0.2s ease',
-                                transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)'
-                            }}
-                            onClick={() => !disabled && setIsOpen(!isOpen)}
-                        />
                     </div>
                 </div>
             </div>

@@ -62,6 +62,7 @@ const OpenInvoices = () => {
 
     const [currentInvoice, setCurrentInvoice] = useState(null);
     const [driverToAssign, setDriverToAssign] = useState('');
+    const [driverNotesToAssign, setDriverNotesToAssign] = useState('');
     const [currentExpense, setCurrentExpense] = useState(null);
     const [currentService, setCurrentService] = useState(null);
     const printableInvoiceRef = useRef(null);
@@ -131,6 +132,7 @@ const OpenInvoices = () => {
         e && e.stopPropagation();
         setCurrentInvoice(invoice);
         setDriverToAssign(invoice.driver || '');
+        setDriverNotesToAssign(invoice.driverNotes || '');
         setShowDriverModal(true);
     };
 
@@ -350,6 +352,7 @@ const OpenInvoices = () => {
                         <p class="fw-bold mb-1 gold" style="font-size: 11pt">DRIVER:</p>
                         <p class="mb-1">${invoice.driver || "Not assigned"}</p>
                         ${getDriverContact(invoice)}
+                        ${invoice.driverNotes ? `<p class="mb-0 text-muted" style="font-size: 9pt"><em>Notes: ${invoice.driverNotes}</em></p>` : ''}
                     </div>
                 </div>
                 
@@ -592,7 +595,18 @@ const OpenInvoices = () => {
                                                     <td className="px-4 py-3">
                                                         <div className="d-flex align-items-center gap-2">
                                                             <div>
-                                                                {invoice.driver || (
+                                                                {invoice.driver ? (
+                                                                    <div>
+                                                                        <div className="fw-medium">{invoice.driver}</div>
+                                                                        {invoice.driverNotes && (
+                                                                            <div className="text-muted small" style={{ maxWidth: '150px' }} title={invoice.driverNotes}>
+                                                                                {invoice.driverNotes.length > 30 
+                                                                                    ? invoice.driverNotes.substring(0, 30) + '...' 
+                                                                                    : invoice.driverNotes}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
                                                                     <span className="text-warning">Not assigned</span>
                                                                 )}
                                                             </div>
@@ -908,14 +922,15 @@ const OpenInvoices = () => {
             <DriverModal
                 show={showDriverModal}
                 onClose={() => setShowDriverModal(false)}
-                onSave={(driver) => {
-                    console.log("Driver selected:", driver);
+                onSave={(driver, notes) => {
                     setDriverToAssign(driver);
-                    assignDriver(currentInvoice.id, driver); // Call assignDriver directly here
-                    setShowDriverModal(false); // Close modal after assignment
+                    setDriverNotesToAssign(notes || '');
+                    assignDriver(currentInvoice.id, driver, notes);
+                    setShowDriverModal(false);
                 }}
                 drivers={drivers}
                 currentDriver={driverToAssign}
+                currentNotes={driverNotesToAssign}
             />
 
             {/* Print Modal */}

@@ -3,7 +3,7 @@ import Modal from './Modal';
 import SearchableSelect from './SearchableSelect';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-const DriverModal = ({ show, onClose, onSave, drivers, currentDriver = '' }) => {
+const DriverModal = ({ show, onClose, onSave, drivers, currentDriver = '', currentNotes = '' }) => {
     const [assignedDriver, setAssignedDriver] = useState('');
     const [assignmentDate, setAssignmentDate] = useState('');
     const [notes, setNotes] = useState('');
@@ -12,13 +12,13 @@ const DriverModal = ({ show, onClose, onSave, drivers, currentDriver = '' }) => 
         if (show) {
             setAssignedDriver(currentDriver || '');
             setAssignmentDate(new Date().toISOString().slice(0, 10));
-            setNotes('');
+            setNotes(currentNotes || '');
         }
-    }, [show, currentDriver]);
+    }, [show, currentDriver, currentNotes]);
 
     const handleSubmit = () => {
         if (!assignedDriver) return;
-        onSave(assignedDriver);
+        onSave(assignedDriver, notes);
         onClose();
     };
 

@@ -21,6 +21,9 @@ public class Invoice
 
     public int? DriverId { get; set; }
 
+    [MaxLength(500)]
+    public string? DriverNotes { get; set; }
+
     [Required]
     public int Persons { get; set; }
 

@@ -417,6 +417,7 @@ export function DataProvider({ children }) {
                 date: invoiceData.date || new Date().toISOString().split('T')[0],
                 customerId: invoiceData.customerId,
                 driverId: invoiceData.driverId,
+                driverNotes: invoiceData.driverNotes || null,
                 persons: invoiceData.persons || 1,
                 services: invoiceData.services || [],
                 expenses: invoiceData.expenses || [],
@@ -537,10 +538,13 @@ export function DataProvider({ children }) {
         }
     };
 
-    const assignDriver = async (invoiceId, driverName) => {
+    const assignDriver = async (invoiceId, driverName, driverNotes = null) => {
         try {
             const driverId = drivers.find(d => d.name === driverName)?.id;
-            const updatedInvoice = await invoicesAPI.assignDriver(invoiceId, { driverId });
+            const updatedInvoice = await invoicesAPI.assignDriver(invoiceId, { 
+                driverId,
+                driverNotes: driverNotes || null
+            });
 
             await Promise.all([
                 loadOpenInvoices(true),

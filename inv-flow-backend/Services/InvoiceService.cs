@@ -124,6 +124,7 @@ public class InvoiceService : IInvoiceService
             Date = dto.Date,
             CustomerId = dto.CustomerId,
             DriverId = dto.DriverId,
+            DriverNotes = dto.DriverNotes,
             Persons = dto.Persons,
             Total = total,
             Paid = paid,
@@ -414,6 +415,7 @@ public class InvoiceService : IInvoiceService
         if (invoice == null) return null;
 
         invoice.DriverId = dto.DriverId;
+        invoice.DriverNotes = dto.DriverNotes;
         invoice.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
