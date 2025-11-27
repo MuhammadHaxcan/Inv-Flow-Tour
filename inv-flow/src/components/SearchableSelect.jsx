@@ -12,8 +12,7 @@ const SearchableSelect = ({
     getOptionLabel = (option) => option.label || option.name || option,
     getOptionValue = (option) => option.value || option.name || option,
     disabled = false,
-    size = 'md', // 'sm' or 'md'
-    keepFocusAfterSelect = false // Don't keep focus after selection by default
+    size = 'md' // 'sm' or 'md'
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -23,6 +22,7 @@ const SearchableSelect = ({
     const inputRef = useRef(null);
     const dropdownRef = useRef(null);
     const blurTimeoutRef = useRef(null);
+    const justSelectedRef = useRef(false); // Track if we just made a selection
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -137,13 +137,18 @@ const SearchableSelect = ({
         setSearchTerm('');
         setHighlightedIndex(-1);
         
-        // Optionally blur the input to remove focus
-        if (!keepFocusAfterSelect && inputRef.current) {
-            inputRef.current.blur();
-        } else if (keepFocusAfterSelect && inputRef.current) {
-            // Keep focus on the input for quick consecutive selections
+        // Mark that we just selected - prevents dropdown from reopening on focus
+        justSelectedRef.current = true;
+        
+        // Keep focus on the input but don't reopen dropdown
+        if (inputRef.current) {
             inputRef.current.focus();
         }
+        
+        // Reset the flag after a short delay
+        setTimeout(() => {
+            justSelectedRef.current = false;
+        }, 100);
     };
 
     // Handle input blur
@@ -247,8 +252,8 @@ const SearchableSelect = ({
                         value={displayValue}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
-                        onClick={() => !disabled && setIsOpen(true)}
-                        onFocus={() => !disabled && setIsOpen(true)}
+                        onClick={() => !disabled && !justSelectedRef.current && setIsOpen(true)}
+                        onFocus={() => !disabled && !justSelectedRef.current && setIsOpen(true)}
                         onBlur={handleBlur}
                         placeholder={placeholder}
                         disabled={disabled}

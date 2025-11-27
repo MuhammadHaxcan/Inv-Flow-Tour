@@ -150,7 +150,8 @@ public class InvoiceService : IInvoiceService
             }
         }
 
-        // Add expenses
+        // Add expenses - first add all expenses to get their IDs
+        var expensesToAdd = new List<(InvoiceExpense expense, CreateInvoiceExpenseDto dto, ExpenseType type)>();
         foreach (var expenseDto in dto.Expenses)
         {
             var expenseType = await _context.ExpenseTypes.FindAsync(expenseDto.ExpenseTypeId);
@@ -166,23 +167,30 @@ public class InvoiceService : IInvoiceService
                     Pax = expenseDto.Pax
                 };
                 _context.InvoiceExpenses.Add(invoiceExpense);
+                expensesToAdd.Add((invoiceExpense, expenseDto, expenseType));
+            }
+        }
 
-                // Create transaction
-                var account = await _context.Accounts.FirstOrDefaultAsync(a => a.AccountType == "cash");
-                if (account != null)
+        // Save to get expense IDs
+        await _context.SaveChangesAsync();
+
+        // Now create transactions with the correct expense IDs
+        var cashAccount = await _context.Accounts.FirstOrDefaultAsync(a => a.AccountType == "cash");
+        if (cashAccount != null)
+        {
+            foreach (var (expense, expDto, expType) in expensesToAdd)
+            {
+                _context.Transactions.Add(new Transaction
                 {
-                    _context.Transactions.Add(new Transaction
-                    {
-                        Date = expenseDto.Date,
-                        Description = $"{expenseType.Name} expense for {invoiceNumber}",
-                        InvoiceId = invoice.Id,
-                        InvoiceNumber = invoiceNumber,
-                        AccountId = account.Id,
-                        Debit = expenseDto.Amount,
-                        Reference = $"EXP-{invoiceExpense.Id}",
-                        ExpenseType = expenseType.Name
-                    });
-                }
+                    Date = expDto.Date,
+                    Description = $"{expType.Name} expense for {invoiceNumber}",
+                    InvoiceId = invoice.Id,
+                    InvoiceNumber = invoiceNumber,
+                    AccountId = cashAccount.Id,
+                    Debit = expDto.Amount,
+                    Reference = $"EXP-{expense.Id}",
+                    ExpenseType = expType.Name
+                });
             }
         }
 
@@ -320,7 +328,10 @@ public class InvoiceService : IInvoiceService
         _context.InvoiceExpenses.Add(invoiceExpense);
         invoice.UpdatedAt = DateTime.UtcNow;
 
-        // Create transaction for expense (debit)
+        // Save first to get the expense ID
+        await _context.SaveChangesAsync();
+
+        // Create transaction for expense (debit) - now expense.Id is valid
         if (account != null)
         {
             _context.Transactions.Add(new Transaction
@@ -334,9 +345,9 @@ public class InvoiceService : IInvoiceService
                 Reference = $"EXP-{invoiceExpense.Id}",
                 ExpenseType = expenseType.Name
             });
+            await _context.SaveChangesAsync();
         }
 
-        await _context.SaveChangesAsync();
         return await GetByIdAsync(invoiceId);
     }
 
@@ -498,13 +509,15 @@ public class InvoiceService : IInvoiceService
 
         _context.InvoiceExpenses.Remove(expense);
 
-        // Remove transaction
-        var transaction = await _context.Transactions
-            .FirstOrDefaultAsync(t => t.InvoiceId == invoiceId && t.Reference == $"EXP-{expenseId}");
+        // Remove all related transactions (both expense creation and payment transactions)
+        var transactions = await _context.Transactions
+            .Where(t => t.InvoiceId == invoiceId && 
+                       (t.Reference == $"EXP-{expenseId}" || t.Reference == $"EXP-PAY-{expenseId}"))
+            .ToListAsync();
 
-        if (transaction != null)
+        if (transactions.Any())
         {
-            _context.Transactions.Remove(transaction);
+            _context.Transactions.RemoveRange(transactions);
         }
 
         invoice.UpdatedAt = DateTime.UtcNow;
@@ -560,6 +573,7 @@ public class InvoiceService : IInvoiceService
         expense.UpdatedAt = DateTime.UtcNow;
 
         // Create transaction for expense payment (debit from account)
+        // Always use standard reference format for proper cleanup on deletion
         _context.Transactions.Add(new Transaction
         {
             Date = dto.Date,
@@ -568,8 +582,9 @@ public class InvoiceService : IInvoiceService
             InvoiceNumber = expense.Invoice.Number,
             AccountId = dto.AccountId,
             Debit = expense.Amount,
-            Reference = dto.Reference ?? $"EXP-PAY-{expense.Id}",
-            ExpenseType = expense.Type
+            Reference = $"EXP-PAY-{expense.Id}",
+            ExpenseType = expense.Type,
+            Notes = dto.Reference // Store custom reference in Notes if provided
         });
 
         await _context.SaveChangesAsync();

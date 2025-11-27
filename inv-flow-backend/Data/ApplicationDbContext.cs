@@ -94,6 +94,12 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(ie => ie.VendorId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        modelBuilder.Entity<InvoiceExpense>()
+            .HasOne(ie => ie.Account)
+            .WithMany()
+            .HasForeignKey(ie => ie.AccountId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<Payment>()
             .HasOne(p => p.Invoice)
             .WithMany(i => i.Payments)
