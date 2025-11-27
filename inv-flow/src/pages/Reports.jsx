@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, BarChart3, TrendingUp, DollarSign, Users, Package, Filter } from 'lucide-react';
+import { Calendar, BarChart3, TrendingUp, DollarSign, Users, Package, Filter, RefreshCw } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { reportsAPI } from '../services/api';
 import SearchableSelect from '../components/SearchableSelect';
@@ -94,6 +94,16 @@ const Reports = () => {
         return `AED ${parseFloat(amount || 0).toFixed(2)}`;
     };
 
+    const handleReset = () => {
+        setDateRange({
+            startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+            endDate: new Date().toISOString().split('T')[0]
+        });
+        setSelectedService('all');
+        setSelectedCustomer('all');
+        setSelectedDriver('all');
+    };
+
     const tabs = [
         { id: 'service', label: 'Service Report', icon: Package },
         { id: 'customer', label: 'Customer Report', icon: Users },
@@ -105,7 +115,7 @@ const Reports = () => {
 
     if (isLoading && !reportData) {
         return (
-            <div className="content-wrapper py-3 px-4">
+            <div className="content-wrapper">
                 <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
                     <div className="text-center">
                         <div className="spinner-border text-primary mb-3" role="status">
@@ -121,7 +131,7 @@ const Reports = () => {
     return (
         <div className="content-wrapper">
             <div className="card shadow">
-                <div className="card-header bg-light py-2">
+                <div className="card-header bg-light py-3">
                     <div className="d-flex justify-content-between align-items-center">
                         <h3 className="h5 fw-bold text-primary mb-0">Master Reports</h3>
                         <p className="text-muted small mb-0">
@@ -131,10 +141,10 @@ const Reports = () => {
                 </div>
 
                 {/* Filters Section */}
-                <div className="card-body border-bottom bg-light py-3">
+                <div className="border-bottom bg-white py-3 px-4">
                     <div className="row align-items-end g-3">
                         <div className="col-md-2">
-                            <label className="form-label small fw-medium">From Date</label>
+                            <label className="form-label small fw-medium mb-1">From Date</label>
                             <div className="input-group input-group-sm">
                                 <input
                                     type="date"
@@ -149,7 +159,7 @@ const Reports = () => {
                         </div>
 
                         <div className="col-md-2">
-                            <label className="form-label small fw-medium">To Date</label>
+                            <label className="form-label small fw-medium mb-1">To Date</label>
                             <div className="input-group input-group-sm">
                                 <input
                                     type="date"
@@ -165,7 +175,7 @@ const Reports = () => {
 
                         {activeTab === 'service' && (
                             <div className="col-md-3">
-                                <label className="form-label small fw-medium">Service</label>
+                                <label className="form-label small fw-medium mb-1">Service</label>
                                 <SearchableSelect
                                     value={selectedService}
                                     onChange={(e) => setSelectedService(e.target.value)}
@@ -181,7 +191,7 @@ const Reports = () => {
 
                         {activeTab === 'customer' && (
                             <div className="col-md-3">
-                                <label className="form-label small fw-medium">Customer</label>
+                                <label className="form-label small fw-medium mb-1">Customer</label>
                                 <SearchableSelect
                                     value={selectedCustomer}
                                     onChange={(e) => setSelectedCustomer(e.target.value)}
@@ -197,7 +207,7 @@ const Reports = () => {
 
                         {activeTab === 'driver' && (
                             <div className="col-md-3">
-                                <label className="form-label small fw-medium">Driver</label>
+                                <label className="form-label small fw-medium mb-1">Driver</label>
                                 <SearchableSelect
                                     value={selectedDriver}
                                     onChange={(e) => setSelectedDriver(e.target.value)}
@@ -211,51 +221,53 @@ const Reports = () => {
                             </div>
                         )}
 
-                        <div className="col-md-3 d-flex gap-2">
-                            <button
-                                onClick={loadReportData}
-                                className="btn btn-sm btn-primary d-flex align-items-center gap-1"
-                                disabled={loading}
-                            >
-                                <Filter size={14} />
-                                {loading ? 'Loading...' : 'Apply'}
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setDateRange({
-                                        startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-                                        endDate: new Date().toISOString().split('T')[0]
-                                    });
-                                    setSelectedService('all');
-                                    setSelectedCustomer('all');
-                                    setSelectedDriver('all');
-                                }}
-                                className="btn btn-sm btn-outline-secondary"
-                                disabled={loading}
-                            >
-                                Reset
-                            </button>
+                        {activeTab === 'summary' && <div className="col-md-3"></div>}
+
+                        <div className="col-md-auto ms-auto">
+                            <div className="d-flex gap-2">
+                                <button
+                                    onClick={loadReportData}
+                                    className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                                    disabled={loading}
+                                >
+                                    {loading ? (
+                                        <RefreshCw size={14} className="animate-spin" />
+                                    ) : (
+                                        <Filter size={14} />
+                                    )}
+                                    {loading ? 'Loading...' : 'Apply Filters'}
+                                </button>
+                                <button
+                                    onClick={handleReset}
+                                    className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                                    disabled={loading}
+                                >
+                                    <RefreshCw size={14} />
+                                    Reset
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="card-header p-0 border-0">
-                    <ul className="nav nav-tabs card-header-tabs">
+                <div className="border-bottom">
+                    <ul className="nav nav-tabs border-0 px-3">
                         {tabs.map(tab => {
                             const Icon = tab.icon;
                             return (
                                 <li className="nav-item" key={tab.id}>
                                     <button
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`nav-link d-flex align-items-center gap-2 px-4 py-2 ${
-                                            activeTab === tab.id ? 'active' : 'text-secondary'
+                                        className={`nav-link d-flex align-items-center gap-2 px-4 py-3 border-0 ${
+                                            activeTab === tab.id 
+                                                ? 'active text-primary fw-medium border-bottom border-primary border-2' 
+                                                : 'text-secondary'
                                         }`}
                                         style={{
-                                            fontSize: '0.85rem',
-                                            fontWeight: activeTab === tab.id ? '500' : '400',
-                                            border: 'none',
-                                            background: 'none'
+                                            fontSize: '0.875rem',
+                                            background: 'transparent',
+                                            marginBottom: '-1px'
                                         }}
                                     >
                                         <Icon size={16} />
@@ -328,42 +340,48 @@ const ServiceReport = ({ data, formatCurrency }) => {
     return (
         <>
             {/* Summary Cards */}
-            <div className="row g-3 p-4 pb-3">
+            <div className="row g-3 p-4">
                 <div className="col-md-4">
-                    <div className="card border-0 bg-primary bg-opacity-10">
+                    <div className="card border-0 bg-primary bg-opacity-10 h-100">
                         <div className="card-body py-3">
                             <div className="d-flex align-items-center justify-content-between">
                                 <div>
                                     <p className="text-muted small mb-1">Total Revenue</p>
                                     <h4 className="mb-0 text-primary fw-bold">{formatCurrency(totalRevenue)}</h4>
                                 </div>
-                                <DollarSign size={32} className="text-primary opacity-50" />
+                                <div className="bg-primary bg-opacity-25 rounded-circle p-2">
+                                    <DollarSign size={24} className="text-primary" />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div className="col-md-4">
-                    <div className="card border-0 bg-success bg-opacity-10">
+                    <div className="card border-0 bg-success bg-opacity-10 h-100">
                         <div className="card-body py-3">
                             <div className="d-flex align-items-center justify-content-between">
                                 <div>
                                     <p className="text-muted small mb-1">Total Invoices</p>
                                     <h4 className="mb-0 text-success fw-bold">{totalInvoices}</h4>
                                 </div>
-                                <TrendingUp size={32} className="text-success opacity-50" />
+                                <div className="bg-success bg-opacity-25 rounded-circle p-2">
+                                    <TrendingUp size={24} className="text-success" />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div className="col-md-4">
-                    <div className="card border-0 bg-info bg-opacity-10">
+                    <div className="card border-0 bg-info bg-opacity-10 h-100">
                         <div className="card-body py-3">
                             <div className="d-flex align-items-center justify-content-between">
                                 <div>
                                     <p className="text-muted small mb-1">Total Quantity</p>
                                     <h4 className="mb-0 text-info fw-bold">{totalQuantity}</h4>
                                 </div>
-                                <Package size={32} className="text-info opacity-50" />
+                                <div className="bg-info bg-opacity-25 rounded-circle p-2">
+                                    <Package size={24} className="text-info" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -394,7 +412,7 @@ const ServiceReport = ({ data, formatCurrency }) => {
                                 <tr key={index}>
                                     <td className="px-4 py-3 fw-medium">{service.serviceName}</td>
                                     <td className="px-4 py-3 text-end">{service.quantity || 0}</td>
-                                    <td className="px-4 py-3 text-end fw-bold">{formatCurrency(service.totalRevenue)}</td>
+                                    <td className="px-4 py-3 text-end fw-bold text-primary">{formatCurrency(service.totalRevenue)}</td>
                                     <td className="px-4 py-3 text-end text-muted">{formatCurrency(service.averagePrice)}</td>
                                     <td className="px-4 py-3 text-end">{service.invoiceCount || 0}</td>
                                 </tr>
@@ -406,7 +424,7 @@ const ServiceReport = ({ data, formatCurrency }) => {
                             <tr>
                                 <td className="px-4 py-3">Total</td>
                                 <td className="px-4 py-3 text-end">{totalQuantity}</td>
-                                <td className="px-4 py-3 text-end">{formatCurrency(totalRevenue)}</td>
+                                <td className="px-4 py-3 text-end text-primary">{formatCurrency(totalRevenue)}</td>
                                 <td className="px-4 py-3 text-end">{formatCurrency(totalRevenue / totalQuantity || 0)}</td>
                                 <td className="px-4 py-3 text-end">{totalInvoices}</td>
                             </tr>
@@ -429,42 +447,48 @@ const CustomerReport = ({ data, formatCurrency }) => {
     return (
         <>
             {/* Summary Cards */}
-            <div className="row g-3 p-4 pb-3">
+            <div className="row g-3 p-4">
                 <div className="col-md-4">
-                    <div className="card border-0 bg-primary bg-opacity-10">
+                    <div className="card border-0 bg-primary bg-opacity-10 h-100">
                         <div className="card-body py-3">
                             <div className="d-flex align-items-center justify-content-between">
                                 <div>
                                     <p className="text-muted small mb-1">Total Revenue</p>
                                     <h4 className="mb-0 text-primary fw-bold">{formatCurrency(totalRevenue)}</h4>
                                 </div>
-                                <DollarSign size={32} className="text-primary opacity-50" />
+                                <div className="bg-primary bg-opacity-25 rounded-circle p-2">
+                                    <DollarSign size={24} className="text-primary" />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div className="col-md-4">
-                    <div className="card border-0 bg-success bg-opacity-10">
+                    <div className="card border-0 bg-success bg-opacity-10 h-100">
                         <div className="card-body py-3">
                             <div className="d-flex align-items-center justify-content-between">
                                 <div>
                                     <p className="text-muted small mb-1">Total Invoices</p>
                                     <h4 className="mb-0 text-success fw-bold">{totalInvoices}</h4>
                                 </div>
-                                <Users size={32} className="text-success opacity-50" />
+                                <div className="bg-success bg-opacity-25 rounded-circle p-2">
+                                    <Users size={24} className="text-success" />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div className="col-md-4">
-                    <div className="card border-0 bg-danger bg-opacity-10">
+                    <div className="card border-0 bg-danger bg-opacity-10 h-100">
                         <div className="card-body py-3">
                             <div className="d-flex align-items-center justify-content-between">
                                 <div>
                                     <p className="text-muted small mb-1">Outstanding</p>
                                     <h4 className="mb-0 text-danger fw-bold">{formatCurrency(totalOutstanding)}</h4>
                                 </div>
-                                <TrendingUp size={32} className="text-danger opacity-50" />
+                                <div className="bg-danger bg-opacity-25 rounded-circle p-2">
+                                    <TrendingUp size={24} className="text-danger" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -502,7 +526,7 @@ const CustomerReport = ({ data, formatCurrency }) => {
                                             {!customer.email && !customer.phone && <span className="text-muted">-</span>}
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-end fw-bold">{formatCurrency(customer.totalRevenue)}</td>
+                                    <td className="px-4 py-3 text-end fw-bold text-primary">{formatCurrency(customer.totalRevenue)}</td>
                                     <td className="px-4 py-3 text-end">{customer.invoiceCount || 0}</td>
                                     <td className="px-4 py-3 text-end text-muted">{formatCurrency(customer.averageInvoice)}</td>
                                     <td className="px-4 py-3 text-end">
@@ -520,7 +544,7 @@ const CustomerReport = ({ data, formatCurrency }) => {
                         <tfoot className="table-light fw-bold">
                             <tr>
                                 <td className="px-4 py-3" colSpan="2">Total</td>
-                                <td className="px-4 py-3 text-end">{formatCurrency(totalRevenue)}</td>
+                                <td className="px-4 py-3 text-end text-primary">{formatCurrency(totalRevenue)}</td>
                                 <td className="px-4 py-3 text-end">{totalInvoices}</td>
                                 <td className="px-4 py-3 text-end">{formatCurrency(totalRevenue / totalInvoices || 0)}</td>
                                 <td className="px-4 py-3 text-end text-danger">{formatCurrency(totalOutstanding)}</td>
@@ -543,29 +567,33 @@ const DriverReport = ({ data, formatCurrency }) => {
     return (
         <>
             {/* Summary Cards */}
-            <div className="row g-3 p-4 pb-3">
+            <div className="row g-3 p-4">
                 <div className="col-md-6">
-                    <div className="card border-0 bg-primary bg-opacity-10">
+                    <div className="card border-0 bg-primary bg-opacity-10 h-100">
                         <div className="card-body py-3">
                             <div className="d-flex align-items-center justify-content-between">
                                 <div>
                                     <p className="text-muted small mb-1">Total Revenue</p>
                                     <h4 className="mb-0 text-primary fw-bold">{formatCurrency(totalRevenue)}</h4>
                                 </div>
-                                <DollarSign size={32} className="text-primary opacity-50" />
+                                <div className="bg-primary bg-opacity-25 rounded-circle p-2">
+                                    <DollarSign size={24} className="text-primary" />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div className="col-md-6">
-                    <div className="card border-0 bg-success bg-opacity-10">
+                    <div className="card border-0 bg-success bg-opacity-10 h-100">
                         <div className="card-body py-3">
                             <div className="d-flex align-items-center justify-content-between">
                                 <div>
                                     <p className="text-muted small mb-1">Total Invoices</p>
                                     <h4 className="mb-0 text-success fw-bold">{totalInvoices}</h4>
                                 </div>
-                                <Users size={32} className="text-success opacity-50" />
+                                <div className="bg-success bg-opacity-25 rounded-circle p-2">
+                                    <Users size={24} className="text-success" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -596,7 +624,7 @@ const DriverReport = ({ data, formatCurrency }) => {
                                 <tr key={index}>
                                     <td className="px-4 py-3 fw-medium">{driver.driverName}</td>
                                     <td className="px-4 py-3 text-muted">{driver.phone || '-'}</td>
-                                    <td className="px-4 py-3 text-end fw-bold">{formatCurrency(driver.totalRevenue)}</td>
+                                    <td className="px-4 py-3 text-end fw-bold text-primary">{formatCurrency(driver.totalRevenue)}</td>
                                     <td className="px-4 py-3 text-end">{driver.invoiceCount || 0}</td>
                                     <td className="px-4 py-3 text-end text-muted">{formatCurrency(driver.averageInvoice)}</td>
                                 </tr>
@@ -607,7 +635,7 @@ const DriverReport = ({ data, formatCurrency }) => {
                         <tfoot className="table-light fw-bold">
                             <tr>
                                 <td className="px-4 py-3" colSpan="2">Total</td>
-                                <td className="px-4 py-3 text-end">{formatCurrency(totalRevenue)}</td>
+                                <td className="px-4 py-3 text-end text-primary">{formatCurrency(totalRevenue)}</td>
                                 <td className="px-4 py-3 text-end">{totalInvoices}</td>
                                 <td className="px-4 py-3 text-end">{formatCurrency(totalRevenue / totalInvoices || 0)}</td>
                             </tr>
@@ -626,36 +654,64 @@ const SummaryReport = ({ data, formatCurrency }) => {
     return (
         <>
             {/* Summary Cards */}
-            <div className="row g-3 p-4 pb-3">
+            <div className="row g-3 p-4">
                 <div className="col-md-3">
-                    <div className="card border-0 bg-primary bg-opacity-10">
+                    <div className="card border-0 bg-primary bg-opacity-10 h-100">
                         <div className="card-body py-3">
-                            <p className="text-muted small mb-1">Total Revenue</p>
-                            <h4 className="mb-0 text-primary fw-bold">{formatCurrency(data.totalRevenue || 0)}</h4>
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Total Revenue</p>
+                                    <h4 className="mb-0 text-primary fw-bold">{formatCurrency(data.totalRevenue || 0)}</h4>
+                                </div>
+                                <div className="bg-primary bg-opacity-25 rounded-circle p-2">
+                                    <DollarSign size={20} className="text-primary" />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div className="col-md-3">
-                    <div className="card border-0 bg-success bg-opacity-10">
+                    <div className="card border-0 bg-success bg-opacity-10 h-100">
                         <div className="card-body py-3">
-                            <p className="text-muted small mb-1">Total Invoices</p>
-                            <h4 className="mb-0 text-success fw-bold">{data.totalInvoices || 0}</h4>
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Total Invoices</p>
+                                    <h4 className="mb-0 text-success fw-bold">{data.totalInvoices || 0}</h4>
+                                </div>
+                                <div className="bg-success bg-opacity-25 rounded-circle p-2">
+                                    <TrendingUp size={20} className="text-success" />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div className="col-md-3">
-                    <div className="card border-0 bg-warning bg-opacity-10">
+                    <div className="card border-0 bg-warning bg-opacity-10 h-100">
                         <div className="card-body py-3">
-                            <p className="text-muted small mb-1">Paid Amount</p>
-                            <h4 className="mb-0 text-warning fw-bold">{formatCurrency(data.totalPaid || 0)}</h4>
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Paid Amount</p>
+                                    <h4 className="mb-0 text-warning fw-bold">{formatCurrency(data.totalPaid || 0)}</h4>
+                                </div>
+                                <div className="bg-warning bg-opacity-25 rounded-circle p-2">
+                                    <DollarSign size={20} className="text-warning" />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div className="col-md-3">
-                    <div className="card border-0 bg-danger bg-opacity-10">
+                    <div className="card border-0 bg-danger bg-opacity-10 h-100">
                         <div className="card-body py-3">
-                            <p className="text-muted small mb-1">Outstanding</p>
-                            <h4 className="mb-0 text-danger fw-bold">{formatCurrency(data.totalOutstanding || 0)}</h4>
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Outstanding</p>
+                                    <h4 className="mb-0 text-danger fw-bold">{formatCurrency(data.totalOutstanding || 0)}</h4>
+                                </div>
+                                <div className="bg-danger bg-opacity-25 rounded-circle p-2">
+                                    <TrendingUp size={20} className="text-danger" />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -669,9 +725,9 @@ const SummaryReport = ({ data, formatCurrency }) => {
                         <table className="table table-sm mb-0">
                             <thead className="table-light">
                                 <tr>
-                                    <th className="py-2">Status</th>
-                                    <th className="py-2 text-end">Count</th>
-                                    <th className="py-2 text-end">Amount</th>
+                                    <th className="py-2 px-3">Status</th>
+                                    <th className="py-2 px-3 text-end">Count</th>
+                                    <th className="py-2 px-3 text-end">Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -680,7 +736,7 @@ const SummaryReport = ({ data, formatCurrency }) => {
                                 ) : (
                                     data.statusBreakdown?.map((status, index) => (
                                         <tr key={index}>
-                                            <td className="py-2">
+                                            <td className="py-2 px-3">
                                                 <span className={`badge ${
                                                     status.status === 'paid' ? 'bg-success' :
                                                     status.status === 'partial' ? 'bg-warning text-dark' : 'bg-danger'
@@ -688,8 +744,8 @@ const SummaryReport = ({ data, formatCurrency }) => {
                                                     {status.status.charAt(0).toUpperCase() + status.status.slice(1)}
                                                 </span>
                                             </td>
-                                            <td className="py-2 text-end">{status.count}</td>
-                                            <td className="py-2 text-end fw-medium">{formatCurrency(status.amount)}</td>
+                                            <td className="py-2 px-3 text-end">{status.count}</td>
+                                            <td className="py-2 px-3 text-end fw-medium">{formatCurrency(status.amount)}</td>
                                         </tr>
                                     ))
                                 )}
@@ -704,8 +760,8 @@ const SummaryReport = ({ data, formatCurrency }) => {
                         <table className="table table-sm mb-0">
                             <thead className="table-light">
                                 <tr>
-                                    <th className="py-2">Service</th>
-                                    <th className="py-2 text-end">Revenue</th>
+                                    <th className="py-2 px-3">Service</th>
+                                    <th className="py-2 px-3 text-end">Revenue</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -714,8 +770,8 @@ const SummaryReport = ({ data, formatCurrency }) => {
                                 ) : (
                                     data.topServices?.slice(0, 5).map((service, index) => (
                                         <tr key={index}>
-                                            <td className="py-2">{service.serviceName}</td>
-                                            <td className="py-2 text-end fw-medium">{formatCurrency(service.revenue)}</td>
+                                            <td className="py-2 px-3">{service.serviceName}</td>
+                                            <td className="py-2 px-3 text-end fw-medium text-primary">{formatCurrency(service.revenue)}</td>
                                         </tr>
                                     ))
                                 )}

@@ -304,7 +304,7 @@ const GenerateInvoice = () => {
 
     if (isLoading) {
         return (
-            <div className="content-wrapper py-3 px-4">
+            <div className="content-wrapper">
                 <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
                     <div className="text-center">
                         <div className="spinner-border text-primary mb-3" role="status">
@@ -321,7 +321,7 @@ const GenerateInvoice = () => {
         <>
             <div className="content-wrapper">
                 <div className="card shadow">
-                    <div className="card-header bg-light py-2">
+                    <div className="card-header bg-light py-3">
                         <div className="d-flex justify-content-between align-items-center">
                             <h3 className="h5 fw-bold text-primary mb-0">Generate Invoice</h3>
                             <div className="d-flex align-items-center gap-3">

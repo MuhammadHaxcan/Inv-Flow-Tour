@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, CheckCircle, FileText } from 'lucide-react';
+import { DollarSign, CheckCircle, FileText, AlertCircle } from 'lucide-react';
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
 import { useData } from '../contexts/DataContext';
@@ -79,7 +79,7 @@ const OutstandingExpenses = () => {
 
     if (loading || loadingStates.accounts) {
         return (
-            <div className="content-wrapper py-3 px-4">
+            <div className="content-wrapper">
                 <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
                     <div className="text-center">
                         <div className="spinner-border text-primary mb-3" role="status">
@@ -96,19 +96,40 @@ const OutstandingExpenses = () => {
         <>
             <div className="content-wrapper">
                 <div className="card shadow">
-                    <div className="card-header bg-light py-2">
+                    <div className="card-header bg-light py-3">
                         <div className="d-flex justify-content-between align-items-center">
                             <h3 className="h5 fw-bold text-primary mb-0">Outstanding Expenses</h3>
-                            <div className="d-flex align-items-center gap-3">
-                                <span className="badge bg-warning text-dark fs-6">
-                                    Total Outstanding: {formatCurrency(totalOutstanding)}
-                                </span>
-                                <span className="badge bg-secondary fs-6">
+                            <div className="d-flex align-items-center gap-2">
+                                <span className="badge bg-secondary px-3 py-2">
                                     {outstandingExpenses.length} expense(s)
                                 </span>
                             </div>
                         </div>
                     </div>
+
+                    {/* Summary Card */}
+                    {outstandingExpenses.length > 0 && (
+                        <div className="border-bottom bg-white py-3 px-4">
+                            <div className="row">
+                                <div className="col-md-4">
+                                    <div className="card border-0 bg-warning bg-opacity-10">
+                                        <div className="card-body py-3">
+                                            <div className="d-flex align-items-center justify-content-between">
+                                                <div>
+                                                    <p className="text-muted small mb-1">Total Outstanding</p>
+                                                    <h4 className="mb-0 text-warning fw-bold">{formatCurrency(totalOutstanding)}</h4>
+                                                </div>
+                                                <div className="bg-warning bg-opacity-25 rounded-circle p-2">
+                                                    <AlertCircle size={24} className="text-warning" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="card-body p-0">
                         <div className="table-responsive">
                             <table className="table table-hover mb-0">
@@ -121,7 +142,7 @@ const OutstandingExpenses = () => {
                                         <th className="px-4 py-3">Date</th>
                                         <th className="px-4 py-3 text-center">Pax</th>
                                         <th className="px-4 py-3 text-end">Amount</th>
-                                        <th className="px-4 py-3 text-center">Actions</th>
+                                        <th className="px-4 py-3 text-center" style={{ width: '100px' }}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -129,7 +150,7 @@ const OutstandingExpenses = () => {
                                         <tr>
                                             <td colSpan="8" className="text-center py-5 text-muted">
                                                 <CheckCircle size={48} className="mb-3 text-success" />
-                                                <p className="mb-0">No outstanding expenses</p>
+                                                <p className="mb-0 fw-medium">No outstanding expenses</p>
                                                 <small>All expenses have been paid!</small>
                                             </td>
                                         </tr>
@@ -160,7 +181,7 @@ const OutstandingExpenses = () => {
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-3 text-end">
-                                                    <strong>{formatCurrency(expense.amount)}</strong>
+                                                    <strong className="text-warning">{formatCurrency(expense.amount)}</strong>
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
                                                     <button
@@ -180,7 +201,7 @@ const OutstandingExpenses = () => {
                                     <tfoot className="table-light fw-bold">
                                         <tr>
                                             <td colSpan="6" className="px-4 py-3 text-end">Total Outstanding:</td>
-                                            <td className="px-4 py-3 text-end">{formatCurrency(totalOutstanding)}</td>
+                                            <td className="px-4 py-3 text-end text-warning">{formatCurrency(totalOutstanding)}</td>
                                             <td></td>
                                         </tr>
                                     </tfoot>
@@ -199,17 +220,27 @@ const OutstandingExpenses = () => {
             >
                 {selectedExpense && (
                     <div>
-                        <div className="alert alert-info mb-3">
-                            <strong>Expense:</strong> {selectedExpense.type}<br />
-                            <strong>Invoice:</strong> {selectedExpense.invoiceNumber}<br />
-                            <strong>Amount:</strong> {formatCurrency(selectedExpense.amount)}
-                            {selectedExpense.vendorName && (
-                                <><br /><strong>Vendor:</strong> {selectedExpense.vendorName}</>
-                            )}
+                        <div className="alert alert-info mb-3 py-2">
+                            <div className="row small">
+                                <div className="col-6">
+                                    <strong>Expense:</strong> {selectedExpense.type}
+                                </div>
+                                <div className="col-6">
+                                    <strong>Invoice:</strong> {selectedExpense.invoiceNumber}
+                                </div>
+                                <div className="col-6 mt-1">
+                                    <strong>Amount:</strong> {formatCurrency(selectedExpense.amount)}
+                                </div>
+                                {selectedExpense.vendorName && (
+                                    <div className="col-6 mt-1">
+                                        <strong>Vendor:</strong> {selectedExpense.vendorName}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="mb-3">
-                            <label className="form-label">Payment Account <span className="text-danger">*</span></label>
+                            <label className="form-label small fw-medium">Payment Account <span className="text-danger">*</span></label>
                             <SearchableSelect
                                 value={paymentData.accountId}
                                 onChange={(e) => setPaymentData({ ...paymentData, accountId: e.target.value })}
@@ -218,27 +249,27 @@ const OutstandingExpenses = () => {
                                     label: `${account.name} ${account.accountType === 'cash' ? '(Cash)' : '(Bank)'}`
                                 }))}
                                 placeholder="Select Payment Account"
-                                required
+                                size="sm"
                             />
                         </div>
 
                         <div className="mb-3">
-                            <label className="form-label">Payment Date</label>
+                            <label className="form-label small fw-medium">Payment Date</label>
                             <input
                                 type="date"
                                 value={paymentData.date}
                                 onChange={(e) => setPaymentData({ ...paymentData, date: e.target.value })}
-                                className="form-control"
+                                className="form-control form-control-sm"
                             />
                         </div>
 
                         <div className="mb-3">
-                            <label className="form-label">Reference (Optional)</label>
+                            <label className="form-label small fw-medium">Reference (Optional)</label>
                             <input
                                 type="text"
                                 value={paymentData.reference}
                                 onChange={(e) => setPaymentData({ ...paymentData, reference: e.target.value })}
-                                className="form-control"
+                                className="form-control form-control-sm"
                                 placeholder="Transaction reference"
                             />
                         </div>
@@ -246,15 +277,15 @@ const OutstandingExpenses = () => {
                         <div className="d-flex gap-2">
                             <button
                                 onClick={handleMarkPaid}
-                                className="btn btn-success flex-grow-1"
+                                className="btn btn-sm btn-success flex-grow-1 d-flex align-items-center justify-content-center gap-1"
                                 disabled={!paymentData.accountId}
                             >
-                                <DollarSign size={16} className="me-2" />
+                                <DollarSign size={16} />
                                 Mark as Paid
                             </button>
                             <button
                                 onClick={() => { setShowPayModal(false); setSelectedExpense(null); }}
-                                className="btn btn-outline-secondary"
+                                className="btn btn-sm btn-outline-secondary"
                             >
                                 Cancel
                             </button>
@@ -267,4 +298,3 @@ const OutstandingExpenses = () => {
 };
 
 export default OutstandingExpenses;
-

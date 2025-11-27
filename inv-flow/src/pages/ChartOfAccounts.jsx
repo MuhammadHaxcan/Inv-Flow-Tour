@@ -362,7 +362,7 @@ const ChartOfAccounts = () => {
         <>
             <div className="content-wrapper">
                 <div className="card shadow">
-                    <div className="card-header bg-light py-2">
+                    <div className="card-header bg-light py-3">
                         <div className="d-flex justify-content-between align-items-center">
                             <h3 className="h5 fw-bold text-primary mb-0">Chart of Accounts</h3>
                             <button
@@ -375,22 +375,23 @@ const ChartOfAccounts = () => {
                         </div>
                     </div>  
                     {/* Category Tabs */}
-                    <div className="card-header p-0 border-0">
-                        <ul className="nav nav-tabs card-header-tabs">
+                    <div className="border-bottom">
+                        <ul className="nav nav-tabs border-0 px-3">
                             {categories.map(cat => {
                                 const Icon = cat.icon;
                                 return (
                                     <li className="nav-item" key={cat.id}>
                                         <button
                                             onClick={() => setActiveCategory(cat.id)}
-                                            className={`nav-link d-flex align-items-center gap-2 px-4 py-2 ${
-                                                activeCategory === cat.id ? 'active' : 'text-secondary'
+                                            className={`nav-link d-flex align-items-center gap-2 px-4 py-3 border-0 ${
+                                                activeCategory === cat.id 
+                                                    ? 'active text-primary fw-medium border-bottom border-primary border-2' 
+                                                    : 'text-secondary'
                                             }`}
                                             style={{
-                                                fontSize: '0.85rem',
-                                                fontWeight: activeCategory === cat.id ? '500' : '400',
-                                                border: 'none',
-                                                background: 'none'
+                                                fontSize: '0.875rem',
+                                                background: 'transparent',
+                                                marginBottom: '-1px'
                                             }}
                                         >
                                             <Icon size={16} />

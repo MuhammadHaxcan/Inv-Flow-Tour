@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Info } from 'lucide-react';
+import { Plus, Edit2, Trash2, Info, Package } from 'lucide-react';
 import ServiceModal from '../components/ServiceModal';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useData } from '../contexts/DataContext';
@@ -67,7 +67,7 @@ const Services = () => {
 
     if (loadingStates.services) {
         return (
-            <div className="content-wrapper py-3 px-4">
+            <div className="content-wrapper">
                 <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
                     <div className="text-center">
                         <div className="spinner-border text-primary mb-3" role="status">
@@ -84,11 +84,11 @@ const Services = () => {
         <>
             <div className="content-wrapper">
                 <div className="card shadow">
-                    <div className="card-header bg-light py-2">
+                    <div className="card-header bg-light py-3">
                         <div className="d-flex justify-content-between align-items-center">
                             <h3 className="h5 fw-bold text-primary mb-0">Services</h3>
                             <button 
-                                className="btn btn-primary btn-sm d-flex align-items-center gap-1"
+                                className="btn btn-sm btn-primary d-flex align-items-center gap-1"
                                 onClick={handleAddService}
                             >
                                 <Plus size={16} />
@@ -97,12 +97,14 @@ const Services = () => {
                         </div>
                     </div>      
                     
-                    <div className="alert alert-info mx-4 mt-3 mb-0 py-2 d-flex align-items-center gap-2">
-                        <Info size={16} />
-                        <span className="small">Service prices can be entered with or without VAT. The system will automatically calculate the other amount.</span>
+                    <div className="border-bottom bg-white py-3 px-4">
+                        <div className="alert alert-info mb-0 py-2 d-flex align-items-center gap-2">
+                            <Info size={16} />
+                            <span className="small">Service prices can be entered with or without VAT. The system will automatically calculate the other amount.</span>
+                        </div>
                     </div>
                     
-                    <div className="card-body p-0 mt-3">
+                    <div className="card-body p-0">
                         <div className="table-responsive">
                             <table className="table table-hover mb-0">
                                 <thead className="table-light">
@@ -111,14 +113,16 @@ const Services = () => {
                                         <th className="px-4 py-3">Description</th>
                                         <th className="px-4 py-3 text-end">With VAT</th>
                                         <th className="px-4 py-3 text-end">Without VAT</th>
-                                        <th className="px-4 py-3 text-center">Actions</th>
+                                        <th className="px-4 py-3 text-center" style={{ width: '120px' }}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {services.length === 0 ? (
                                         <tr>
-                                            <td colSpan="5" className="text-center py-4 text-muted">
-                                                No services found
+                                            <td colSpan="5" className="text-center py-5 text-muted">
+                                                <Package size={48} className="mb-3 opacity-50" />
+                                                <p className="mb-0">No services found</p>
+                                                <small>Click "Add Service" to create your first service</small>
                                             </td>
                                         </tr>
                                     ) : (
@@ -126,19 +130,21 @@ const Services = () => {
                                             <tr key={service.id}>
                                                 <td className="px-4 py-3 fw-medium">{service.name}</td>
                                                 <td className="px-4 py-3 text-muted">{service.description || '-'}</td>
-                                                <td className="px-4 py-3 text-end fw-bold">{formatCurrency(service.vatIncluded)}</td>
+                                                <td className="px-4 py-3 text-end fw-bold text-primary">{formatCurrency(service.vatIncluded)}</td>
                                                 <td className="px-4 py-3 text-end text-muted">{formatCurrency(service.charge)}</td>
                                                 <td className="px-4 py-3">
                                                     <div className="d-flex justify-content-center gap-2">
                                                         <button 
-                                                            className="btn btn-outline-primary btn-sm"
+                                                            className="btn btn-sm btn-outline-primary"
                                                             onClick={() => handleEditService(service)}
+                                                            title="Edit Service"
                                                         >
-                                                            <Edit size={14} />
+                                                            <Edit2 size={14} />
                                                         </button>
                                                         <button 
-                                                            className="btn btn-outline-danger btn-sm"
+                                                            className="btn btn-sm btn-outline-danger"
                                                             onClick={() => handleDeleteService(service.id)}
+                                                            title="Delete Service"
                                                         >
                                                             <Trash2 size={14} />
                                                         </button>

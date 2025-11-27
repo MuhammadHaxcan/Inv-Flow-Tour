@@ -351,9 +351,9 @@ const ClosedInvoices = () => {
 
     return (
         <>
-            <div className="content-wrapper py-3 px-4">
+            <div className="content-wrapper">
                 <div className="card shadow">
-                    <div className="card-header bg-light py-2">
+                    <div className="card-header bg-light py-3">
                         <div className="d-flex justify-content-between align-items-center">
                             <h3 className="h5 fw-bold text-primary mb-0">Closed Invoices</h3>
                             <p className="text-muted small mb-0">
