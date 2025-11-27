@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import SearchableSelect from './SearchableSelect';
 
-const ServiceForm = ({ servicesList, onSave, onCancel, invoice, service }) => {
+const ServiceForm = ({ servicesList, onSave, onCancel, invoice, service, existingServices = [] }) => {
     // Initialize state from props
     const [selectedService, setSelectedService] = useState(service?.service || '');
     const [rate, setRate] = useState(service?.rate || '');
@@ -14,6 +14,15 @@ const ServiceForm = ({ servicesList, onSave, onCancel, invoice, service }) => {
             setRate(service.rate || '');
         }
     }, [service]);
+
+    // Filter out already-used services (except the one being edited)
+    const availableServices = useMemo(() => {
+        const usedServiceNames = existingServices
+            .filter(s => !service || s.id !== service.id) // Exclude the service being edited
+            .map(s => s.service);
+        
+        return servicesList.filter(s => !usedServiceNames.includes(s.name));
+    }, [servicesList, existingServices, service]);
     
     // Handle service selection
     const handleServiceChange = (e) => {
@@ -43,10 +52,15 @@ const ServiceForm = ({ servicesList, onSave, onCancel, invoice, service }) => {
                 <SearchableSelect
                     value={selectedService}
                     onChange={handleServiceChange}
-                    options={servicesList.map(s => ({ value: s.name, label: s.name }))}
+                    options={availableServices.map(s => ({ value: s.name, label: s.name }))}
                     placeholder="Select Service"
                     required
                 />
+                {availableServices.length === 0 && !service && (
+                    <small className="text-warning d-block mt-1">
+                        All services have been added to this invoice.
+                    </small>
+                )}
             </div>
             <div className="mb-3">
                 <label className="form-label">Rate (AED with VAT)</label>

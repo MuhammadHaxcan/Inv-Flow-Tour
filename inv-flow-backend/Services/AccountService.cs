@@ -51,8 +51,20 @@ public class AccountService : IAccountService
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var account = await _context.Accounts.FindAsync(id);
+        var account = await _context.Accounts
+            .Include(a => a.Transactions)
+            .Include(a => a.Payments)
+            .FirstOrDefaultAsync(a => a.Id == id);
+            
         if (account == null) return false;
+
+        // Check if account has related transactions or payments
+        if (account.Transactions.Any() || account.Payments.Any())
+        {
+            throw new InvalidOperationException(
+                $"Cannot delete account '{account.Name}' because it has {account.Transactions.Count} transaction(s) and {account.Payments.Count} payment(s) associated with it. " +
+                "Please remove or reassign these records first.");
+        }
 
         _context.Accounts.Remove(account);
         await _context.SaveChangesAsync();

@@ -176,7 +176,7 @@ const OpenInvoices = () => {
         setShowPaymentModal(false);
     };
 
-    const handleAddOrUpdateExpense = (type, amount, date, description, vendorName, pax) => {
+    const handleAddOrUpdateExpense = async (type, amount, date, description, vendorName, pax) => {
         if (!currentInvoice) return;
 
         const expenseData = {
@@ -188,15 +188,17 @@ const OpenInvoices = () => {
             pax: pax ? parseInt(pax) : null
         };
 
-        if (currentExpense) {
-            // Update existing expense
-            updateExpense(currentInvoice.id, currentExpense.id, {
-                ...currentExpense,
-                ...expenseData
-            });
-        } else {
-            // Add new expense
-            addExpense(currentInvoice.id, expenseData);
+        try {
+            if (currentExpense) {
+                // Update existing expense - pass only the new data, let DataContext handle ID resolution
+                await updateExpense(currentInvoice.id, currentExpense.id, expenseData);
+            } else {
+                // Add new expense
+                await addExpense(currentInvoice.id, expenseData);
+            }
+        } catch (error) {
+            console.error('Error saving expense:', error);
+            alert('Error saving expense: ' + error.message);
         }
 
         setCurrentExpense(null);
@@ -370,9 +372,6 @@ const OpenInvoices = () => {
                     </table>
                 </div>
 
-                <!-- Expenses if any -->
-                ${getExpensesHTML(invoice)}
-                
                 <!-- Payment Info -->
                 <div class="row g-0 mb-3 pt-2 border-top">
                     <div class="col-6">
@@ -591,7 +590,7 @@ const OpenInvoices = () => {
                                                         <div className="text-muted small">{invoice.persons} persons</div>
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        <div className="d-flex align-items-center justify-content-between">
+                                                        <div className="d-flex align-items-center gap-2">
                                                             <div>
                                                                 {invoice.driver || (
                                                                     <span className="text-warning">Not assigned</span>
@@ -599,7 +598,7 @@ const OpenInvoices = () => {
                                                             </div>
                                                             <button
                                                                 onClick={(e) => openDriverModal(invoice, e)}
-                                                                className="btn btn-sm btn-outline-primary ms-2"
+                                                                className="btn btn-sm btn-outline-primary"
                                                                 title={invoice.driver ? 'Change Driver' : 'Assign Driver'}
                                                             >
                                                                 <Edit2 size={14} />
@@ -901,6 +900,7 @@ const OpenInvoices = () => {
                     onCancel={() => { setShowServiceModal(false); setCurrentService(null); }}
                     invoice={currentInvoice}
                     service={currentService}
+                    existingServices={currentInvoice?.services || []}
                 />
             </Modal>
 

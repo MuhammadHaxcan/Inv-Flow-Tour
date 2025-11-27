@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, User, DollarSign, Receipt, Truck, Edit2, Trash2, Calendar } from 'lucide-react';
+import { Plus, User, DollarSign, Receipt, Truck, Edit2, Trash2, Calendar, X } from 'lucide-react';
 import Modal from '../components/Modal';
 import CustomerModal from '../components/CustomerModal';
 import ServiceForm from '../components/ServiceForm';
@@ -150,15 +150,18 @@ const GenerateInvoice = () => {
         return calculateInvoiceTotal() - calculateExpensesTotal();
     };
 
-    const handleAddCustomer = (formData) => {
-        const newCustomer = addCustomer(formData);
-        setSelectedCustomer(newCustomer.name);
-        setShowCustomerModal(false);
+    const handleAddCustomer = async (formData) => {
+        try {
+            const newCustomer = await addCustomer(formData);
+            setSelectedCustomer(newCustomer.name);
+            setShowCustomerModal(false);
+        } catch (error) {
+            alert('Error adding customer: ' + error.message);
+        }
     };
 
-    const handleAddExpense = (type, amount, date, description, vendorName, pax) => {
-        const newExpense = {
-            id: Date.now(),
+    const handleAddOrUpdateExpense = (type, amount, date, description, vendorName, pax) => {
+        const expenseData = {
             type,
             amount: parseFloat(amount),
             date,
@@ -166,7 +169,20 @@ const GenerateInvoice = () => {
             vendorName,
             pax: pax ? parseInt(pax) : null
         };
-        setInvoiceExpenses([...invoiceExpenses, newExpense]);
+
+        if (currentExpense) {
+            // Update existing expense
+            setInvoiceExpenses(invoiceExpenses.map(exp => 
+                exp.id === currentExpense.id 
+                    ? { ...exp, ...expenseData }
+                    : exp
+            ));
+        } else {
+            // Add new expense
+            setInvoiceExpenses([...invoiceExpenses, { id: Date.now(), ...expenseData }]);
+        }
+        
+        setCurrentExpense(null);
         setShowExpenseModal(false);
     };
 
@@ -240,10 +256,13 @@ const GenerateInvoice = () => {
         // Transform expenses to API format
         const expensesData = invoiceExpenses.map(exp => {
             const expenseType = expenses.find(e => e.name === exp.type);
+            const vendor = exp.vendorName ? vendors.find(v => v.name === exp.vendorName) : null;
             return {
                 expenseTypeId: expenseType?.id || 0,
                 amount: parseFloat(exp.amount) || 0,
-                date: exp.date || serviceDate
+                date: exp.date || serviceDate,
+                vendorId: vendor?.id || null,
+                pax: exp.pax || null
             };
         }).filter(e => e.expenseTypeId > 0);
 
@@ -395,13 +414,24 @@ const GenerateInvoice = () => {
                                                         {assignedDriver}
                                                     </span>
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowDriverModal(true)}
-                                                    className="btn btn-sm btn-outline-secondary py-0 px-1"
-                                                >
-                                                    <Edit2 size={14} />
-                                                </button>
+                                                <div className="d-flex gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowDriverModal(true)}
+                                                        className="btn btn-sm btn-outline-secondary py-0 px-1"
+                                                        title="Change Driver"
+                                                    >
+                                                        <Edit2 size={14} />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setAssignedDriver('')}
+                                                        className="btn btn-sm btn-outline-danger py-0 px-1"
+                                                        title="Remove Driver"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         ) : (
                                             <button
@@ -438,6 +468,8 @@ const GenerateInvoice = () => {
                                         type="button"
                                         onClick={addService}
                                         className="btn btn-sm btn-outline-dark d-flex align-items-center gap-1"
+                                        disabled={invoiceServices.filter(s => s.service).length >= services.length}
+                                        title={invoiceServices.filter(s => s.service).length >= services.length ? "All services have been added" : "Add Service"}
                                     >
                                         <Plus size={16} />
                                         Add Service
@@ -454,13 +486,21 @@ const GenerateInvoice = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {invoiceServices.map((service, index) => (
+                                            {invoiceServices.map((service, index) => {
+                                                // Get services already selected in other rows (excluding current row)
+                                                const usedServices = invoiceServices
+                                                    .filter((s, i) => i !== index && s.service)
+                                                    .map(s => s.service);
+                                                // Filter available services for this row
+                                                const availableServices = services.filter(s => !usedServices.includes(s.name));
+                                                
+                                                return (
                                                 <tr key={index}>
                                                     <td className="px-3 py-2">
                                                         <SearchableSelect
                                                             value={service.service}
                                                             onChange={(e) => updateService(index, 'service', e.target.value)}
-                                                            options={services.map(s => ({ value: s.name, label: s.name }))}
+                                                            options={availableServices.map(s => ({ value: s.name, label: s.name }))}
                                                             placeholder="Select Service"
                                                             className={`${(!service.service && index === 0) && 'is-invalid'}`}
                                                             required={index === 0}
@@ -493,7 +533,8 @@ const GenerateInvoice = () => {
                                                         )}
                                                     </td>
                                                 </tr>
-                                            ))}
+                                            );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
@@ -678,7 +719,7 @@ const GenerateInvoice = () => {
                 <ExpenseForm
                     expenseTypes={expenseTypes}
                     vendors={vendors}
-                    onSave={(type, amount, date, description, _accountName, vendorName, pax) => handleAddExpense(type, amount, date, description, vendorName, pax)}
+                    onSave={(type, amount, date, description, _accountName, vendorName, pax) => handleAddOrUpdateExpense(type, amount, date, description, vendorName, pax)}
                     onCancel={() => { setShowExpenseModal(false); setCurrentExpense(null); }}
                     invoice={currentInvoice}
                     expense={currentExpense}

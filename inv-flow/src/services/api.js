@@ -85,7 +85,22 @@ const apiCall = async (endpoint, options = {}, retries = 0) => {
             throw error;
         }
 
-        return response.json();
+        // Handle 204 No Content responses (common for DELETE operations)
+        if (response.status === 204 || response.headers.get('content-length') === '0') {
+            return { success: true };
+        }
+
+        // Try to parse JSON, return success object if empty
+        const text = await response.text();
+        if (!text) {
+            return { success: true };
+        }
+        
+        try {
+            return JSON.parse(text);
+        } catch {
+            return { success: true, data: text };
+        }
     } catch (error) {
         // Handle connection errors
         if ((error.message.includes('Failed to fetch') || 

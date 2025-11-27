@@ -82,12 +82,19 @@ public class AccountsController : ControllerBase
     [RequirePermission("accounts.delete")]
     public async Task<IActionResult> Delete(int id)
     {
-        var result = await _accountService.DeleteAsync(id);
-        if (!result)
+        try
         {
-            return NotFound();
+            var result = await _accountService.DeleteAsync(id);
+            if (!result)
+            {
+                return NotFound(new { message = "Account not found" });
+            }
+            return NoContent();
         }
-        return NoContent();
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }
 

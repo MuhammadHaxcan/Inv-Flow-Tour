@@ -13,7 +13,7 @@ public class CreateAccountDtoValidator : AbstractValidator<CreateAccountDto>
 
         RuleFor(x => x.AccountType)
             .NotEmpty().WithMessage("Account type is required")
-            .Must(x => x.ToLower() == "cash" || x.ToLower() == "bank")
+            .Must(x => !string.IsNullOrEmpty(x) && (x.ToLower() == "cash" || x.ToLower() == "bank"))
             .WithMessage("Account type must be either 'cash' or 'bank'");
 
         RuleFor(x => x.AccountNumber)
@@ -34,7 +34,7 @@ public class UpdateAccountDtoValidator : AbstractValidator<UpdateAccountDto>
 
         RuleFor(x => x.AccountType)
             .NotEmpty().WithMessage("Account type is required")
-            .Must(x => x.ToLower() == "cash" || x.ToLower() == "bank")
+            .Must(x => !string.IsNullOrEmpty(x) && (x.ToLower() == "cash" || x.ToLower() == "bank"))
             .WithMessage("Account type must be either 'cash' or 'bank'");
 
         RuleFor(x => x.AccountNumber)

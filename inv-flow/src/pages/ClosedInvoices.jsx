@@ -208,9 +208,6 @@ const ClosedInvoices = () => {
                     </table>
                 </div>
 
-                <!-- Expenses if any -->
-                ${getExpensesHTML(invoice)}
-                
                 <!-- Payment Info -->
                 <div class="row g-0 mb-3 pt-2 border-top">
                     <div class="col-6">

@@ -69,46 +69,54 @@ const ChartOfAccounts = () => {
         }
     };
         
-    const handleSaveCustomer = (formData) => {
-        if (editingItem) {
-            // Update existing customer
-            updateCustomer({ ...editingItem, ...formData });
-        } else {
-            // Add new customer
-            const newItem = { ...formData, id: Date.now() };
-            addCustomer(newItem);
+    const handleSaveCustomer = async (formData) => {
+        try {
+            if (editingItem) {
+                // Update existing customer
+                await updateCustomer({ ...editingItem, ...formData });
+            } else {
+                // Add new customer - don't add fake id, let backend generate it
+                await addCustomer(formData);
+            }
+            setShowCustomerModal(false);
+            setEditingItem(null);
+        } catch (error) {
+            console.error('Error saving customer:', error);
+            alert('Error saving customer: ' + error.message);
         }
-        setShowCustomerModal(false);
-        setEditingItem(null);
     };
 
-    const handleSave = (formData) => {
-        if (editingItem) {
-            // Update existing item
-            if (activeCategory === 'driver') {
-                updateDriver({ ...editingItem, ...formData });
-            } else if (activeCategory === 'expense') {
-                updateExpenseType({ ...editingItem, ...formData });
-            } else if (activeCategory === 'bank') {
-                updateAccount({ ...editingItem, ...formData });
-            } else if (activeCategory === 'vendor') {
-                updateVendor({ ...editingItem, ...formData });
+    const handleSave = async (formData) => {
+        try {
+            if (editingItem) {
+                // Update existing item
+                if (activeCategory === 'driver') {
+                    await updateDriver({ ...editingItem, ...formData });
+                } else if (activeCategory === 'expense') {
+                    await updateExpenseType({ ...editingItem, ...formData });
+                } else if (activeCategory === 'bank') {
+                    await updateAccount({ ...editingItem, ...formData });
+                } else if (activeCategory === 'vendor') {
+                    await updateVendor({ ...editingItem, ...formData });
+                }
+            } else {
+                // Add new item - don't add fake id, let backend generate it
+                if (activeCategory === 'driver') {
+                    await addDriver(formData);
+                } else if (activeCategory === 'expense') {
+                    await addExpenseType(formData);
+                } else if (activeCategory === 'bank') {
+                    await addAccount(formData);
+                } else if (activeCategory === 'vendor') {
+                    await addVendor(formData);
+                }
             }
-        } else {
-            // Add new item
-            const newItem = { ...formData, id: Date.now() };
-            if (activeCategory === 'driver') {
-                addDriver(newItem);
-            } else if (activeCategory === 'expense') {
-                addExpenseType(newItem);
-            } else if (activeCategory === 'bank') {
-                addAccount(newItem);
-            } else if (activeCategory === 'vendor') {
-                addVendor(newItem);
-            }
+            setShowAddModal(false);
+            setEditingItem(null);
+        } catch (error) {
+            console.error('Error saving item:', error);
+            alert('Error saving item: ' + error.message);
         }
-        setShowAddModal(false);
-        setEditingItem(null);
     };
 
     const categories = [
