@@ -10,35 +10,54 @@ public static class SeedData
         // Seed Permissions - always ensure they exist
         var permissionDefinitions = new[]
         {
+            // Customer permissions
             ("customers.read", "Read customers", "customers", "read"),
             ("customers.write", "Create/Update customers", "customers", "write"),
             ("customers.delete", "Delete customers", "customers", "delete"),
+            // Driver permissions
             ("drivers.read", "Read drivers", "drivers", "read"),
             ("drivers.write", "Create/Update drivers", "drivers", "write"),
             ("drivers.delete", "Delete drivers", "drivers", "delete"),
+            // Service permissions
             ("services.read", "Read services", "services", "read"),
             ("services.write", "Create/Update services", "services", "write"),
             ("services.delete", "Delete services", "services", "delete"),
+            // Account permissions
             ("accounts.read", "Read accounts", "accounts", "read"),
             ("accounts.write", "Create/Update accounts", "accounts", "write"),
             ("accounts.delete", "Delete accounts", "accounts", "delete"),
-            ("expenses.read", "Read expenses", "expenses", "read"),
-            ("expenses.write", "Create/Update expenses", "expenses", "write"),
-            ("expenses.delete", "Delete expenses", "expenses", "delete"),
+            // Expense type permissions (used for expense types management)
+            ("expenses.read", "Read expense types", "expenses", "read"),
+            ("expenses.write", "Create/Update expense types", "expenses", "write"),
+            ("expenses.delete", "Delete expense types", "expenses", "delete"),
+            // Vendor permissions
             ("vendors.read", "Read vendors", "vendors", "read"),
             ("vendors.write", "Create/Update vendors", "vendors", "write"),
             ("vendors.delete", "Delete vendors", "vendors", "delete"),
+            // Invoice permissions
             ("invoices.read", "Read invoices", "invoices", "read"),
             ("invoices.write", "Create/Update invoices", "invoices", "write"),
             ("invoices.delete", "Delete invoices", "invoices", "delete"),
+            // Transaction permissions
             ("transactions.read", "Read transactions", "transactions", "read"),
+            // Report permissions
+            ("reports.read", "Read/view reports", "reports", "read"),
+            ("reports.write", "Update/generate reports", "reports", "write"),
+            // User permissions
             ("users.read", "Read users", "users", "read"),
             ("users.write", "Create/Update users", "users", "write"),
             ("users.delete", "Delete users", "users", "delete"),
+            // Role permissions
             ("roles.read", "Read roles", "roles", "read"),
             ("roles.write", "Create/Update roles", "roles", "write"),
             ("roles.delete", "Delete roles", "roles", "delete"),
+            // Permission permissions
             ("permissions.read", "Read permissions", "permissions", "read"),
+            // Signature permissions
+            ("signatures.read", "Read signatures", "signatures", "read"),
+            ("signatures.write", "Create/Update signatures", "signatures", "write"),
+            ("signatures.delete", "Delete signatures", "signatures", "delete"),
+            // Company settings permissions
             ("companysettings.read", "Read company settings", "companysettings", "read"),
             ("companysettings.write", "Update company settings", "companysettings", "write")
         };
@@ -135,7 +154,8 @@ public static class SeedData
         var basicUserPermissions = allPermissions.Where(p =>
             p.Name.Contains(".read") ||
             p.Name == "invoices.write" ||
-            p.Name == "customers.write");
+            p.Name == "customers.write" ||
+            p.Name == "reports.read");
 
         foreach (var permission in basicUserPermissions)
         {

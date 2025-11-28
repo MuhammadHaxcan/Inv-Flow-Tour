@@ -73,6 +73,21 @@ const apiCall = async (endpoint, options = {}, retries = 0) => {
             throw new Error('Unauthorized');
         }
 
+        if (response.status === 403) {
+            // Forbidden - user doesn't have permission
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch {
+                errorData = { message: 'You do not have permission to access this resource' };
+            }
+            const errorMessage = errorData.message || errorData.error || 'You do not have permission to access this resource';
+            const error = new Error(errorMessage);
+            error.response = errorData;
+            error.status = 403;
+            throw error;
+        }
+
         if (!response.ok) {
             let errorData;
             try {
@@ -83,6 +98,7 @@ const apiCall = async (endpoint, options = {}, retries = 0) => {
             const errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
             const error = new Error(errorMessage);
             error.response = errorData;
+            error.status = response.status;
             throw error;
         }
 

@@ -1,11 +1,12 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Eraser, Save, RotateCcw } from 'lucide-react';
+import { Eraser, Save, RotateCcw, AlertCircle } from 'lucide-react';
 
 const SignatureCanvas = ({ onSave, onCancel, initialImage = null, width = 400, height = 200 }) => {
     const canvasRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [hasDrawn, setHasDrawn] = useState(false);
     const [signatureName, setSignatureName] = useState('');
+    const [error, setError] = useState('');
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -57,6 +58,7 @@ const SignatureCanvas = ({ onSave, onCancel, initialImage = null, width = 400, h
         ctx.beginPath();
         ctx.moveTo(x, y);
         setIsDrawing(true);
+        setError(''); // Clear error when user starts drawing
     };
 
     const draw = (e) => {
@@ -83,15 +85,16 @@ const SignatureCanvas = ({ onSave, onCancel, initialImage = null, width = 400, h
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         setHasDrawn(false);
+        setError('');
     };
 
     const handleSave = () => {
         if (!signatureName.trim()) {
-            alert('Please enter a name for this signature');
+            setError('Please enter a name for this signature');
             return;
         }
         if (!hasDrawn) {
-            alert('Please draw a signature first');
+            setError('Please draw a signature first');
             return;
         }
         
@@ -100,23 +103,35 @@ const SignatureCanvas = ({ onSave, onCancel, initialImage = null, width = 400, h
         onSave(signatureName.trim(), imageData);
     };
 
+    const handleNameChange = (e) => {
+        setSignatureName(e.target.value);
+        if (error) setError(''); // Clear error when user types
+    };
+
     return (
         <div className="signature-canvas-container">
+            {error && (
+                <div className="alert alert-warning d-flex align-items-center gap-2 py-2 mb-3">
+                    <AlertCircle size={16} />
+                    <span className="small">{error}</span>
+                </div>
+            )}
+            
             <div className="mb-3">
                 <label className="form-label fw-medium">Signature Name</label>
                 <input
                     type="text"
-                    className="form-control"
+                    className={`form-control ${error && !signatureName.trim() ? 'is-invalid' : ''}`}
                     placeholder="e.g., Manager Signature, Director Signature"
                     value={signatureName}
-                    onChange={(e) => setSignatureName(e.target.value)}
+                    onChange={handleNameChange}
                 />
             </div>
             
             <div className="mb-3">
                 <label className="form-label fw-medium">Draw Signature</label>
                 <div 
-                    className="border rounded position-relative"
+                    className={`border rounded position-relative ${error && !hasDrawn ? 'border-warning' : ''}`}
                     style={{ 
                         backgroundColor: '#f8f9fa',
                         touchAction: 'none'
@@ -188,5 +203,3 @@ const SignatureCanvas = ({ onSave, onCancel, initialImage = null, width = 400, h
 };
 
 export default SignatureCanvas;
-
-

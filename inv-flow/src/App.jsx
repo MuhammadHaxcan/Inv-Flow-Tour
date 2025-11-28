@@ -4,6 +4,7 @@ import { FileText, Building2, FileCheck2, CheckCircle, CreditCard, Tag, Calendar
 import './App.css'
 import { DataProvider } from './contexts/DataContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { usePermissions } from './hooks/usePermissions'
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 // Lazy load pages for code splitting
@@ -31,8 +32,8 @@ const PageLoader = () => (
     </div>
 );
 
-function ProtectedRoute({ children, requiredPermission }) {
-    const { isAuthenticated, hasPermission, loading } = useAuth();
+function ProtectedRoute({ children, requiredPermission, requiredPermissions }) {
+    const { isAuthenticated, hasPermission, hasAnyPermission, loading } = useAuth();
 
     if (loading) {
         return <PageLoader />;
@@ -42,11 +43,24 @@ function ProtectedRoute({ children, requiredPermission }) {
         return <Navigate to="/login" replace />;
     }
 
-    if (requiredPermission && !hasPermission(requiredPermission)) {
+    // Check for single permission or array of permissions
+    const hasAccess = requiredPermission 
+        ? hasPermission(requiredPermission)
+        : requiredPermissions 
+            ? hasAnyPermission(requiredPermissions)
+            : true;
+
+    if (!hasAccess) {
         return (
             <div className="min-vh-100 d-flex align-items-center justify-content-center">
-                <div className="alert alert-danger" role="alert">
-                    You don't have permission to access this page.
+                <div className="text-center">
+                    <div className="alert alert-danger" role="alert">
+                        <h5 className="alert-heading">Access Denied</h5>
+                        <p className="mb-0">You don't have permission to access this page.</p>
+                    </div>
+                    <NavLink to="/" className="btn btn-primary mt-3">
+                        Go to Home
+                    </NavLink>
                 </div>
             </div>
         );
@@ -56,13 +70,38 @@ function ProtectedRoute({ children, requiredPermission }) {
 }
 
 function Navbar() {
-    const { user, logout, hasPermission, hasAnyPermission } = useAuth();
+    const { user, logout } = useAuth();
+    const {
+        // Invoice permissions
+        canReadInvoices,
+        canWriteInvoices,
+        
+        // Service permissions
+        canReadServices,
+        
+        // Account permissions
+        canReadAccounts,
+        
+        // Transaction permissions
+        canReadTransactions,
+        
+        // Report permissions
+        canReadReports,
+        
+        // Admin permissions
+        canReadUsers,
+        canReadRoles,
+        canReadPermissions,
+        
+        // Composite permissions
+        canAccessAdmin,
+        canManageInvoices,
+        canManageServices,
+        canManageAccounts
+    } = usePermissions();
 
-    const canAccessInvoices = hasAnyPermission(['invoices.read', 'invoices.write']);
-    const canAccessServices = hasAnyPermission(['services.read', 'services.write']);
-    const canAccessAccounts = hasAnyPermission(['accounts.read', 'accounts.write']);
-    const canAccessTransactions = hasPermission('transactions.read');
-    const canAccessAdmin = hasAnyPermission(['users.read', 'roles.read', 'permissions.read']);
+    // Check if user has any invoice-related permissions
+    const showInvoicesDropdown = canReadInvoices || canWriteInvoices;
 
     return (
         <nav className="bg-white border-bottom shadow-sm w-100">
@@ -71,7 +110,7 @@ function Navbar() {
                     <div className="d-flex align-items-center">
                         <h1 className="h3 fw-bold mb-0 text-primary me-5">Inv-Flow</h1>
                         <div className="d-flex">
-                            {canAccessInvoices && (
+                            {showInvoicesDropdown && (
                                 <div className="dropdown">
                                     <button
                                         className="btn btn-white px-4 py-2 d-flex align-items-center gap-2 text-secondary dropdown-toggle"
@@ -84,7 +123,7 @@ function Navbar() {
                                         Invoices
                                     </button>
                                     <ul className="dropdown-menu" aria-labelledby="invoicesDropdown">
-                                        {hasPermission('invoices.write') && (
+                                        {canWriteInvoices && (
                                             <li>
                                                 <NavLink
                                                     to="/generateinvoice"
@@ -97,7 +136,7 @@ function Navbar() {
                                                 </NavLink>
                                             </li>
                                         )}
-                                        {hasPermission('invoices.read') && (
+                                        {canReadInvoices && (
                                             <>
                                                 <li>
                                                     <NavLink
@@ -138,7 +177,7 @@ function Navbar() {
                                     </ul>
                                 </div>
                             )}
-                            {hasPermission('invoices.read') && (
+                            {canReadInvoices && (
                                 <NavLink
                                     to="/calendar"
                                     className={({ isActive }) =>
@@ -152,7 +191,7 @@ function Navbar() {
                                     Calendar
                                 </NavLink>
                             )}
-                            {canAccessTransactions && (
+                            {canReadTransactions && (
                                 <NavLink
                                     to="/bank-statement"
                                     className={({ isActive }) =>
@@ -166,7 +205,7 @@ function Navbar() {
                                     Bank Statement
                                 </NavLink>
                             )}
-                            {canAccessServices && (
+                            {canReadServices && (
                                 <NavLink
                                     to="/services"
                                     className={({ isActive }) =>
@@ -180,7 +219,7 @@ function Navbar() {
                                     Services
                                 </NavLink>
                             )}
-                            {canAccessAccounts && (
+                            {canReadAccounts && (
                                 <NavLink
                                     to="/accounts"
                                     className={({ isActive }) =>
@@ -194,7 +233,7 @@ function Navbar() {
                                     Chart of Accounts
                                 </NavLink>
                             )}
-                            {hasPermission('invoices.read') && (
+                            {canReadReports && (
                                 <NavLink
                                     to="/reports"
                                     className={({ isActive }) =>
@@ -254,8 +293,8 @@ function AppContent() {
                         <Routes>
                             <Route path="/login" element={<Login />} />
                             <Route path="/" element={
-                                <ProtectedRoute requiredPermission="invoices.read">
-                                    <Navigate to="/generateinvoice" replace />
+                                <ProtectedRoute requiredPermissions={['invoices.read', 'invoices.write']}>
+                                    <Navigate to="/open-invoices" replace />
                                 </ProtectedRoute>
                             } />
                             <Route path="/generateinvoice" element={
@@ -299,12 +338,12 @@ function AppContent() {
                                 </ProtectedRoute>
                             } />
                             <Route path="/admin" element={
-                                <ProtectedRoute requiredPermission="users.read">
+                                <ProtectedRoute requiredPermissions={['users.read', 'roles.read', 'permissions.read']}>
                                     <Admin />
                                 </ProtectedRoute>
                             } />
                             <Route path="/reports" element={
-                                <ProtectedRoute requiredPermission="invoices.read">
+                                <ProtectedRoute requiredPermission="reports.read">
                                     <Reports />
                                 </ProtectedRoute>
                             } />

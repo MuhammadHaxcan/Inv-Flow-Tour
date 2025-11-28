@@ -7,6 +7,7 @@ import PaymentForm from '../components/PaymentForm';
 import ExpenseForm from '../components/ExpenseForm';
 import DriverModal from '../components/DriverModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import AlertModal from '../components/AlertModal';
 import SearchableSelect from '../components/SearchableSelect';
 import { useData } from '../contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
@@ -44,6 +45,13 @@ const GenerateInvoice = () => {
     const [currentExpense, setCurrentExpense] = useState(null); // Track current expense for editing
     const [showDeleteExpenseModal, setShowDeleteExpenseModal] = useState(false);
     const [expenseToDeleteIndex, setExpenseToDeleteIndex] = useState(null);
+    
+    // Alert modal state
+    const [alertModal, setAlertModal] = useState({ show: false, message: '', type: 'info', title: '' });
+
+    const showAlert = (message, type = 'info', title = '') => {
+        setAlertModal({ show: true, message, type, title });
+    };
 
     // Get today's date in a consistent format
     const today = new Date();
@@ -157,7 +165,7 @@ const GenerateInvoice = () => {
             setSelectedCustomer(newCustomer.name);
             setShowCustomerModal(false);
         } catch (error) {
-            alert('Error adding customer: ' + error.message);
+            showAlert('Error adding customer: ' + error.message, 'error');
         }
     };
 
@@ -218,27 +226,27 @@ const GenerateInvoice = () => {
     // Updated to handle form submission and save invoice with only service and pax as mandatory
     const handleSaveInvoice = async () => {
         if (!selectedCustomer) {
-            alert('Please select a customer');
+            showAlert('Please select a customer', 'warning');
             return;
         }
 
         // Validate that at least one service is fully filled
         const validServices = invoiceServices.filter(s => s.service && s.rate);
         if (validServices.length === 0) {
-            alert('Please add at least one service');
+            showAlert('Please add at least one service', 'warning');
             return;
         }
 
         // Validate person accommodation
         if (!accommodation) {
-            alert('Please enter number of persons');
+            showAlert('Please enter number of persons', 'warning');
             return;
         }
 
         // Find customer ID
         const customer = customers.find(c => c.name === selectedCustomer);
         if (!customer) {
-            alert('Customer not found');
+            showAlert('Customer not found', 'error');
             return;
         }
 
@@ -294,7 +302,7 @@ const GenerateInvoice = () => {
             await generateInvoice(invoiceData);
             navigate('/open-invoices');
         } catch (error) {
-            alert('Error generating invoice: ' + error.message);
+            showAlert('Error generating invoice: ' + error.message, 'error');
         }
     };
 
@@ -748,6 +756,15 @@ const GenerateInvoice = () => {
                 message="Are you sure you want to delete this expense?"
                 confirmButtonText="Delete"
                 confirmButtonVariant="danger"
+            />
+
+            {/* Alert Modal */}
+            <AlertModal
+                show={alertModal.show}
+                onClose={() => setAlertModal({ ...alertModal, show: false })}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
             />
         </>
     );

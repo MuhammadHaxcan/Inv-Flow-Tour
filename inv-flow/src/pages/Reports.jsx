@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, BarChart3, TrendingUp, DollarSign, Users, Package, Filter, RefreshCw } from 'lucide-react';
+import { Calendar, BarChart3, TrendingUp, DollarSign, Users, Package, Filter, RefreshCw, AlertCircle } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
+import { usePermissions } from '../hooks/usePermissions';
 import { reportsAPI } from '../services/api';
 import SearchableSelect from '../components/SearchableSelect';
+import { Navigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Reports = () => {
     const { services, customers, drivers, loadServices, loadCustomers, loadDrivers, loadingStates } = useData();
+    const { canReadReports } = usePermissions();
+    
     const [activeTab, setActiveTab] = useState('service');
     const [dateRange, setDateRange] = useState({
         startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
@@ -19,6 +23,11 @@ const Reports = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // Redirect if user doesn't have permission
+    if (!canReadReports) {
+        return <Navigate to="/" replace />;
+    }
+
     useEffect(() => {
         loadServices();
         loadCustomers();
@@ -26,10 +35,17 @@ const Reports = () => {
     }, [loadServices, loadCustomers, loadDrivers]);
 
     useEffect(() => {
-        loadReportData();
-    }, [activeTab, dateRange.startDate, dateRange.endDate, selectedService, selectedCustomer, selectedDriver]);
+        if (canReadReports) {
+            loadReportData();
+        }
+    }, [activeTab, dateRange.startDate, dateRange.endDate, selectedService, selectedCustomer, selectedDriver, canReadReports]);
 
     const loadReportData = async () => {
+        // Don't load if user doesn't have permission
+        if (!canReadReports) {
+            return;
+        }
+
         setLoading(true);
         setError(null);
         try {
@@ -80,8 +96,15 @@ const Reports = () => {
             setReportData(data);
         } catch (err) {
             console.error('Error loading report:', err);
-            const errorMessage = err.message || 'Failed to load report data';
-            setError(errorMessage);
+            
+            // Handle 403 Forbidden specifically
+            if (err.status === 403 || (err.message && err.message.includes('permission'))) {
+                setError('You do not have permission to access reports. Please contact your administrator to grant you the "reports.read" permission.');
+            } else {
+                const errorMessage = err.message || 'Failed to load report data';
+                setError(errorMessage);
+            }
+            
             if (err.response || err.data) {
                 console.error('Full error details:', err.response || err.data);
             }
@@ -282,8 +305,17 @@ const Reports = () => {
                 {/* Report Content */}
                 <div className="card-body p-0">
                     {error && (
-                        <div className="alert alert-danger m-4" role="alert">
-                            {error}
+                        <div className="alert alert-danger m-4 d-flex align-items-center gap-2" role="alert">
+                            <AlertCircle size={20} />
+                            <div>
+                                <strong>Error Loading Report</strong>
+                                <div className="mt-1">{error}</div>
+                                {error.includes('permission') && (
+                                    <div className="mt-2 small">
+                                        If you believe you should have access to reports, please contact your administrator.
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 

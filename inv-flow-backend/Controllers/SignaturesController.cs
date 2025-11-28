@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using inv_flow_backend.DTOs;
 using inv_flow_backend.Services.Interfaces;
+using inv_flow_backend.Attributes;
 
 namespace inv_flow_backend.Controllers;
 
@@ -20,6 +21,7 @@ public class SignaturesController : ControllerBase
     }
 
     [HttpGet]
+    // No specific permission required - signatures are needed for invoice printing
     public async Task<ActionResult<IEnumerable<SignatureDto>>> GetAll()
     {
         var signatures = await _signatureService.GetAllAsync();
@@ -27,6 +29,7 @@ public class SignaturesController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    // No specific permission required - signatures are needed for invoice printing
     public async Task<ActionResult<SignatureDto>> GetById(int id)
     {
         var signature = await _signatureService.GetByIdAsync(id);
@@ -38,6 +41,7 @@ public class SignaturesController : ControllerBase
     }
 
     [HttpGet("active")]
+    // No specific permission required - active signature is needed for invoice printing
     public async Task<ActionResult<SignatureDto>> GetActive()
     {
         var signature = await _signatureService.GetActiveSignatureAsync();
@@ -49,6 +53,7 @@ public class SignaturesController : ControllerBase
     }
 
     [HttpPost]
+    [RequirePermission("signatures.write")]
     public async Task<ActionResult<SignatureDto>> Create([FromBody] CreateSignatureDto dto)
     {
         if (string.IsNullOrEmpty(dto.Name))
@@ -66,6 +71,7 @@ public class SignaturesController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [RequirePermission("signatures.write")]
     public async Task<ActionResult<SignatureDto>> Update(int id, [FromBody] UpdateSignatureDto dto)
     {
         var signature = await _signatureService.UpdateAsync(id, dto);
@@ -77,6 +83,7 @@ public class SignaturesController : ControllerBase
     }
 
     [HttpPost("{id}/set-active")]
+    [RequirePermission("signatures.write")]
     public async Task<ActionResult> SetActive(int id)
     {
         var result = await _signatureService.SetActiveAsync(id);
@@ -88,6 +95,7 @@ public class SignaturesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission("signatures.delete")]
     public async Task<ActionResult> Delete(int id)
     {
         var result = await _signatureService.DeleteAsync(id);

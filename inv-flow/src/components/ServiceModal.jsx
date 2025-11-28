@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
+import { AlertCircle } from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const ServiceModal = ({ isOpen, onClose, onSave, service = null }) => {
@@ -11,6 +12,7 @@ const ServiceModal = ({ isOpen, onClose, onSave, service = null }) => {
     });
     
     const [inputMode, setInputMode] = useState('withVAT'); // 'withVAT' or 'withoutVAT'
+    const [error, setError] = useState('');
 
     // Format amount to AED
     const formatCurrency = (amount) => {
@@ -45,11 +47,13 @@ const ServiceModal = ({ isOpen, onClose, onSave, service = null }) => {
                 chargeWithoutVAT: ''
             });
         }
+        setError('');
     }, [service, isOpen]);
 
     // Handle form input changes
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        setError(''); // Clear error on input change
         
         if (name === 'chargeWithVAT' && inputMode === 'withVAT') {
             const withoutVAT = value ? calculateWithoutVAT(value) : '';
@@ -83,8 +87,13 @@ const ServiceModal = ({ isOpen, onClose, onSave, service = null }) => {
         const chargeWithVAT = parseFloat(formData.chargeWithVAT);
         const chargeWithoutVAT = parseFloat(formData.chargeWithoutVAT);
         
-        if (!formData.name || !chargeWithVAT || isNaN(chargeWithVAT)) {
-            alert('Please enter a valid service name and charge');
+        if (!formData.name.trim()) {
+            setError('Please enter a service name');
+            return;
+        }
+        
+        if (!chargeWithVAT || isNaN(chargeWithVAT) || chargeWithVAT <= 0) {
+            setError('Please enter a valid charge amount');
             return;
         }
 
@@ -107,11 +116,18 @@ const ServiceModal = ({ isOpen, onClose, onSave, service = null }) => {
                 e.preventDefault();
                 handleSubmit();
             }}>
+                {error && (
+                    <div className="alert alert-warning d-flex align-items-center gap-2 py-2 mb-3">
+                        <AlertCircle size={16} />
+                        <span className="small">{error}</span>
+                    </div>
+                )}
+                
                 <div className="mb-3">
                     <label htmlFor="name" className="form-label">Service Name</label>
                     <input 
                         type="text" 
-                        className="form-control" 
+                        className={`form-control ${error && !formData.name.trim() ? 'is-invalid' : ''}`}
                         id="name" 
                         name="name"
                         value={formData.name}
@@ -156,7 +172,7 @@ const ServiceModal = ({ isOpen, onClose, onSave, service = null }) => {
                                 <span className="input-group-text">AED</span>
                                 <input 
                                     type="number" 
-                                    className="form-control" 
+                                    className={`form-control ${error && (!formData.chargeWithVAT || isNaN(parseFloat(formData.chargeWithVAT))) ? 'is-invalid' : ''}`}
                                     id="chargeWithVAT" 
                                     name="chargeWithVAT"
                                     value={formData.chargeWithVAT}
@@ -182,7 +198,7 @@ const ServiceModal = ({ isOpen, onClose, onSave, service = null }) => {
                                 <span className="input-group-text">AED</span>
                                 <input 
                                     type="number" 
-                                    className="form-control" 
+                                    className={`form-control ${error && (!formData.chargeWithoutVAT || isNaN(parseFloat(formData.chargeWithoutVAT))) ? 'is-invalid' : ''}`}
                                     id="chargeWithoutVAT" 
                                     name="chargeWithoutVAT"
                                     value={formData.chargeWithoutVAT}

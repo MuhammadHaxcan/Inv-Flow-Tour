@@ -3,6 +3,9 @@ import { Plus, Edit2, Trash2, Lock, User as UserIcon, Image, PenTool, Check, Upl
 import { usersAPI, rolesAPI, permissionsAPI, signaturesAPI, companySettingsAPI } from '../services/api';
 import SignatureCanvas from '../components/SignatureCanvas';
 import Modal from '../components/Modal';
+import ConfirmationModal from '../components/ConfirmationModal';
+import AlertModal from '../components/AlertModal';
+import { usePermissions } from '../hooks/usePermissions';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Admin = () => {
@@ -31,6 +34,27 @@ const Admin = () => {
         permissionIds: []
     });
     const logoInputRef = useRef(null);
+
+    // Confirmation modals state
+    const [deleteUserModal, setDeleteUserModal] = useState({ show: false, user: null });
+    const [deleteRoleModal, setDeleteRoleModal] = useState({ show: false, role: null });
+    const [deleteSignatureModal, setDeleteSignatureModal] = useState({ show: false, signature: null });
+    const [clearLogoModal, setClearLogoModal] = useState(false);
+    
+    // Alert modal state
+    const [alertModal, setAlertModal] = useState({ show: false, message: '', type: 'info', title: '' });
+
+    // Permissions
+    const { 
+        canWriteUsers, canDeleteUsers,
+        canWriteRoles, canDeleteRoles,
+        canWriteSignatures, canDeleteSignatures,
+        canWriteCompanySettings
+    } = usePermissions();
+
+    const showAlert = (message, type = 'info', title = '') => {
+        setAlertModal({ show: true, message, type, title });
+    };
 
     const tabs = [
         { id: 'users', label: 'Users', icon: UserIcon },
@@ -69,7 +93,7 @@ const Admin = () => {
             }
         } catch (error) {
             console.error('Error loading data:', error);
-            alert('Error loading data');
+            showAlert('Error loading data', 'error');
         } finally {
             setLoading(false);
         }
@@ -91,7 +115,7 @@ const Admin = () => {
             resetUserForm();
             loadData();
         } catch (error) {
-            alert('Error saving user: ' + error.message);
+            showAlert('Error saving user: ' + error.message, 'error');
         }
     };
 
@@ -107,29 +131,27 @@ const Admin = () => {
             resetRoleForm();
             loadData();
         } catch (error) {
-            alert('Error saving role: ' + error.message);
+            showAlert('Error saving role: ' + error.message, 'error');
         }
     };
 
-    const handleDeleteUser = async (id) => {
-        if (window.confirm('Are you sure you want to delete this user?')) {
-            try {
-                await usersAPI.delete(id);
-                loadData();
-            } catch (error) {
-                alert('Error deleting user: ' + error.message);
-            }
+    const handleDeleteUser = async () => {
+        try {
+            await usersAPI.delete(deleteUserModal.user.id);
+            setDeleteUserModal({ show: false, user: null });
+            loadData();
+        } catch (error) {
+            showAlert('Error deleting user: ' + error.message, 'error');
         }
     };
 
-    const handleDeleteRole = async (id) => {
-        if (window.confirm('Are you sure you want to delete this role?')) {
-            try {
-                await rolesAPI.delete(id);
-                loadData();
-            } catch (error) {
-                alert('Error deleting role: ' + error.message);
-            }
+    const handleDeleteRole = async () => {
+        try {
+            await rolesAPI.delete(deleteRoleModal.role.id);
+            setDeleteRoleModal({ show: false, role: null });
+            loadData();
+        } catch (error) {
+            showAlert('Error deleting role: ' + error.message, 'error');
         }
     };
 
@@ -181,7 +203,7 @@ const Admin = () => {
             setShowSignatureModal(false);
             loadData();
         } catch (error) {
-            alert('Error saving signature: ' + error.message);
+            showAlert('Error saving signature: ' + error.message, 'error');
         }
     };
 
@@ -190,18 +212,17 @@ const Admin = () => {
             await signaturesAPI.setActive(id);
             loadData();
         } catch (error) {
-            alert('Error setting active signature: ' + error.message);
+            showAlert('Error setting active signature: ' + error.message, 'error');
         }
     };
 
-    const handleDeleteSignature = async (id) => {
-        if (window.confirm('Are you sure you want to delete this signature?')) {
-            try {
-                await signaturesAPI.delete(id);
-                loadData();
-            } catch (error) {
-                alert('Error deleting signature: ' + error.message);
-            }
+    const handleDeleteSignature = async () => {
+        try {
+            await signaturesAPI.delete(deleteSignatureModal.signature.id);
+            setDeleteSignatureModal({ show: false, signature: null });
+            loadData();
+        } catch (error) {
+            showAlert('Error deleting signature: ' + error.message, 'error');
         }
     };
 
@@ -210,12 +231,12 @@ const Admin = () => {
         if (!file) return;
 
         if (!file.type.startsWith('image/')) {
-            alert('Please select an image file');
+            showAlert('Please select an image file', 'warning');
             return;
         }
 
         if (file.size > 2 * 1024 * 1024) {
-            alert('Image size should be less than 2MB');
+            showAlert('Image size should be less than 2MB', 'warning');
             return;
         }
 
@@ -231,18 +252,17 @@ const Admin = () => {
             };
             reader.readAsDataURL(file);
         } catch (error) {
-            alert('Error uploading logo: ' + error.message);
+            showAlert('Error uploading logo: ' + error.message, 'error');
         }
     };
 
     const handleClearLogo = async () => {
-        if (window.confirm('Are you sure you want to remove the logo?')) {
-            try {
-                await companySettingsAPI.clearLogo();
-                loadData();
-            } catch (error) {
-                alert('Error removing logo: ' + error.message);
-            }
+        try {
+            await companySettingsAPI.clearLogo();
+            setClearLogoModal(false);
+            loadData();
+        } catch (error) {
+            showAlert('Error removing logo: ' + error.message, 'error');
         }
     };
 
@@ -302,16 +322,18 @@ const Admin = () => {
                                 <div>
                                     <div className="d-flex justify-content-between align-items-center mb-3">
                                         <h6 className="fw-bold text-muted text-uppercase small mb-0">User Management</h6>
-                                        <button
-                                            className="btn btn-sm btn-primary d-flex align-items-center gap-1"
-                                            onClick={() => {
-                                                resetUserForm();
-                                                setShowUserModal(true);
-                                            }}
-                                        >
-                                            <Plus size={16} />
-                                            Add User
-                                        </button>
+                                        {canWriteUsers && (
+                                            <button
+                                                className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                                                onClick={() => {
+                                                    resetUserForm();
+                                                    setShowUserModal(true);
+                                                }}
+                                            >
+                                                <Plus size={16} />
+                                                Add User
+                                            </button>
+                                        )}
                                     </div>
                                     <div className="table-responsive">
                                         <table className="table table-hover mb-0">
@@ -322,13 +344,15 @@ const Admin = () => {
                                                     <th className="px-4 py-3">Full Name</th>
                                                     <th className="px-4 py-3">Roles</th>
                                                     <th className="px-4 py-3">Status</th>
-                                                    <th className="px-4 py-3 text-center" style={{ width: '100px' }}>Actions</th>
+                                                    {(canWriteUsers || canDeleteUsers) && (
+                                                        <th className="px-4 py-3 text-center" style={{ width: '100px' }}>Actions</th>
+                                                    )}
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {users.length === 0 ? (
                                                     <tr>
-                                                        <td colSpan="6" className="text-center py-4 text-muted">
+                                                        <td colSpan={canWriteUsers || canDeleteUsers ? "6" : "5"} className="text-center py-4 text-muted">
                                                             No users found
                                                         </td>
                                                     </tr>
@@ -350,24 +374,30 @@ const Admin = () => {
                                                                     {user.isActive ? 'Active' : 'Inactive'}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-4 py-3">
-                                                                <div className="d-flex justify-content-center gap-2">
-                                                                    <button
-                                                                        className="btn btn-sm btn-outline-primary"
-                                                                        onClick={() => handleEditUser(user)}
-                                                                        title="Edit"
-                                                                    >
-                                                                        <Edit2 size={14} />
-                                                                    </button>
-                                                                    <button
-                                                                        className="btn btn-sm btn-outline-danger"
-                                                                        onClick={() => handleDeleteUser(user.id)}
-                                                                        title="Delete"
-                                                                    >
-                                                                        <Trash2 size={14} />
-                                                                    </button>
-                                                                </div>
-                                                            </td>
+                                                            {(canWriteUsers || canDeleteUsers) && (
+                                                                <td className="px-4 py-3">
+                                                                    <div className="d-flex justify-content-center gap-2">
+                                                                        {canWriteUsers && (
+                                                                            <button
+                                                                                className="btn btn-sm btn-outline-primary"
+                                                                                onClick={() => handleEditUser(user)}
+                                                                                title="Edit"
+                                                                            >
+                                                                                <Edit2 size={14} />
+                                                                            </button>
+                                                                        )}
+                                                                        {canDeleteUsers && (
+                                                                            <button
+                                                                                className="btn btn-sm btn-outline-danger"
+                                                                                onClick={() => setDeleteUserModal({ show: true, user })}
+                                                                                title="Delete"
+                                                                            >
+                                                                                <Trash2 size={14} />
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                            )}
                                                         </tr>
                                                     ))
                                                 )}
@@ -382,16 +412,18 @@ const Admin = () => {
                                 <div>
                                     <div className="d-flex justify-content-between align-items-center mb-3">
                                         <h6 className="fw-bold text-muted text-uppercase small mb-0">Role Management</h6>
-                                        <button
-                                            className="btn btn-sm btn-primary d-flex align-items-center gap-1"
-                                            onClick={() => {
-                                                resetRoleForm();
-                                                setShowRoleModal(true);
-                                            }}
-                                        >
-                                            <Plus size={16} />
-                                            Add Role
-                                        </button>
+                                        {canWriteRoles && (
+                                            <button
+                                                className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                                                onClick={() => {
+                                                    resetRoleForm();
+                                                    setShowRoleModal(true);
+                                                }}
+                                            >
+                                                <Plus size={16} />
+                                                Add Role
+                                            </button>
+                                        )}
                                     </div>
                                     <div className="table-responsive">
                                         <table className="table table-hover mb-0">
@@ -400,13 +432,15 @@ const Admin = () => {
                                                     <th className="px-4 py-3">Name</th>
                                                     <th className="px-4 py-3">Description</th>
                                                     <th className="px-4 py-3">Permissions</th>
-                                                    <th className="px-4 py-3 text-center" style={{ width: '100px' }}>Actions</th>
+                                                    {(canWriteRoles || canDeleteRoles) && (
+                                                        <th className="px-4 py-3 text-center" style={{ width: '100px' }}>Actions</th>
+                                                    )}
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {roles.length === 0 ? (
                                                     <tr>
-                                                        <td colSpan="4" className="text-center py-4 text-muted">
+                                                        <td colSpan={canWriteRoles || canDeleteRoles ? "4" : "3"} className="text-center py-4 text-muted">
                                                             No roles found
                                                         </td>
                                                     </tr>
@@ -420,24 +454,30 @@ const Admin = () => {
                                                                     {role.permissionIds?.length || 0} permissions
                                                                 </span>
                                                             </td>
-                                                            <td className="px-4 py-3">
-                                                                <div className="d-flex justify-content-center gap-2">
-                                                                    <button
-                                                                        className="btn btn-sm btn-outline-primary"
-                                                                        onClick={() => handleEditRole(role)}
-                                                                        title="Edit"
-                                                                    >
-                                                                        <Edit2 size={14} />
-                                                                    </button>
-                                                                    <button
-                                                                        className="btn btn-sm btn-outline-danger"
-                                                                        onClick={() => handleDeleteRole(role.id)}
-                                                                        title="Delete"
-                                                                    >
-                                                                        <Trash2 size={14} />
-                                                                    </button>
-                                                                </div>
-                                                            </td>
+                                                            {(canWriteRoles || canDeleteRoles) && (
+                                                                <td className="px-4 py-3">
+                                                                    <div className="d-flex justify-content-center gap-2">
+                                                                        {canWriteRoles && (
+                                                                            <button
+                                                                                className="btn btn-sm btn-outline-primary"
+                                                                                onClick={() => handleEditRole(role)}
+                                                                                title="Edit"
+                                                                            >
+                                                                                <Edit2 size={14} />
+                                                                            </button>
+                                                                        )}
+                                                                        {canDeleteRoles && (
+                                                                            <button
+                                                                                className="btn btn-sm btn-outline-danger"
+                                                                                onClick={() => setDeleteRoleModal({ show: true, role })}
+                                                                                title="Delete"
+                                                                            >
+                                                                                <Trash2 size={14} />
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                            )}
                                                         </tr>
                                                     ))
                                                 )}
@@ -474,14 +514,16 @@ const Admin = () => {
                                                                     }}
                                                                     className="border rounded p-2"
                                                                 />
-                                                                <button
-                                                                    className="btn btn-sm btn-danger position-absolute top-0 end-0 translate-middle rounded-circle p-1"
-                                                                    onClick={handleClearLogo}
-                                                                    title="Remove Logo"
-                                                                    style={{ width: '24px', height: '24px' }}
-                                                                >
-                                                                    <X size={12} />
-                                                                </button>
+                                                                {canWriteCompanySettings && (
+                                                                    <button
+                                                                        className="btn btn-sm btn-danger position-absolute top-0 end-0 translate-middle rounded-circle p-1"
+                                                                        onClick={() => setClearLogoModal(true)}
+                                                                        title="Remove Logo"
+                                                                        style={{ width: '24px', height: '24px' }}
+                                                                    >
+                                                                        <X size={12} />
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         ) : (
                                                             <div 
@@ -493,25 +535,27 @@ const Admin = () => {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="text-center">
-                                                        <input
-                                                            type="file"
-                                                            ref={logoInputRef}
-                                                            onChange={handleLogoUpload}
-                                                            accept="image/*"
-                                                            style={{ display: 'none' }}
-                                                        />
-                                                        <button
-                                                            className="btn btn-sm btn-primary d-flex align-items-center gap-1 mx-auto"
-                                                            onClick={() => logoInputRef.current?.click()}
-                                                        >
-                                                            <Upload size={14} />
-                                                            {companySettings?.logoImageData ? 'Change Logo' : 'Upload Logo'}
-                                                        </button>
-                                                        <small className="text-muted d-block mt-2">
-                                                            Max: 2MB. PNG, JPG, GIF
-                                                        </small>
-                                                    </div>
+                                                    {canWriteCompanySettings && (
+                                                        <div className="text-center">
+                                                            <input
+                                                                type="file"
+                                                                ref={logoInputRef}
+                                                                onChange={handleLogoUpload}
+                                                                accept="image/*"
+                                                                style={{ display: 'none' }}
+                                                            />
+                                                            <button
+                                                                className="btn btn-sm btn-primary d-flex align-items-center gap-1 mx-auto"
+                                                                onClick={() => logoInputRef.current?.click()}
+                                                            >
+                                                                <Upload size={14} />
+                                                                {companySettings?.logoImageData ? 'Change Logo' : 'Upload Logo'}
+                                                            </button>
+                                                            <small className="text-muted d-block mt-2">
+                                                                Max: 2MB. PNG, JPG, GIF
+                                                            </small>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -524,20 +568,24 @@ const Admin = () => {
                                                         <PenTool size={16} />
                                                         Authorized Signatures
                                                     </h6>
-                                                    <button
-                                                        className="btn btn-sm btn-primary d-flex align-items-center gap-1"
-                                                        onClick={() => setShowSignatureModal(true)}
-                                                    >
-                                                        <Plus size={14} />
-                                                        Add
-                                                    </button>
+                                                    {canWriteSignatures && (
+                                                        <button
+                                                            className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                                                            onClick={() => setShowSignatureModal(true)}
+                                                        >
+                                                            <Plus size={14} />
+                                                            Add
+                                                        </button>
+                                                    )}
                                                 </div>
                                                 <div className="card-body">
                                                     {signatures.length === 0 ? (
                                                         <div className="text-center text-muted py-4">
                                                             <PenTool size={48} className="mb-2 opacity-50" />
                                                             <p className="mb-0 small">No signatures added yet</p>
-                                                            <small>Click "Add" to draw a new signature</small>
+                                                            {canWriteSignatures && (
+                                                                <small>Click "Add" to draw a new signature</small>
+                                                            )}
                                                         </div>
                                                     ) : (
                                                         <div className="signatures-list">
@@ -569,7 +617,7 @@ const Admin = () => {
                                                                         </div>
                                                                     </div>
                                                                     <div className="d-flex gap-1">
-                                                                        {!signature.isActive && (
+                                                                        {!signature.isActive && canWriteSignatures && (
                                                                             <button
                                                                                 className="btn btn-sm btn-outline-success"
                                                                                 onClick={() => handleSetActiveSignature(signature.id)}
@@ -578,13 +626,15 @@ const Admin = () => {
                                                                                 <Check size={14} />
                                                                             </button>
                                                                         )}
-                                                                        <button
-                                                                            className="btn btn-sm btn-outline-danger"
-                                                                            onClick={() => handleDeleteSignature(signature.id)}
-                                                                            title="Delete"
-                                                                        >
-                                                                            <Trash2 size={14} />
-                                                                        </button>
+                                                                        {canDeleteSignatures && (
+                                                                            <button
+                                                                                className="btn btn-sm btn-outline-danger"
+                                                                                onClick={() => setDeleteSignatureModal({ show: true, signature })}
+                                                                                title="Delete"
+                                                                            >
+                                                                                <Trash2 size={14} />
+                                                                            </button>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             ))}
@@ -795,6 +845,62 @@ const Admin = () => {
                     onCancel={() => setShowSignatureModal(false)}
                 />
             </Modal>
+
+            {/* Delete User Confirmation Modal */}
+            <ConfirmationModal
+                show={deleteUserModal.show}
+                onClose={() => setDeleteUserModal({ show: false, user: null })}
+                onConfirm={handleDeleteUser}
+                title="Delete User"
+                message="Are you sure you want to delete this user?"
+                itemName={deleteUserModal.user?.username}
+                confirmButtonText="Delete"
+                type="danger"
+            />
+
+            {/* Delete Role Confirmation Modal */}
+            <ConfirmationModal
+                show={deleteRoleModal.show}
+                onClose={() => setDeleteRoleModal({ show: false, role: null })}
+                onConfirm={handleDeleteRole}
+                title="Delete Role"
+                message="Are you sure you want to delete this role?"
+                itemName={deleteRoleModal.role?.name}
+                confirmButtonText="Delete"
+                type="danger"
+            />
+
+            {/* Delete Signature Confirmation Modal */}
+            <ConfirmationModal
+                show={deleteSignatureModal.show}
+                onClose={() => setDeleteSignatureModal({ show: false, signature: null })}
+                onConfirm={handleDeleteSignature}
+                title="Delete Signature"
+                message="Are you sure you want to delete this signature?"
+                itemName={deleteSignatureModal.signature?.name}
+                confirmButtonText="Delete"
+                type="danger"
+            />
+
+            {/* Clear Logo Confirmation Modal */}
+            <ConfirmationModal
+                show={clearLogoModal}
+                onClose={() => setClearLogoModal(false)}
+                onConfirm={handleClearLogo}
+                title="Remove Logo"
+                message="Are you sure you want to remove the company logo?"
+                confirmButtonText="Remove"
+                type="warning"
+            />
+
+            {/* Alert Modal */}
+            <AlertModal
+                show={alertModal.show}
+                onClose={() => setAlertModal({ ...alertModal, show: false })}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+            />
         </div>
     );
 };

@@ -2,12 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { DollarSign, CheckCircle, FileText, AlertCircle } from 'lucide-react';
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
+import AlertModal from '../components/AlertModal';
 import { useData } from '../contexts/DataContext';
+import { usePermissions } from '../hooks/usePermissions';
 import { invoicesAPI } from '../services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const OutstandingExpenses = () => {
     const { accounts, loadAccounts, loadingStates } = useData();
+    
+    // Permissions
+    const { canWriteInvoices } = usePermissions();
     
     const [outstandingExpenses, setOutstandingExpenses] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -18,6 +23,13 @@ const OutstandingExpenses = () => {
         date: new Date().toISOString().split('T')[0],
         reference: ''
     });
+    
+    // Alert modal state
+    const [alertModal, setAlertModal] = useState({ show: false, message: '', type: 'info', title: '' });
+
+    const showAlert = (message, type = 'info', title = '') => {
+        setAlertModal({ show: true, message, type, title });
+    };
 
     // Load accounts and expenses on mount
     useEffect(() => {
@@ -54,7 +66,7 @@ const OutstandingExpenses = () => {
 
     const handleMarkPaid = async () => {
         if (!selectedExpense || !paymentData.accountId) {
-            alert('Please select a payment account');
+            showAlert('Please select a payment account', 'warning');
             return;
         }
 
@@ -70,7 +82,7 @@ const OutstandingExpenses = () => {
             setShowPayModal(false);
             setSelectedExpense(null);
         } catch (error) {
-            alert('Error marking expense as paid: ' + error.message);
+            showAlert('Error marking expense as paid: ' + error.message, 'error');
         }
     };
 
@@ -142,13 +154,15 @@ const OutstandingExpenses = () => {
                                         <th className="px-4 py-3">Date</th>
                                         <th className="px-4 py-3 text-center">Pax</th>
                                         <th className="px-4 py-3 text-end">Amount</th>
-                                        <th className="px-4 py-3 text-center" style={{ width: '100px' }}>Actions</th>
+                                        {canWriteInvoices && (
+                                            <th className="px-4 py-3 text-center" style={{ width: '100px' }}>Actions</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {outstandingExpenses.length === 0 ? (
                                         <tr>
-                                            <td colSpan="8" className="text-center py-5 text-muted">
+                                            <td colSpan={canWriteInvoices ? "8" : "7"} className="text-center py-5 text-muted">
                                                 <CheckCircle size={48} className="mb-3 text-success" />
                                                 <p className="mb-0 fw-medium">No outstanding expenses</p>
                                                 <small>All expenses have been paid!</small>
@@ -183,16 +197,18 @@ const OutstandingExpenses = () => {
                                                 <td className="px-4 py-3 text-end">
                                                     <strong className="text-warning">{formatCurrency(expense.amount)}</strong>
                                                 </td>
-                                                <td className="px-4 py-3 text-center">
-                                                    <button
-                                                        onClick={() => openPayModal(expense)}
-                                                        className="btn btn-sm btn-success d-flex align-items-center gap-1 mx-auto"
-                                                        title="Mark as Paid"
-                                                    >
-                                                        <DollarSign size={14} />
-                                                        Pay
-                                                    </button>
-                                                </td>
+                                                {canWriteInvoices && (
+                                                    <td className="px-4 py-3 text-center">
+                                                        <button
+                                                            onClick={() => openPayModal(expense)}
+                                                            className="btn btn-sm btn-success d-flex align-items-center gap-1 mx-auto"
+                                                            title="Mark as Paid"
+                                                        >
+                                                            <DollarSign size={14} />
+                                                            Pay
+                                                        </button>
+                                                    </td>
+                                                )}
                                             </tr>
                                         ))
                                     )}
@@ -202,7 +218,7 @@ const OutstandingExpenses = () => {
                                         <tr>
                                             <td colSpan="6" className="px-4 py-3 text-end">Total Outstanding:</td>
                                             <td className="px-4 py-3 text-end text-warning">{formatCurrency(totalOutstanding)}</td>
-                                            <td></td>
+                                            {canWriteInvoices && <td></td>}
                                         </tr>
                                     </tfoot>
                                 )}
@@ -293,6 +309,15 @@ const OutstandingExpenses = () => {
                     </div>
                 )}
             </Modal>
+
+            {/* Alert Modal */}
+            <AlertModal
+                show={alertModal.show}
+                onClose={() => setAlertModal({ ...alertModal, show: false })}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+            />
         </>
     );
 };

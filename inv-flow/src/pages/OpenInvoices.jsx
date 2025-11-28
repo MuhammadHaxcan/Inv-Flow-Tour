@@ -6,9 +6,12 @@ import ExpenseForm from '../components/ExpenseForm';
 import ServiceForm from '../components/ServiceForm';
 import DriverModal from '../components/DriverModal';
 import PrintableInvoice from '../components/PrintableInvoice';
-import { useData } from '../contexts/DataContext';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import ConfirmationModal from '../components/ConfirmationModal';
+import AlertModal from '../components/AlertModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import { useData } from '../contexts/DataContext';
+import { usePermissions } from '../hooks/usePermissions';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import defaultLogoImg from '../assets/SiyyadKhanLogo.png';
 import { printInvoice, calculateInvoiceVAT } from '../utils/printInvoice';
 
@@ -32,6 +35,14 @@ const OpenInvoices = () => {
         loadOpenInvoices, loadDrivers, loadServices, loadAccounts, loadExpenses, loadVendors, loadCompanySettings,
         loadingStates
     } = useData();
+
+    // Permissions
+    // Note: Removing services/expenses from invoices requires 'invoices.write', not 'invoices.delete'
+    // 'invoices.delete' would be for deleting entire invoices (if such feature exists)
+    const { 
+        canWriteInvoices, 
+        canReadInvoices
+    } = usePermissions();
 
     // Load only needed data when component mounts
     useEffect(() => {
@@ -69,6 +80,16 @@ const OpenInvoices = () => {
     const [currentService, setCurrentService] = useState(null);
     const [sendingEmail, setSendingEmail] = useState({}); // Track sending state per invoice
     const printableInvoiceRef = useRef(null);
+
+    // Email confirmation modal
+    const [emailConfirmModal, setEmailConfirmModal] = useState({ show: false, invoice: null });
+    
+    // Alert modal state
+    const [alertModal, setAlertModal] = useState({ show: false, message: '', type: 'info', title: '' });
+
+    const showAlert = (message, type = 'info', title = '') => {
+        setAlertModal({ show: true, message, type, title });
+    };
 
     // Show loading state if data is being loaded
     const isLoading = loadingStates.openInvoices || loadingStates.drivers || loadingStates.services || loadingStates.accounts || loadingStates.expenses;
@@ -190,7 +211,7 @@ const OpenInvoices = () => {
             }
         } catch (error) {
             console.error('Error saving expense:', error);
-            alert('Error saving expense: ' + error.message);
+            showAlert('Error saving expense: ' + error.message, 'error');
         }
 
         setCurrentExpense(null);
@@ -202,31 +223,41 @@ const OpenInvoices = () => {
         setShowDeleteExpenseModal(true);
     };
 
-    const confirmDeleteExpense = () => {
-        removeExpense(expenseToDelete.invoiceId, expenseToDelete.expenseId);
+    const confirmDeleteExpense = async () => {
+        try {
+            await removeExpense(expenseToDelete.invoiceId, expenseToDelete.expenseId);
+        } catch (error) {
+            console.error('Error deleting expense:', error);
+            showAlert('Error deleting expense: ' + error.message, 'error');
+        }
         setShowDeleteExpenseModal(false);
         setExpenseToDelete({ invoiceId: null, expenseId: null, type: '' });
     };
 
     // Update this function to handle service updates correctly
-    const handleAddOrUpdateService = (service, rate) => {
+    const handleAddOrUpdateService = async (service, rate) => {
         if (!currentInvoice) return;
 
-        // Create service data object
-        const serviceData = {
-            service,
-            rate: parseFloat(rate)
-        };
+        try {
+            // Create service data object
+            const serviceData = {
+                service,
+                rate: parseFloat(rate)
+            };
 
-        if (currentService) {
-            // For editing existing service, preserve the ID
-            addInvoiceService(currentInvoice.id, {
-                ...serviceData,
-                id: currentService.id // Preserve the original service ID
-            });
-        } else {
-            // For new services
-            addInvoiceService(currentInvoice.id, serviceData);
+            if (currentService) {
+                // For editing existing service, preserve the ID
+                await addInvoiceService(currentInvoice.id, {
+                    ...serviceData,
+                    id: currentService.id // Preserve the original service ID
+                });
+            } else {
+                // For new services
+                await addInvoiceService(currentInvoice.id, serviceData);
+            }
+        } catch (error) {
+            console.error('Error saving service:', error);
+            showAlert('Error saving service: ' + error.message, 'error');
         }
         
         setCurrentService(null);
@@ -237,15 +268,20 @@ const OpenInvoices = () => {
         // Find the invoice
         const invoice = openInvoices.find(inv => inv.id === invoiceId);
         if (invoice && invoice.services.length <= 1) {
-            alert("Cannot delete the only service. At least one service must remain.");
+            showAlert("Cannot delete the only service. At least one service must remain.", 'warning');
             return;
         }
         setServiceToDelete({ invoiceId, serviceId: service.id, service: service.service });
         setShowDeleteServiceModal(true);
     };
 
-    const confirmDeleteService = () => {
-        removeInvoiceService(serviceToDelete.invoiceId, serviceToDelete.serviceId);
+    const confirmDeleteService = async () => {
+        try {
+            await removeInvoiceService(serviceToDelete.invoiceId, serviceToDelete.serviceId);
+        } catch (error) {
+            console.error('Error deleting service:', error);
+            showAlert('Error deleting service: ' + error.message, 'error');
+        }
         setShowDeleteServiceModal(false);
         setServiceToDelete({ invoiceId: null, serviceId: null, service: '' });
     };
@@ -267,26 +303,29 @@ const OpenInvoices = () => {
     };
 
     // Handle send email
-    const handleSendEmail = async (invoice, e) => {
+    const handleSendEmail = (invoice, e) => {
         e && e.stopPropagation();
         
         if (!invoice.customerEmail) {
-            alert('Customer does not have an email address. Please update customer details first.');
+            showAlert('Customer does not have an email address. Please update customer details first.', 'warning');
             return;
         }
 
-        if (!window.confirm(`Send invoice ${invoice.number} to ${invoice.customerEmail}?`)) {
-            return;
-        }
+        setEmailConfirmModal({ show: true, invoice });
+    };
 
+    const confirmSendEmail = async () => {
+        const invoice = emailConfirmModal.invoice;
+        setEmailConfirmModal({ show: false, invoice: null });
+        
         setSendingEmail(prev => ({ ...prev, [invoice.id]: true }));
         
         try {
             await sendInvoiceEmail(invoice.id);
-            alert(`Invoice sent successfully to ${invoice.customerEmail}`);
+            showAlert(`Invoice sent successfully to ${invoice.customerEmail}`, 'success');
         } catch (error) {
             console.error('Error sending email:', error);
-            alert('Failed to send email: ' + (error.message || 'Unknown error'));
+            showAlert('Failed to send email: ' + (error.message || 'Unknown error'), 'error');
         } finally {
             setSendingEmail(prev => ({ ...prev, [invoice.id]: false }));
         }
@@ -381,13 +420,15 @@ const OpenInvoices = () => {
                                                                     <span className="text-warning">Not assigned</span>
                                                                 )}
                                                             </div>
-                                                            <button
-                                                                onClick={(e) => openDriverModal(invoice, e)}
-                                                                className="btn btn-sm btn-outline-primary"
-                                                                title={invoice.driver ? 'Change Driver' : 'Assign Driver'}
-                                                            >
-                                                                <Edit2 size={14} />
-                                                            </button>
+                                                            {canWriteInvoices && (
+                                                                <button
+                                                                    onClick={(e) => openDriverModal(invoice, e)}
+                                                                    className="btn btn-sm btn-outline-primary"
+                                                                    title={invoice.driver ? 'Change Driver' : 'Assign Driver'}
+                                                                >
+                                                                    <Edit2 size={14} />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-3 text-center">
@@ -401,7 +442,7 @@ const OpenInvoices = () => {
                                                                     {new Date(invoice.emailSentAt).toLocaleDateString()}
                                                                 </small>
                                                             </div>
-                                                        ) : (
+                                                        ) : canWriteInvoices ? (
                                                             <button
                                                                 onClick={(e) => handleSendEmail(invoice, e)}
                                                                 className={`btn btn-sm ${invoice.customerEmail ? 'btn-outline-info' : 'btn-outline-secondary'}`}
@@ -414,6 +455,8 @@ const OpenInvoices = () => {
                                                                     <Mail size={14} />
                                                                 )}
                                                             </button>
+                                                        ) : (
+                                                            <span className="text-muted">-</span>
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-3 text-end">
@@ -422,13 +465,15 @@ const OpenInvoices = () => {
                                                                 <span className="fw-bold">
                                                                     {formatCurrency(invoice.total - invoice.paid)}
                                                                 </span>
-                                                                <button
-                                                                    onClick={e => handleDirectPrint(invoice, e)}
-                                                                    className="btn btn-sm btn-primary d-flex align-items-center gap-1"
-                                                                    title="Print Invoice"
-                                                                >
-                                                                    <Printer size={14} />
-                                                                </button>
+                                                                {canReadInvoices && (
+                                                                    <button
+                                                                        onClick={e => handleDirectPrint(invoice, e)}
+                                                                        className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                                                                        title="Print Invoice"
+                                                                    >
+                                                                        <Printer size={14} />
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                             <span className="text-muted small">
                                                                 VAT: {formatCurrency(calculateTotalVAT(invoice))}
@@ -459,22 +504,24 @@ const OpenInvoices = () => {
                                                                 <div className="card-body border-bottom py-3">
                                                                     <div className="d-flex justify-content-between align-items-center mb-3">
                                                                         <h6 className="fw-bold mb-0">Services</h6>
-                                                                        <div className="d-flex gap-2">
-                                                                            <button
-                                                                                onClick={e => openServiceModal(invoice, null, e)}
-                                                                                className="btn btn-sm btn-dark d-flex align-items-center gap-1"
-                                                                            >
-                                                                                <Plus size={14} />
-                                                                                Add Service
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={e => openPaymentModal(invoice, e)}
-                                                                                className="btn btn-sm btn-success d-flex align-items-center gap-1"
-                                                                            >
-                                                                                <DollarSign size={14} />
-                                                                                Add Payment
-                                                                            </button>
-                                                                        </div>
+                                                                        {canWriteInvoices && (
+                                                                            <div className="d-flex gap-2">
+                                                                                <button
+                                                                                    onClick={e => openServiceModal(invoice, null, e)}
+                                                                                    className="btn btn-sm btn-dark d-flex align-items-center gap-1"
+                                                                                >
+                                                                                    <Plus size={14} />
+                                                                                    Add Service
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={e => openPaymentModal(invoice, e)}
+                                                                                    className="btn btn-sm btn-success d-flex align-items-center gap-1"
+                                                                                >
+                                                                                    <DollarSign size={14} />
+                                                                                    Add Payment
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                     <div className="table-responsive">
                                                                         <table className="table table-sm table-striped">
@@ -482,7 +529,9 @@ const OpenInvoices = () => {
                                                                                 <tr>
                                                                                     <th>Service</th>
                                                                                     <th className="text-end">Amount (incl. VAT)</th>
-                                                                                    <th className="text-center" style={{width: "120px"}}>Actions</th>
+                                                                                    {canWriteInvoices && (
+                                                                                        <th className="text-center" style={{width: "120px"}}>Actions</th>
+                                                                                    )}
                                                                                 </tr>
                                                                             </thead>
                                                                             <tbody>
@@ -490,31 +539,35 @@ const OpenInvoices = () => {
                                                                                     <tr key={service.id}>
                                                                                         <td>{service.service}</td>
                                                                                         <td className="text-end">{formatCurrency(service.rate)}</td>
-                                                                                        <td className="text-center">
-                                                                                            <div className="d-flex justify-content-center gap-2">
-                                                                                                <button
-                                                                                                    onClick={e => openServiceModal(invoice, service, e)}
-                                                                                                    className="btn btn-sm btn-outline-primary"
-                                                                                                    title="Edit Service"
-                                                                                                >
-                                                                                                    <Edit2 size={14} />
-                                                                                                </button>
-                                                                                                {invoice.services.length > 1 && (
-                                                                                                    <button
-                                                                                                        onClick={e => requestDeleteService(invoice.id, service)}
-                                                                                                        className="btn btn-sm btn-outline-danger"
-                                                                                                        title="Delete Service"
-                                                                                                    >
-                                                                                                        <Trash2 size={14} />
-                                                                                                    </button>
-                                                                                                )}
-                                                                                            </div>
-                                                                                        </td>
+                                                                                        {canWriteInvoices && (
+                                                                                            <td className="text-center">
+                                                                                                <div className="d-flex justify-content-center gap-2">
+                                                                                                    {canWriteInvoices && (
+                                                                                                        <button
+                                                                                                            onClick={e => openServiceModal(invoice, service, e)}
+                                                                                                            className="btn btn-sm btn-outline-primary"
+                                                                                                            title="Edit Service"
+                                                                                                        >
+                                                                                                            <Edit2 size={14} />
+                                                                                                        </button>
+                                                                                                    )}
+                                                                                                    {canWriteInvoices && invoice.services.length > 1 && (
+                                                                                                        <button
+                                                                                                            onClick={e => requestDeleteService(invoice.id, service)}
+                                                                                                            className="btn btn-sm btn-outline-danger"
+                                                                                                            title="Delete Service"
+                                                                                                        >
+                                                                                                            <Trash2 size={14} />
+                                                                                                        </button>
+                                                                                                    )}
+                                                                                                </div>
+                                                                                            </td>
+                                                                                        )}
                                                                                     </tr>
                                                                                 ))}
                                                                                 {invoice.services.length === 0 && (
                                                                                     <tr>
-                                                                                        <td colSpan="3" className="text-center text-muted">No services added</td>
+                                                                                        <td colSpan={canWriteInvoices ? "3" : "2"} className="text-center text-muted">No services added</td>
                                                                                     </tr>
                                                                                 )}
                                                                             </tbody>
@@ -526,15 +579,17 @@ const OpenInvoices = () => {
                                                                 <div className="card-body border-bottom py-3">
                                                                     <div className="d-flex justify-content-between align-items-center mb-3">
                                                                         <h6 className="fw-bold mb-0">Expenses</h6>
-                                                                        <div className="d-flex gap-2">
-                                                                            <button
-                                                                                onClick={e => openExpenseModal(invoice, null, e)}
-                                                                                className="btn btn-sm btn-dark d-flex align-items-center gap-1"
-                                                                            >
-                                                                                <Plus size={14} />
-                                                                                Add Expense
-                                                                            </button>
-                                                                        </div>
+                                                                        {canWriteInvoices && (
+                                                                            <div className="d-flex gap-2">
+                                                                                <button
+                                                                                    onClick={e => openExpenseModal(invoice, null, e)}
+                                                                                    className="btn btn-sm btn-dark d-flex align-items-center gap-1"
+                                                                                >
+                                                                                    <Plus size={14} />
+                                                                                    Add Expense
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                     <div className="table-responsive">
                                                                         <table className="table table-sm table-striped">
@@ -544,7 +599,9 @@ const OpenInvoices = () => {
                                                                                     <th>Date</th>
                                                                                     <th className="text-center">Pax</th>
                                                                                     <th className="text-end">Amount</th>
-                                                                                    <th className="text-center">Actions</th>
+                                                                                    {canWriteInvoices && (
+                                                                                        <th className="text-center">Actions</th>
+                                                                                    )}
                                                                                 </tr>
                                                                             </thead>
                                                                             <tbody>
@@ -565,29 +622,35 @@ const OpenInvoices = () => {
                                                                                                     <span className="badge bg-success ms-2">Paid</span>
                                                                                                 )}
                                                                                             </td>
-                                                                                            <td className="text-center">
-                                                                                                <div className="d-flex justify-content-center gap-2">
-                                                                                                    <button
-                                                                                                        onClick={e => openExpenseModal(invoice, exp, e)}
-                                                                                                        className="btn btn-sm btn-outline-primary"
-                                                                                                        title="Edit Expense"
-                                                                                                    >
-                                                                                                        <Edit2 size={14} />
-                                                                                                    </button>
-                                                                                                    <button
-                                                                                                        onClick={e => requestDeleteExpense(invoice.id, exp)}
-                                                                                                        className="btn btn-sm btn-outline-danger"
-                                                                                                        title="Delete Expense"
-                                                                                                    >
-                                                                                                        <Trash2 size={14} />
-                                                                                                    </button>
-                                                                                                </div>
-                                                                                            </td>
+                                                                                            {canWriteInvoices && (
+                                                                                                <td className="text-center">
+                                                                                                    <div className="d-flex justify-content-center gap-2">
+                                                                                                        {canWriteInvoices && (
+                                                                                                            <button
+                                                                                                                onClick={e => openExpenseModal(invoice, exp, e)}
+                                                                                                                className="btn btn-sm btn-outline-primary"
+                                                                                                                title="Edit Expense"
+                                                                                                            >
+                                                                                                                <Edit2 size={14} />
+                                                                                                            </button>
+                                                                                                        )}
+                                                                                                        {canWriteInvoices && (
+                                                                                                            <button
+                                                                                                                onClick={e => requestDeleteExpense(invoice.id, exp)}
+                                                                                                                className="btn btn-sm btn-outline-danger"
+                                                                                                                title="Delete Expense"
+                                                                                                            >
+                                                                                                                <Trash2 size={14} />
+                                                                                                            </button>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                </td>
+                                                                                            )}
                                                                                         </tr>
                                                                                 ))}
                                                                                 {invoice.expenses.length === 0 && (
                                                                                     <tr>
-                                                                                        <td colSpan="5" className="text-center text-muted">No expenses added</td>
+                                                                                        <td colSpan={canWriteInvoices ? "5" : "4"} className="text-center text-muted">No expenses added</td>
                                                                                     </tr>
                                                                                 )}
                                                                             </tbody>
@@ -757,6 +820,7 @@ const OpenInvoices = () => {
                 </div>
             </Modal>
 
+            {/* Delete Expense Confirmation Modal */}
             <DeleteConfirmationModal
                 show={showDeleteExpenseModal}
                 onClose={() => setShowDeleteExpenseModal(false)}
@@ -767,6 +831,8 @@ const OpenInvoices = () => {
                 confirmButtonText="Delete"
                 confirmButtonVariant="danger"
             />
+
+            {/* Delete Service Confirmation Modal */}
             <DeleteConfirmationModal
                 show={showDeleteServiceModal}
                 onClose={() => setShowDeleteServiceModal(false)}
@@ -776,6 +842,26 @@ const OpenInvoices = () => {
                 message="Are you sure you want to delete this service?"
                 confirmButtonText="Delete"
                 confirmButtonVariant="danger"
+            />
+
+            {/* Email Confirmation Modal */}
+            <ConfirmationModal
+                show={emailConfirmModal.show}
+                onClose={() => setEmailConfirmModal({ show: false, invoice: null })}
+                onConfirm={confirmSendEmail}
+                title="Send Invoice Email"
+                message={`Send invoice ${emailConfirmModal.invoice?.number} to ${emailConfirmModal.invoice?.customerEmail}?`}
+                confirmButtonText="Send Email"
+                type="confirm"
+            />
+
+            {/* Alert Modal */}
+            <AlertModal
+                show={alertModal.show}
+                onClose={() => setAlertModal({ ...alertModal, show: false })}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
             />
         </>
     );

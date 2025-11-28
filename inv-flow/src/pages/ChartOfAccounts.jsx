@@ -3,7 +3,10 @@ import { User, Truck, Receipt, CreditCard, Building2, Plus, Edit2, Trash2 } from
 import CustomerModal from '../components/CustomerModal';
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
+import ConfirmationModal from '../components/ConfirmationModal';
+import AlertModal from '../components/AlertModal';
 import { useData } from '../contexts/DataContext';
+import { usePermissions } from '../hooks/usePermissions';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const ChartOfAccounts = () => {
@@ -11,6 +14,12 @@ const ChartOfAccounts = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [showCustomerModal, setShowCustomerModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+
+    // Delete confirmation modal state
+    const [deleteModal, setDeleteModal] = useState({ show: false, item: null, category: '' });
+    
+    // Alert modal state
+    const [alertModal, setAlertModal] = useState({ show: false, message: '', type: 'info', title: '' });
 
     // Use data context
     const { 
@@ -23,6 +32,20 @@ const ChartOfAccounts = () => {
         loadingStates
     } = useData();
 
+    // Permissions
+    const { 
+        canWriteCustomers, canDeleteCustomers,
+        canWriteDrivers, canDeleteDrivers,
+        canWriteVendors, canDeleteVendors,
+        canWriteExpenseTypes, canDeleteExpenseTypes,
+        canWriteAccounts, canDeleteAccounts,
+        canWriteCategory, canDeleteCategory
+    } = usePermissions();
+
+    const showAlert = (message, type = 'info', title = '') => {
+        setAlertModal({ show: true, message, type, title });
+    };
+
     // Load all data when component mounts
     useEffect(() => {
         loadCustomers();
@@ -32,21 +55,34 @@ const ChartOfAccounts = () => {
         loadVendors();
     }, [loadCustomers, loadDrivers, loadExpenses, loadAccounts, loadVendors]);
 
+    // Get write/delete permissions for current category
+    const canWrite = canWriteCategory(activeCategory);
+    const canDelete = canDeleteCategory(activeCategory);
+
     // Handle deletion based on active category
-    const handleDelete = (id) => {
-        if (window.confirm('Are you sure you want to delete this item?')) {
-            if (activeCategory === 'customer') {
-                deleteCustomer(id);
-            } else if (activeCategory === 'driver') {
-                deleteDriver(id);
-            } else if (activeCategory === 'expense') {
-                deleteExpenseType(id);
-            } else if (activeCategory === 'bank') {
-                deleteAccount(id);
-            } else if (activeCategory === 'vendor') {
-                deleteVendor(id);
+    const handleDelete = async () => {
+        const { item, category } = deleteModal;
+        try {
+            if (category === 'customer') {
+                await deleteCustomer(item.id);
+            } else if (category === 'driver') {
+                await deleteDriver(item.id);
+            } else if (category === 'expense') {
+                await deleteExpenseType(item.id);
+            } else if (category === 'bank') {
+                await deleteAccount(item.id);
+            } else if (category === 'vendor') {
+                await deleteVendor(item.id);
             }
+            setDeleteModal({ show: false, item: null, category: '' });
+        } catch (error) {
+            console.error('Error deleting item:', error);
+            showAlert('Error deleting item: ' + error.message, 'error');
         }
+    };
+
+    const requestDelete = (item) => {
+        setDeleteModal({ show: true, item, category: activeCategory });
     };
 
     const handleEdit = (item) => {
@@ -82,7 +118,7 @@ const ChartOfAccounts = () => {
             setEditingItem(null);
         } catch (error) {
             console.error('Error saving customer:', error);
-            alert('Error saving customer: ' + error.message);
+            showAlert('Error saving customer: ' + error.message, 'error');
         }
     };
 
@@ -115,7 +151,7 @@ const ChartOfAccounts = () => {
             setEditingItem(null);
         } catch (error) {
             console.error('Error saving item:', error);
-            alert('Error saving item: ' + error.message);
+            showAlert('Error saving item: ' + error.message, 'error');
         }
     };
 
@@ -147,6 +183,11 @@ const ChartOfAccounts = () => {
         columns = ['Name', 'Account Number', 'Details'];
     }
 
+    const getCategoryLabel = (category) => {
+        const cat = categories.find(c => c.id === category);
+        return cat ? cat.label : category;
+    };
+
     const AddEditModal = () => {
         // Initialize formData with default values for bank accounts
         const getInitialFormData = () => {
@@ -174,7 +215,7 @@ const ChartOfAccounts = () => {
             <Modal
                 show={showAddModal}
                 onClose={() => { setShowAddModal(false); setEditingItem(null); }}
-                title={editingItem ? `Edit ${activeCategory}` : `Add ${activeCategory}`}
+                title={editingItem ? `Edit ${getCategoryLabel(activeCategory)}` : `Add ${getCategoryLabel(activeCategory)}`}
             >
                 <form onSubmit={handleSubmit}>
                     {activeCategory === 'driver' && (
@@ -365,13 +406,15 @@ const ChartOfAccounts = () => {
                     <div className="card-header bg-light py-3">
                         <div className="d-flex justify-content-between align-items-center">
                             <h3 className="h5 fw-bold text-primary mb-0">Chart of Accounts</h3>
-                            <button
-                                onClick={handleAddNew}
-                                className="btn btn-sm btn-primary d-flex align-items-center gap-1"
-                            >
-                                <Plus size={16} />
-                                Add New
-                            </button>
+                            {canWrite && (
+                                <button
+                                    onClick={handleAddNew}
+                                    className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                                >
+                                    <Plus size={16} />
+                                    Add New
+                                </button>
+                            )}
                         </div>
                     </div>  
                     {/* Category Tabs */}
@@ -412,14 +455,16 @@ const ChartOfAccounts = () => {
                                         {columns.map((col, i) => (
                                             <th key={i} className="px-4 py-3">{col}</th>
                                         ))}
-                                        <th className="px-4 py-3 text-center" style={{ width: '100px' }}>Actions</th>
+                                        {(canWrite || canDelete) && (
+                                            <th className="px-4 py-3 text-center" style={{ width: '100px' }}>Actions</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {data.length === 0 ? (
                                         <tr>
-                                            <td colSpan={columns.length + 1} className="text-center py-4 text-muted">
-                                                No records found. Click "Add New" to create one.
+                                            <td colSpan={(canWrite || canDelete) ? columns.length + 1 : columns.length} className="text-center py-4 text-muted">
+                                                No records found. {canWrite ? 'Click "Add New" to create one.' : ''}
                                             </td>
                                         </tr>
                                     ) : (
@@ -467,24 +512,30 @@ const ChartOfAccounts = () => {
                                                         <td className="px-4 py-3">{item.details || '-'}</td>
                                                     </>
                                                 )}
-                                                <td className="px-4 py-3">
-                                                    <div className="d-flex justify-content-center gap-2">
-                                                        <button
-                                                            onClick={() => handleEdit(item)}
-                                                            className="btn btn-sm btn-outline-primary"
-                                                            title="Edit"
-                                                        >
-                                                            <Edit2 size={14} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDelete(item.id)}
-                                                            className="btn btn-sm btn-outline-danger"
-                                                            title="Delete"
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </button>
-                                                    </div>
-                                                </td>
+                                                {(canWrite || canDelete) && (
+                                                    <td className="px-4 py-3">
+                                                        <div className="d-flex justify-content-center gap-2">
+                                                            {canWrite && (
+                                                                <button
+                                                                    onClick={() => handleEdit(item)}
+                                                                    className="btn btn-sm btn-outline-primary"
+                                                                    title="Edit"
+                                                                >
+                                                                    <Edit2 size={14} />
+                                                                </button>
+                                                            )}
+                                                            {canDelete && (
+                                                                <button
+                                                                    onClick={() => requestDelete(item)}
+                                                                    className="btn btn-sm btn-outline-danger"
+                                                                    title="Delete"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                )}
                                             </tr>
                                         ))
                                     )}
@@ -502,6 +553,27 @@ const ChartOfAccounts = () => {
                 initialData={editingItem || {}}
             />
             <AddEditModal />
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmationModal
+                show={deleteModal.show}
+                onClose={() => setDeleteModal({ show: false, item: null, category: '' })}
+                onConfirm={handleDelete}
+                title={`Delete ${getCategoryLabel(deleteModal.category)}`}
+                message={`Are you sure you want to delete this ${getCategoryLabel(deleteModal.category).toLowerCase()}?`}
+                itemName={deleteModal.item?.name}
+                confirmButtonText="Delete"
+                type="danger"
+            />
+
+            {/* Alert Modal */}
+            <AlertModal
+                show={alertModal.show}
+                onClose={() => setAlertModal({ ...alertModal, show: false })}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+            />
         </>
     );
 };

@@ -19,7 +19,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpPost("service")]
-    [RequirePermission("invoices.read")]
+    [RequirePermission("reports.read")]
     public async Task<ActionResult<ServiceReportDto>> GetServiceReport([FromBody] ReportFilterDto? filter)
     {
         if (filter == null)
@@ -30,7 +30,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpPost("customer")]
-    [RequirePermission("invoices.read")]
+    [RequirePermission("reports.read")]
     public async Task<ActionResult<CustomerReportDto>> GetCustomerReport([FromBody] ReportFilterDto? filter)
     {
         if (filter == null)
@@ -41,7 +41,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpPost("driver")]
-    [RequirePermission("invoices.read")]
+    [RequirePermission("reports.read")]
     public async Task<ActionResult<DriverReportDto>> GetDriverReport([FromBody] ReportFilterDto? filter)
     {
         if (filter == null)
@@ -52,7 +52,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpPost("summary")]
-    [RequirePermission("invoices.read")]
+    [RequirePermission("reports.read")]
     public async Task<ActionResult<SummaryReportDto>> GetSummaryReport([FromBody] ReportFilterDto? filter)
     {
         if (filter == null)
@@ -62,4 +62,3 @@ public class ReportsController : ControllerBase
         return Ok(report);
     }
 }
-
