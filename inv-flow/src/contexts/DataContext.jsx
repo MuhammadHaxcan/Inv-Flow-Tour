@@ -594,6 +594,22 @@ export function DataProvider({ children }) {
         }
     };
 
+    const sendInvoiceEmail = async (invoiceId) => {
+        try {
+            const result = await invoicesAPI.sendEmail(invoiceId);
+            
+            // Reload invoices to get updated emailSentAt timestamp
+            await Promise.all([
+                loadOpenInvoices(true),
+                loadClosedInvoices(true)
+            ]);
+
+            return result;
+        } catch (error) {
+            throw error;
+        }
+    };
+
     return (
         <DataContext.Provider value={{
             // Data
@@ -652,6 +668,7 @@ export function DataProvider({ children }) {
             updateExpense,
             removeExpense,
             removeInvoiceService,
+            sendInvoiceEmail,
         }}>
             {children}
         </DataContext.Provider>

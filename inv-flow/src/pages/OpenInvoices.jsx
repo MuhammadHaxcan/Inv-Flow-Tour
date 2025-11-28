@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronUp, Plus, DollarSign, Truck, Receipt, Edit2, Printer, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, DollarSign, Truck, Receipt, Edit2, Printer, Trash2, Mail, Check } from 'lucide-react';
 import Modal from '../components/Modal';
 import PaymentForm from '../components/PaymentForm';
 import ExpenseForm from '../components/ExpenseForm';
@@ -28,6 +28,7 @@ const OpenInvoices = () => {
         updateExpense,
         removeExpense,
         removeInvoiceService,
+        sendInvoiceEmail,
         loadOpenInvoices, loadDrivers, loadServices, loadAccounts, loadExpenses, loadVendors, loadCompanySettings,
         loadingStates
     } = useData();
@@ -66,6 +67,7 @@ const OpenInvoices = () => {
     const [driverNotesToAssign, setDriverNotesToAssign] = useState('');
     const [currentExpense, setCurrentExpense] = useState(null);
     const [currentService, setCurrentService] = useState(null);
+    const [sendingEmail, setSendingEmail] = useState({}); // Track sending state per invoice
     const printableInvoiceRef = useRef(null);
 
     // Show loading state if data is being loaded
@@ -264,6 +266,32 @@ const OpenInvoices = () => {
         });
     };
 
+    // Handle send email
+    const handleSendEmail = async (invoice, e) => {
+        e && e.stopPropagation();
+        
+        if (!invoice.customerEmail) {
+            alert('Customer does not have an email address. Please update customer details first.');
+            return;
+        }
+
+        if (!window.confirm(`Send invoice ${invoice.number} to ${invoice.customerEmail}?`)) {
+            return;
+        }
+
+        setSendingEmail(prev => ({ ...prev, [invoice.id]: true }));
+        
+        try {
+            await sendInvoiceEmail(invoice.id);
+            alert(`Invoice sent successfully to ${invoice.customerEmail}`);
+        } catch (error) {
+            console.error('Error sending email:', error);
+            alert('Failed to send email: ' + (error.message || 'Unknown error'));
+        } finally {
+            setSendingEmail(prev => ({ ...prev, [invoice.id]: false }));
+        }
+    };
+
     // Calculate totals for the table footer
     const calculateTotals = () => {
         if (!openInvoices.length) return { outstanding: 0, total: 0 };
@@ -300,13 +328,14 @@ const OpenInvoices = () => {
                                         <th className="px-4 py-3">Invoice Details</th>
                                         <th className="px-4 py-3">Customer</th>
                                         <th className="px-4 py-3">Driver</th>
+                                        <th className="px-4 py-3 text-center">Email</th>
                                         <th className="px-4 py-3 text-end">Outstanding</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {openInvoices.length === 0 ? (
                                         <tr>
-                                            <td colSpan="4" className="text-center py-4 text-muted">
+                                            <td colSpan="5" className="text-center py-4 text-muted">
                                                 No invoices found
                                             </td>
                                         </tr>
@@ -361,6 +390,32 @@ const OpenInvoices = () => {
                                                             </button>
                                                         </div>
                                                     </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        {invoice.emailSentAt ? (
+                                                            <div className="d-flex flex-column align-items-center">
+                                                                <span className="badge bg-success d-flex align-items-center gap-1">
+                                                                    <Check size={12} />
+                                                                    Sent
+                                                                </span>
+                                                                <small className="text-muted" style={{ fontSize: '10px' }}>
+                                                                    {new Date(invoice.emailSentAt).toLocaleDateString()}
+                                                                </small>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={(e) => handleSendEmail(invoice, e)}
+                                                                className={`btn btn-sm ${invoice.customerEmail ? 'btn-outline-info' : 'btn-outline-secondary'}`}
+                                                                disabled={sendingEmail[invoice.id] || !invoice.customerEmail}
+                                                                title={invoice.customerEmail ? `Send to ${invoice.customerEmail}` : 'No email address'}
+                                                            >
+                                                                {sendingEmail[invoice.id] ? (
+                                                                    <span className="spinner-border spinner-border-sm" role="status" />
+                                                                ) : (
+                                                                    <Mail size={14} />
+                                                                )}
+                                                            </button>
+                                                        )}
+                                                    </td>
                                                     <td className="px-4 py-3 text-end">
                                                         <div className="d-flex flex-column align-items-end">
                                                             <div className="d-flex align-items-center gap-2">
@@ -386,7 +441,7 @@ const OpenInvoices = () => {
                                                 </tr>
                                                 {expandedInvoice === invoice.id && (
                                                     <tr>
-                                                        <td colSpan="4" className="p-0 border-0">
+                                                        <td colSpan="5" className="p-0 border-0">
                                                             <div className="card m-3">
                                                                 {/* Invoice summary */}
                                                                 <div className="card-header bg-light py-3">
@@ -609,7 +664,7 @@ const OpenInvoices = () => {
                                 </tbody>
                                 <tfoot className="table-light fw-bold">
                                     <tr>
-                                        <td colSpan="3" className="px-4 py-3 text-end">Total:</td>
+                                        <td colSpan="4" className="px-4 py-3 text-end">Total:</td>
                                         <td className="px-4 py-3 text-end">
                                             {formatCurrency(totals.outstanding)} / {formatCurrency(totals.total)}
                                         </td>

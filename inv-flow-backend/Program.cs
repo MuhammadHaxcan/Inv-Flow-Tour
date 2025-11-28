@@ -42,11 +42,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins(
-            "http://localhost:5173",   // Vite default
-            "http://localhost:3000",   // React default
-            "http://localhost:5174"    // Vite alternative
-        )
+        policy.SetIsOriginAllowed(origin => 
+            origin.Contains("localhost") || 
+            origin.Contains("ngrok-free.app") ||
+            origin.Contains("ngrok.io"))
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials();
@@ -128,6 +127,9 @@ builder.Services.AddScoped<IReportService, ReportService>();
 // Signature & Company Settings Services
 builder.Services.AddScoped<ISignatureService, SignatureService>();
 builder.Services.AddScoped<ICompanySettingsService, CompanySettingsService>();
+
+// Email Service
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // ============= Swagger/OpenAPI Configuration =============
 builder.Services.AddEndpointsApiExplorer();
@@ -222,10 +224,10 @@ using (var scope = app.Services.CreateScope())
             logger.LogInformation("No pending migrations");
         }
 
-        // Seed initial data
-        //logger.LogInformation("Seeding initial data...");
-        //await SeedData.SeedAsync(context);
-        //logger.LogInformation("Data seeding completed successfully");
+        // Seed initial data (permissions, roles, admin user)
+        logger.LogInformation("Seeding initial data...");
+        await SeedData.SeedAsync(context);
+        logger.LogInformation("Data seeding completed successfully");
     }
     catch (Exception ex)
     {

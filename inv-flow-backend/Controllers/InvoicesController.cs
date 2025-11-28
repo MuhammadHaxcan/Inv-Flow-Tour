@@ -13,6 +13,7 @@ namespace inv_flow_backend.Controllers;
 public class InvoicesController : ControllerBase
 {
     private readonly IInvoiceService _invoiceService;
+    private readonly IEmailService _emailService;
     private readonly IValidator<CreateInvoiceDto> _createValidator;
     private readonly IValidator<AddPaymentDto> _addPaymentValidator;
     private readonly IValidator<AddExpenseDto> _addExpenseValidator;
@@ -22,6 +23,7 @@ public class InvoicesController : ControllerBase
 
     public InvoicesController(
         IInvoiceService invoiceService,
+        IEmailService emailService,
         IValidator<CreateInvoiceDto> createValidator,
         IValidator<AddPaymentDto> addPaymentValidator,
         IValidator<AddExpenseDto> addExpenseValidator,
@@ -30,6 +32,7 @@ public class InvoicesController : ControllerBase
         IValidator<UpdateExpenseDto> updateExpenseValidator)
     {
         _invoiceService = invoiceService;
+        _emailService = emailService;
         _createValidator = createValidator;
         _addPaymentValidator = addPaymentValidator;
         _addExpenseValidator = addExpenseValidator;
@@ -232,6 +235,29 @@ public class InvoicesController : ControllerBase
             return NotFound();
         }
         return Ok(new { success = true, message = "Expense marked as paid" });
+    }
+
+    [HttpPost("{id}/send-email")]
+    [RequirePermission("invoices.write")]
+    public async Task<ActionResult> SendInvoiceEmail(int id)
+    {
+        try
+        {
+            var result = await _emailService.SendInvoiceEmailAsync(id);
+            if (result)
+            {
+                return Ok(new { success = true, message = "Invoice email sent successfully" });
+            }
+            return BadRequest(new { success = false, message = "Failed to send email" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { success = false, message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
     }
 }
 

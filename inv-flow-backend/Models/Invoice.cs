@@ -42,6 +42,11 @@ public class Invoice
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
+    
+    /// <summary>
+    /// Timestamp when invoice email was sent to customer
+    /// </summary>
+    public DateTime? EmailSentAt { get; set; }
 
     // Navigation properties
     public Customer Customer { get; set; } = null!;

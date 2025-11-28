@@ -11,3 +11,4 @@ public interface ICompanySettingsService
     Task<CompanySettingsDto> ClearLogoAsync();
 }
 
+

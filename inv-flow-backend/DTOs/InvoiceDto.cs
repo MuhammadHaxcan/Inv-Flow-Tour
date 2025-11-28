@@ -7,6 +7,7 @@ public class InvoiceDto
     public DateOnly Date { get; set; }
     public int CustomerId { get; set; }
     public string Customer { get; set; } = string.Empty;
+    public string? CustomerEmail { get; set; }
     public int? DriverId { get; set; }
     public string? Driver { get; set; }
     public string? DriverNotes { get; set; }
@@ -15,6 +16,7 @@ public class InvoiceDto
     public decimal Paid { get; set; }
     public string Status { get; set; } = string.Empty;
     public decimal? Vat { get; set; }
+    public DateTime? EmailSentAt { get; set; }
     public List<InvoiceServiceDto> Services { get; set; } = new();
     public List<InvoiceExpenseDto> Expenses { get; set; } = new();
     public List<PaymentDto> Payments { get; set; } = new();

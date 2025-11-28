@@ -50,6 +50,7 @@ const apiCall = async (endpoint, options = {}, retries = 0) => {
     const token = getToken();
     const headers = {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',  // Skip ngrok warning page
         ...options.headers,
     };
 
@@ -214,6 +215,7 @@ export const invoicesAPI = {
     removeExpense: (id, expenseId) => apiCall(`/invoices/${id}/expenses/${expenseId}`, { method: 'DELETE' }),
     getOutstandingExpenses: () => apiCall('/invoices/expenses/outstanding'),
     markExpensePaid: (expenseId, data) => apiCall(`/invoices/expenses/${expenseId}/mark-paid`, { method: 'POST', body: JSON.stringify(data) }),
+    sendEmail: (id) => apiCall(`/invoices/${id}/send-email`, { method: 'POST' }),
 };
 
 // Transactions API
