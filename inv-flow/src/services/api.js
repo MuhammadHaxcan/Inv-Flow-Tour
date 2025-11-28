@@ -232,6 +232,7 @@ export const invoicesAPI = {
     getOutstandingExpenses: () => apiCall('/invoices/expenses/outstanding'),
     markExpensePaid: (expenseId, data) => apiCall(`/invoices/expenses/${expenseId}/mark-paid`, { method: 'POST', body: JSON.stringify(data) }),
     sendEmail: (id) => apiCall(`/invoices/${id}/send-email`, { method: 'POST' }),
+    getDriverSchedule: () => apiCall('/invoices/driver-schedule'),
 };
 
 // Transactions API

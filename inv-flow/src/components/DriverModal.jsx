@@ -3,7 +3,7 @@ import Modal from './Modal';
 import SearchableSelect from './SearchableSelect';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-const DriverModal = ({ show, onClose, onSave, drivers, currentDriver = '', currentNotes = '' }) => {
+const DriverModal = ({ show, onClose, onSave, drivers, currentDriver = '', currentNotes = '', currentDate = '' }) => {
     const [assignedDriver, setAssignedDriver] = useState('');
     const [assignmentDate, setAssignmentDate] = useState('');
     const [notes, setNotes] = useState('');
@@ -11,14 +11,15 @@ const DriverModal = ({ show, onClose, onSave, drivers, currentDriver = '', curre
     useEffect(() => {
         if (show) {
             setAssignedDriver(currentDriver || '');
-            setAssignmentDate(new Date().toISOString().slice(0, 10));
+            // Use current invoice date if provided, otherwise use today's date
+            setAssignmentDate(currentDate || new Date().toISOString().slice(0, 10));
             setNotes(currentNotes || '');
         }
-    }, [show, currentDriver, currentNotes]);
+    }, [show, currentDriver, currentNotes, currentDate]);
 
     const handleSubmit = () => {
         if (!assignedDriver) return;
-        onSave(assignedDriver, notes);
+        onSave(assignedDriver, notes, assignmentDate);
         onClose();
     };
 

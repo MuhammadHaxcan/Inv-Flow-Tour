@@ -76,6 +76,7 @@ const OpenInvoices = () => {
     const [currentInvoice, setCurrentInvoice] = useState(null);
     const [driverToAssign, setDriverToAssign] = useState('');
     const [driverNotesToAssign, setDriverNotesToAssign] = useState('');
+    const [currentInvoiceDate, setCurrentInvoiceDate] = useState('');
     const [currentExpense, setCurrentExpense] = useState(null);
     const [currentService, setCurrentService] = useState(null);
     const [sendingEmail, setSendingEmail] = useState({}); // Track sending state per invoice
@@ -157,6 +158,7 @@ const OpenInvoices = () => {
         setCurrentInvoice(invoice);
         setDriverToAssign(invoice.driver || '');
         setDriverNotesToAssign(invoice.driverNotes || '');
+        setCurrentInvoiceDate(invoice.date || '');
         setShowDriverModal(true);
     };
 
@@ -394,7 +396,14 @@ const OpenInvoices = () => {
                                                             }
                                                             <div>
                                                                 <div className="fw-bold">{invoice.number}</div>
-                                                                <div className="text-muted small">{new Date(invoice.date).toLocaleDateString()}</div>
+                                                                <div className="text-muted small">
+                                                                    Service: {new Date(invoice.date).toLocaleDateString()}
+                                                                    {invoice.createdAt && (
+                                                                        <span className="ms-2" title={`Created: ${new Date(invoice.createdAt).toLocaleString()}`}>
+                                                                            <small className="text-muted">(Created: {new Date(invoice.createdAt).toLocaleDateString()})</small>
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -782,15 +791,16 @@ const OpenInvoices = () => {
             <DriverModal
                 show={showDriverModal}
                 onClose={() => setShowDriverModal(false)}
-                onSave={(driver, notes) => {
+                onSave={(driver, notes, date) => {
                     setDriverToAssign(driver);
                     setDriverNotesToAssign(notes || '');
-                    assignDriver(currentInvoice.id, driver, notes);
+                    assignDriver(currentInvoice.id, driver, notes, date);
                     setShowDriverModal(false);
                 }}
                 drivers={drivers}
                 currentDriver={driverToAssign}
                 currentNotes={driverNotesToAssign}
+                currentDate={currentInvoiceDate}
             />
 
             {/* Print Modal */}

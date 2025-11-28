@@ -7,11 +7,14 @@ export const PERMISSIONS = {
     INVOICES_WRITE: 'invoices.write',
     INVOICES_DELETE: 'invoices.delete',
     
+    // Closed invoice permissions
+    CLOSEDINVOICES_READ: 'closedinvoices.read',
+    
     // Service permissions
     SERVICES_READ: 'services.read',
     SERVICES_WRITE: 'services.write',
     SERVICES_DELETE: 'services.delete',
-    
+        
     // Account permissions
     ACCOUNTS_READ: 'accounts.read',
     ACCOUNTS_WRITE: 'accounts.write',
@@ -71,7 +74,7 @@ export const PERMISSIONS = {
 export const PAGE_PERMISSIONS = {
     generateInvoice: [PERMISSIONS.INVOICES_WRITE],
     openInvoices: [PERMISSIONS.INVOICES_READ],
-    closedInvoices: [PERMISSIONS.INVOICES_READ],
+    closedInvoices: [PERMISSIONS.CLOSEDINVOICES_READ],
     outstandingExpenses: [PERMISSIONS.INVOICES_READ],
     calendar: [PERMISSIONS.INVOICES_READ],
     bankStatement: [PERMISSIONS.TRANSACTIONS_READ],

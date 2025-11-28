@@ -710,14 +710,19 @@ const GenerateInvoice = () => {
             <DriverModal
                 show={showDriverModal}
                 onClose={() => setShowDriverModal(false)}
-                onSave={(driver, notes) => {
+                onSave={(driver, notes, date) => {
                     setAssignedDriver(driver);
                     setDriverNotes(notes || '');
+                    // Update serviceDate if date is provided
+                    if (date) {
+                        setServiceDate(date);
+                    }
                     setShowDriverModal(false);
                 }}
                 drivers={drivers}
                 currentDriver={assignedDriver}
                 currentNotes={driverNotes}
+                currentDate={serviceDate}
             />
 
             {/* Service Modal */}

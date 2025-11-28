@@ -121,14 +121,15 @@ public class InvoiceService : IInvoiceService
         var invoice = new Invoice
         {
             Number = invoiceNumber,
-            Date = dto.Date,
+            Date = dto.Date, // Service date from frontend
             CustomerId = dto.CustomerId,
             DriverId = dto.DriverId,
             DriverNotes = dto.DriverNotes,
             Persons = dto.Persons,
             Total = total,
             Paid = paid,
-            Status = status
+            Status = status,
+            CreatedAt = DateTime.UtcNow // Explicitly set creation date/time
         };
 
         _context.Invoices.Add(invoice);
@@ -427,6 +428,13 @@ public class InvoiceService : IInvoiceService
 
         invoice.DriverId = dto.DriverId;
         invoice.DriverNotes = dto.DriverNotes;
+        
+        // Update invoice date if provided
+        if (dto.Date.HasValue)
+        {
+            invoice.Date = dto.Date.Value;
+        }
+        
         invoice.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -589,6 +597,68 @@ public class InvoiceService : IInvoiceService
 
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<List<DriverScheduleDto>> GetDriverScheduleAsync()
+    {
+        // Get all invoices with drivers assigned
+        // Using invoice.Date (service date) for calendar display
+        var invoices = await _context.Invoices
+            .Where(i => i.DriverId != null)
+            .Include(i => i.Customer)
+            .Include(i => i.Driver)
+            .Include(i => i.InvoiceServices)
+                .ThenInclude(isr => isr.Service)
+            .AsNoTracking()
+            .ToListAsync();
+
+        // Filter out any invoices where Driver is null (shouldn't happen, but safety check)
+        var validInvoices = invoices
+            .Where(i => i.DriverId.HasValue && i.Driver != null)
+            .OrderBy(i => i.Date) // Order by service date (invoice.Date)
+            .ThenBy(i => i.Driver!.Name)
+            .ToList();
+
+        if (!validInvoices.Any())
+        {
+            return new List<DriverScheduleDto>();
+        }
+
+        // Group by driver and service date (invoice.Date) in memory
+        var schedule = validInvoices
+            .GroupBy(i => new { DriverId = i.DriverId!.Value, i.Date }) // Group by service date
+            .Select(g => 
+            {
+                var firstInvoice = g.First();
+                var driver = firstInvoice.Driver!;
+
+                return new DriverScheduleDto
+                {
+                    DriverId = g.Key.DriverId,
+                    DriverName = driver.Name ?? "Unknown",
+                    DriverPhone = driver.Phone,
+                    Date = g.Key.Date,
+                    Invoices = g.Select(i => new DriverScheduleInvoiceDto
+                    {
+                        InvoiceId = i.Id,
+                        InvoiceNumber = i.Number,
+                        Customer = i.Customer?.Name ?? "Unknown",
+                        Persons = i.Persons,
+                        Status = i.Status.ToString().ToLower(),
+                        Total = i.Total,
+                        DriverNotes = i.DriverNotes,
+                        Services = i.InvoiceServices
+                            .Where(isr => isr.Service != null)
+                            .Select(isr => isr.Service!.Name)
+                            .ToList()
+                    }).ToList()
+                };
+            })
+            .OrderBy(s => s.Date)
+            .ThenBy(s => s.DriverName)
+            .ToList();
+
+        return schedule;
     }
 
     /// <summary>

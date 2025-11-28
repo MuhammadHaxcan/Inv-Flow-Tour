@@ -50,7 +50,7 @@ public class InvoicesController : ControllerBase
     }
 
     [HttpGet("closed")]
-    [RequirePermission("invoices.read")]
+    [RequirePermission("closedinvoices.read")]
     public async Task<ActionResult<List<InvoiceDto>>> GetClosedInvoices()
     {
         var invoices = await _invoiceService.GetClosedInvoicesAsync();
@@ -258,6 +258,14 @@ public class InvoicesController : ControllerBase
         {
             return BadRequest(new { success = false, message = ex.Message });
         }
+    }
+
+    [HttpGet("driver-schedule")]
+    [RequirePermission("invoices.read")]
+    public async Task<ActionResult<List<DriverScheduleDto>>> GetDriverSchedule()
+    {
+        var schedule = await _invoiceService.GetDriverScheduleAsync();
+        return Ok(schedule);
     }
 }
 

@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { FileText, Building2, FileCheck2, CheckCircle, CreditCard, Tag, Calendar, Users, LogOut, BarChart3, Receipt } from 'lucide-react'
+import { FileText, Building2, FileCheck2, CheckCircle, CreditCard, Tag, Calendar, Users, LogOut, BarChart3, Receipt, Truck } from 'lucide-react'
 import './App.css'
 import { DataProvider } from './contexts/DataContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -17,6 +17,7 @@ const OutstandingExpenses = lazy(() => import('./pages/OutstandingExpenses'));
 const BankStatement = lazy(() => import('./pages/BankStatement'));
 const Services = lazy(() => import('./pages/Services'));
 const CalendarView = lazy(() => import('./pages/CalendarView'));
+const DriverSchedule = lazy(() => import('./pages/DriverSchedule'));
 const Admin = lazy(() => import('./pages/Admin'));
 const Reports = lazy(() => import('./pages/Reports'));
 
@@ -75,6 +76,7 @@ function Navbar() {
         // Invoice permissions
         canReadInvoices,
         canWriteInvoices,
+        canReadClosedInvoices,
         
         // Service permissions
         canReadServices,
@@ -101,7 +103,7 @@ function Navbar() {
     } = usePermissions();
 
     // Check if user has any invoice-related permissions
-    const showInvoicesDropdown = canReadInvoices || canWriteInvoices;
+    const showInvoicesDropdown = canReadInvoices || canWriteInvoices || canReadClosedInvoices;
 
     return (
         <nav className="bg-white border-bottom shadow-sm w-100">
@@ -137,29 +139,33 @@ function Navbar() {
                                             </li>
                                         )}
                                         {canReadInvoices && (
+                                            <li>
+                                                <NavLink
+                                                    to="/open-invoices"
+                                                    className={({ isActive }) =>
+                                                        `dropdown-item d-flex align-items-center gap-2${isActive ? ' text-primary' : ''}`
+                                                    }
+                                                >
+                                                    <FileCheck2 size={18} />
+                                                    Open Invoices
+                                                </NavLink>
+                                            </li>
+                                        )}
+                                        {canReadClosedInvoices && (
+                                            <li>
+                                                <NavLink
+                                                    to="/closed-invoices"
+                                                    className={({ isActive }) =>
+                                                        `dropdown-item d-flex align-items-center gap-2${isActive ? ' text-primary' : ''}`
+                                                    }
+                                                >
+                                                    <CheckCircle size={18} />
+                                                    Closed Invoices
+                                                </NavLink>
+                                            </li>
+                                        )}
+                                        {canReadInvoices && (
                                             <>
-                                                <li>
-                                                    <NavLink
-                                                        to="/open-invoices"
-                                                        className={({ isActive }) =>
-                                                            `dropdown-item d-flex align-items-center gap-2${isActive ? ' text-primary' : ''}`
-                                                        }
-                                                    >
-                                                        <FileCheck2 size={18} />
-                                                        Open Invoices
-                                                    </NavLink>
-                                                </li>
-                                                <li>
-                                                    <NavLink
-                                                        to="/closed-invoices"
-                                                        className={({ isActive }) =>
-                                                            `dropdown-item d-flex align-items-center gap-2${isActive ? ' text-primary' : ''}`
-                                                        }
-                                                    >
-                                                        <CheckCircle size={18} />
-                                                        Closed Invoices
-                                                    </NavLink>
-                                                </li>
                                                 <li><hr className="dropdown-divider" /></li>
                                                 <li>
                                                     <NavLink
@@ -178,18 +184,42 @@ function Navbar() {
                                 </div>
                             )}
                             {canReadInvoices && (
-                                <NavLink
-                                    to="/calendar"
-                                    className={({ isActive }) =>
-                                        `px-4 py-2 text-decoration-none d-flex align-items-center gap-2 ${isActive
-                                            ? 'text-primary border-bottom border-2 border-primary'
-                                            : 'text-secondary'
-                                        }`
-                                    }
-                                >
-                                    <Calendar size={18} />
-                                    Calendar
-                                </NavLink>
+                                <div className="dropdown">
+                                    <button
+                                        className="btn btn-white px-4 py-2 d-flex align-items-center gap-2 text-secondary dropdown-toggle"
+                                        type="button"
+                                        id="calendarDropdown"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                    >
+                                        <Calendar size={18} />
+                                        Calendar
+                                    </button>
+                                    <ul className="dropdown-menu" aria-labelledby="calendarDropdown">
+                                        <li>
+                                            <NavLink
+                                                to="/calendar"
+                                                className={({ isActive }) =>
+                                                    `dropdown-item d-flex align-items-center gap-2${isActive ? ' text-primary' : ''}`
+                                                }
+                                            >
+                                                <Calendar size={18} />
+                                                Invoice Calendar
+                                            </NavLink>
+                                        </li>
+                                        <li>
+                                            <NavLink
+                                                to="/driver-schedule"
+                                                className={({ isActive }) =>
+                                                    `dropdown-item d-flex align-items-center gap-2${isActive ? ' text-primary' : ''}`
+                                                }
+                                            >
+                                                <Truck size={18} />
+                                                Driver Schedule
+                                            </NavLink>
+                                        </li>
+                                    </ul>
+                                </div>
                             )}
                             {canReadTransactions && (
                                 <NavLink
@@ -308,7 +338,7 @@ function AppContent() {
                                 </ProtectedRoute>
                             } />
                             <Route path="/closed-invoices" element={
-                                <ProtectedRoute requiredPermission="invoices.read">
+                                <ProtectedRoute requiredPermission="closedinvoices.read">
                                     <ClosedInvoices />
                                 </ProtectedRoute>
                             } />
@@ -320,6 +350,11 @@ function AppContent() {
                             <Route path="/calendar" element={
                                 <ProtectedRoute requiredPermission="invoices.read">
                                     <CalendarView />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/driver-schedule" element={
+                                <ProtectedRoute requiredPermission="invoices.read">
+                                    <DriverSchedule />
                                 </ProtectedRoute>
                             } />
                             <Route path="/bank-statement" element={

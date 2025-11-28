@@ -4,7 +4,8 @@ public class InvoiceDto
 {
     public int Id { get; set; }
     public string Number { get; set; } = string.Empty;
-    public DateOnly Date { get; set; }
+    public DateOnly Date { get; set; } // Service date
+    public DateTime CreatedAt { get; set; } // Creation date/time
     public int CustomerId { get; set; }
     public string Customer { get; set; } = string.Empty;
     public string? CustomerEmail { get; set; }
@@ -141,6 +142,7 @@ public class AssignDriverDto
 {
     public int? DriverId { get; set; }
     public string? DriverNotes { get; set; }
+    public DateOnly? Date { get; set; }
 }
 
 public class MarkExpensePaidDto

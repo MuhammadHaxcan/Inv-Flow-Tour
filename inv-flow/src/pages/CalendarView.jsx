@@ -35,6 +35,7 @@ const CalendarView = () => {
     loadClosedInvoices();
     loadDrivers();
   }, [loadOpenInvoices, loadClosedInvoices, loadDrivers]);
+
   const [dateInvoices, setDateInvoices] = useState({ open: [], closed: [] });
   const [showModal, setShowModal] = useState(false);
   const [currentView, setCurrentView] = useState('dayGridMonth');
@@ -80,11 +81,12 @@ const CalendarView = () => {
   }, [calendarApi, currentView]);
 
   // Process invoices and convert them to calendar events
+  // Using invoice.date (service date) for calendar display
   useEffect(() => {
     const openEvents = openInvoices.map(invoice => ({
       id: `open-${invoice.id}`,
       title: `${invoice.customer} (${invoice.services.map(s => s.service).join(', ')})`,
-      start: invoice.date,
+      start: invoice.date, // Service date (invoice.Date)
       allDay: true,
       extendedProps: {
         status: 'open',
@@ -99,7 +101,7 @@ const CalendarView = () => {
     const closedEvents = closedInvoices.map(invoice => ({
       id: `closed-${invoice.id}`,
       title: `${invoice.customer} (${invoice.services.map(s => s.service).join(', ')})`,
-      start: invoice.date,
+      start: invoice.date, // Service date (invoice.Date)
       allDay: true,
       extendedProps: {
         status: 'closed',

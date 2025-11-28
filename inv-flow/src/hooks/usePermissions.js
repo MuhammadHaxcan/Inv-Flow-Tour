@@ -34,6 +34,9 @@ export function usePermissions() {
     const canReadInvoices = hasPermission(PERMISSIONS.INVOICES_READ);
     const canWriteInvoices = hasPermission(PERMISSIONS.INVOICES_WRITE);
     const canDeleteInvoices = hasPermission(PERMISSIONS.INVOICES_DELETE);
+    
+    // Closed invoice permissions
+    const canReadClosedInvoices = hasPermission(PERMISSIONS.CLOSEDINVOICES_READ);
 
     // Service permissions
     const canReadServices = hasPermission(PERMISSIONS.SERVICES_READ);
@@ -151,6 +154,9 @@ export function usePermissions() {
         canReadInvoices,
         canWriteInvoices,
         canDeleteInvoices,
+        
+        // Closed invoice permissions
+        canReadClosedInvoices,
         
         // Service permissions
         canReadServices,

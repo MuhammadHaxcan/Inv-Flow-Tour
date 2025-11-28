@@ -151,7 +151,14 @@ const ClosedInvoices = () => {
                                                         <div className="text-muted small">{invoice.persons} persons</div>
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        {new Date(invoice.date).toLocaleDateString()}
+                                                        <div>
+                                                            <div>Service: {new Date(invoice.date).toLocaleDateString()}</div>
+                                                            {invoice.createdAt && (
+                                                                <small className="text-muted" title={`Created: ${new Date(invoice.createdAt).toLocaleString()}`}>
+                                                                    Created: {new Date(invoice.createdAt).toLocaleDateString()}
+                                                                </small>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td className="px-4 py-3 text-end fw-medium">
                                                         {formatCurrency(invoice.total)}
