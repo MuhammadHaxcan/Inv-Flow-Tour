@@ -1,7 +1,25 @@
-// Use HTTP for development (port 5104) or HTTPS (port 7291)
-// If using HTTPS, you may need to accept the self-signed certificate in your browser
-// ngrok backend: https://80a4051a46be.ngrok-free.app/api
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5104/api';
+// API Base URL Configuration
+// Development: http://localhost:5104/api
+// Production with nginx proxy: /api (relative URL)
+// Production with separate domain: https://api.yourdomain.com/api
+const getApiBaseUrl = () => {
+    const envUrl = import.meta.env.VITE_API_URL;
+    
+    // If VITE_API_URL is set, use it
+    if (envUrl) {
+        // If it's a relative URL (starts with /), use as-is
+        if (envUrl.startsWith('/')) {
+            return envUrl;
+        }
+        // If it's an absolute URL, use it
+        return envUrl;
+    }
+    
+    // Default to localhost for development
+    return 'http://localhost:5104/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Connection check
 let isBackendAvailable = null;
@@ -13,8 +31,15 @@ const checkBackendConnection = async () => {
     }
 
     connectionCheckPromise = (async () => {
+        // Skip connection check for relative URLs (production with proxy)
+        if (API_BASE_URL.startsWith('/')) {
+            isBackendAvailable = true;
+            return true;
+        }
+        
         try {
-            const response = await fetch(`${API_BASE_URL.replace('/api', '')}/swagger/index.html`, {
+            const baseUrlWithoutApi = API_BASE_URL.replace('/api', '');
+            const response = await fetch(`${baseUrlWithoutApi}/swagger/index.html`, {
                 method: 'HEAD',
                 mode: 'no-cors'
             });
@@ -51,9 +76,13 @@ const apiCall = async (endpoint, options = {}, retries = 0) => {
     const token = getToken();
     const headers = {
         'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true',  // Skip ngrok warning page
         ...options.headers,
     };
+
+    // Add ngrok skip header only if needed (development)
+    if (API_BASE_URL.includes('ngrok')) {
+        headers['ngrok-skip-browser-warning'] = 'true';
+    }
 
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
