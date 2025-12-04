@@ -1,5 +1,6 @@
 // Use HTTP for development (port 5104) or HTTPS (port 7291)
 // If using HTTPS, you may need to accept the self-signed certificate in your browser
+// ngrok backend: https://80a4051a46be.ngrok-free.app/api
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5104/api';
 
 // Connection check
@@ -283,6 +284,10 @@ export const reportsAPI = {
         body: JSON.stringify(filters)
     }),
     getSummaryReport: (filters) => apiCall('/reports/summary', {
+        method: 'POST',
+        body: JSON.stringify(filters)
+    }),
+    getAgentReport: (filters) => apiCall('/reports/agent', {
         method: 'POST',
         body: JSON.stringify(filters)
     }),

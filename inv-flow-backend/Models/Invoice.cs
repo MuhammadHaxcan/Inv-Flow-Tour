@@ -40,6 +40,10 @@ public class Invoice
     [Column(TypeName = "decimal(18,2)")]
     public decimal? Vat { get; set; }
 
+    public TripType TripType { get; set; } = TripType.Day;
+
+    public TripMode TripMode { get; set; } = TripMode.Shared;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     
@@ -48,9 +52,15 @@ public class Invoice
     /// </summary>
     public DateTime? EmailSentAt { get; set; }
 
+    /// <summary>
+    /// ID of the user who created this invoice
+    /// </summary>
+    public int? CreatedByUserId { get; set; }
+
     // Navigation properties
     public Customer Customer { get; set; } = null!;
     public Driver? Driver { get; set; }
+    public User? CreatedByUser { get; set; }
     public ICollection<InvoiceServiceItem> InvoiceServices { get; set; } = new List<InvoiceServiceItem>();
     public ICollection<InvoiceExpense> InvoiceExpenses { get; set; } = new List<InvoiceExpense>();
     public ICollection<Payment> Payments { get; set; } = new List<Payment>();

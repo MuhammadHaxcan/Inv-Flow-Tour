@@ -10,11 +10,13 @@ import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import AlertModal from '../components/AlertModal';
 import SearchableSelect from '../components/SearchableSelect';
 import { useData } from '../contexts/DataContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const GenerateInvoice = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     // Use data context
     const {
@@ -64,6 +66,8 @@ const GenerateInvoice = () => {
     const [assignedDriver, setAssignedDriver] = useState('');
     const [driverNotes, setDriverNotes] = useState('');
     const [accommodation, setAccommodation] = useState('');
+    const [tripType, setTripType] = useState('Day'); // 'Day' or 'Night'
+    const [tripMode, setTripMode] = useState('Shared'); // 'Shared' or 'Private'
     const [invoiceServices, setInvoiceServices] = useState([{ service: '', rate: '' }]);
     const [invoiceExpenses, setInvoiceExpenses] = useState([]);
     const [payments, setPayments] = useState([]);
@@ -293,6 +297,8 @@ const GenerateInvoice = () => {
             driverId: driver?.id || null,
             driverNotes: driverNotes || null,
             persons: parseInt(accommodation) || 1,
+            tripType: tripType,
+            tripMode: tripMode,
             services: servicesData,
             expenses: expensesData,
             payments: paymentsData
@@ -357,7 +363,7 @@ const GenerateInvoice = () => {
                                     <label className="small text-muted mb-1">Created By</label>
                                     <input
                                         type="text"
-                                        value="Admin User"
+                                        value={user ? (user.fullName || user.username || 'Unknown User') : 'Loading...'}
                                         className="form-control form-control-sm bg-light"
                                         disabled
                                         style={{ minWidth: "120px" }}
@@ -475,6 +481,77 @@ const GenerateInvoice = () => {
                                         placeholder="Number of persons"
                                         className="form-control form-control-sm"
                                     />
+                                </div>
+                            </div>
+
+                            {/* Trip Type and Mode */}
+                            <div className="row mb-3">
+                                <div className="col-md-6">
+                                    <label className="form-label small fw-medium">Trip Type</label>
+                                    <div className="d-flex align-items-center gap-3">
+                                        <div className="form-check">
+                                            <input
+                                                className="form-check-input"
+                                                type="radio"
+                                                name="tripType"
+                                                id="tripTypeDay"
+                                                value="Day"
+                                                checked={tripType === 'Day'}
+                                                onChange={(e) => setTripType(e.target.value)}
+                                            />
+                                            <label className="form-check-label" htmlFor="tripTypeDay">
+                                                Day Trip
+                                            </label>
+                                        </div>
+                                        <div className="form-check">
+                                            <input
+                                                className="form-check-input"
+                                                type="radio"
+                                                name="tripType"
+                                                id="tripTypeNight"
+                                                value="Night"
+                                                checked={tripType === 'Night'}
+                                                onChange={(e) => setTripType(e.target.value)}
+                                            />
+                                            <label className="form-check-label" htmlFor="tripTypeNight">
+                                                Night Trip
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="col-md-6">
+                                    <label className="form-label small fw-medium">Trip Mode</label>
+                                    <div className="d-flex align-items-center gap-3">
+                                        <div className="form-check">
+                                            <input
+                                                className="form-check-input"
+                                                type="radio"
+                                                name="tripMode"
+                                                id="tripModeShared"
+                                                value="Shared"
+                                                checked={tripMode === 'Shared'}
+                                                onChange={(e) => setTripMode(e.target.value)}
+                                            />
+                                            <label className="form-check-label" htmlFor="tripModeShared">
+                                                Shared
+                                            </label>
+                                        </div>
+                                        <div className="form-check">
+                                            <input
+                                                className="form-check-input"
+                                                type="radio"
+                                                name="tripMode"
+                                                id="tripModePrivate"
+                                                value="Private"
+                                                checked={tripMode === 'Private'}
+                                                onChange={(e) => setTripMode(e.target.value)}
+                                            />
+                                            <label className="form-check-label" htmlFor="tripModePrivate">
+                                                Private
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

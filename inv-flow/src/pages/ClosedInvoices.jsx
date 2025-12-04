@@ -149,6 +149,20 @@ const ClosedInvoices = () => {
                                                     <td className="px-4 py-3">
                                                         <div className="fw-medium">{invoice.customer}</div>
                                                         <div className="text-muted small">{invoice.persons} persons</div>
+                                                        {(invoice.tripType || invoice.tripMode) && (
+                                                            <div className="d-flex gap-1 mt-1">
+                                                                {invoice.tripType && (
+                                                                    <span className={`badge ${invoice.tripType === 'Night' ? 'bg-dark' : 'bg-warning text-dark'}`}>
+                                                                        {invoice.tripType}
+                                                                    </span>
+                                                                )}
+                                                                {invoice.tripMode && (
+                                                                    <span className={`badge ${invoice.tripMode === 'Private' ? 'bg-primary' : 'bg-secondary'}`}>
+                                                                        {invoice.tripMode}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <div>

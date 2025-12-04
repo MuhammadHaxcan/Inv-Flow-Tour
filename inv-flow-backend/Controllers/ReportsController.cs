@@ -61,4 +61,15 @@ public class ReportsController : ControllerBase
         var report = await _reportService.GetSummaryReportAsync(filter);
         return Ok(report);
     }
+
+    [HttpPost("agent")]
+    [RequirePermission("reports.read")]
+    public async Task<ActionResult<AgentReportDto>> GetAgentReport([FromBody] ReportFilterDto? filter)
+    {
+        if (filter == null)
+            filter = new ReportFilterDto();
+        
+        var report = await _reportService.GetAgentReportAsync(filter);
+        return Ok(report);
+    }
 }

@@ -8,7 +8,7 @@ public interface IInvoiceService
     Task<List<InvoiceDto>> GetClosedInvoicesAsync();
     Task<InvoiceDto?> GetByIdAsync(int id);
     Task<string> GetNextInvoiceNumberAsync();
-    Task<InvoiceDto> CreateAsync(CreateInvoiceDto dto);
+    Task<InvoiceDto> CreateAsync(CreateInvoiceDto dto, int? userId = null);
     Task<InvoiceDto?> AddPaymentAsync(int invoiceId, AddPaymentDto dto);
     Task<InvoiceDto?> AddExpenseAsync(int invoiceId, AddExpenseDto dto);
     Task<InvoiceDto?> AddServiceAsync(int invoiceId, AddInvoiceServiceDto dto);

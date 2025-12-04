@@ -87,7 +87,15 @@ public class InvoicesController : ControllerBase
             return BadRequest(validationResult.Errors);
         }
 
-        var invoice = await _invoiceService.CreateAsync(dto);
+        // Get current user ID from claims
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        int? userId = null;
+        if (int.TryParse(userIdClaim, out var parsedUserId))
+        {
+            userId = parsedUserId;
+        }
+
+        var invoice = await _invoiceService.CreateAsync(dto, userId);
         return CreatedAtAction(nameof(GetById), new { id = invoice.Id }, invoice);
     }
 

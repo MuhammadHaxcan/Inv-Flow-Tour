@@ -26,6 +26,7 @@ public class InvoiceService : IInvoiceService
             .Where(i => i.Status != InvoiceStatus.Paid)
             .Include(i => i.Customer)
             .Include(i => i.Driver)
+            .Include(i => i.CreatedByUser)
             .Include(i => i.InvoiceServices)
                 .ThenInclude(isr => isr.Service)
             .Include(i => i.InvoiceExpenses)
@@ -50,6 +51,7 @@ public class InvoiceService : IInvoiceService
             .Where(i => i.Status == InvoiceStatus.Paid)
             .Include(i => i.Customer)
             .Include(i => i.Driver)
+            .Include(i => i.CreatedByUser)
             .Include(i => i.InvoiceServices)
                 .ThenInclude(isr => isr.Service)
             .Include(i => i.InvoiceExpenses)
@@ -72,6 +74,7 @@ public class InvoiceService : IInvoiceService
         var invoice = await _context.Invoices
             .Include(i => i.Customer)
             .Include(i => i.Driver)
+            .Include(i => i.CreatedByUser)
             .Include(i => i.InvoiceServices)
                 .ThenInclude(isr => isr.Service)
             .Include(i => i.InvoiceExpenses)
@@ -111,7 +114,7 @@ public class InvoiceService : IInvoiceService
         return $"{prefix}0001";
     }
 
-    public async Task<InvoiceDto> CreateAsync(CreateInvoiceDto dto)
+    public async Task<InvoiceDto> CreateAsync(CreateInvoiceDto dto, int? userId = null)
     {
         var invoiceNumber = await GetNextInvoiceNumberAsync();
         var total = dto.Services.Sum(s => s.Rate);
@@ -129,6 +132,9 @@ public class InvoiceService : IInvoiceService
             Total = total,
             Paid = paid,
             Status = status,
+            TripType = Enum.TryParse<TripType>(dto.TripType, ignoreCase: true, out var tripType) ? tripType : TripType.Day,
+            TripMode = Enum.TryParse<TripMode>(dto.TripMode, ignoreCase: true, out var tripMode) ? tripMode : TripMode.Shared,
+            CreatedByUserId = userId,
             CreatedAt = DateTime.UtcNow // Explicitly set creation date/time
         };
 
@@ -645,6 +651,8 @@ public class InvoiceService : IInvoiceService
                         Customer = i.Customer?.Name ?? "Unknown",
                         Persons = i.Persons,
                         Status = i.Status.ToString().ToLower(),
+                        TripType = i.TripType.ToString(),
+                        TripMode = i.TripMode.ToString(),
                         Total = i.Total,
                         DriverNotes = i.DriverNotes,
                         Services = i.InvoiceServices

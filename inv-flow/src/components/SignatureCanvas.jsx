@@ -203,3 +203,4 @@ const SignatureCanvas = ({ onSave, onCancel, initialImage = null, width = 400, h
 };
 
 export default SignatureCanvas;
+

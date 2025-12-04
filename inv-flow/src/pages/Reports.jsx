@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, BarChart3, TrendingUp, DollarSign, Users, Package, Filter, RefreshCw, AlertCircle } from 'lucide-react';
+import { Calendar, BarChart3, TrendingUp, DollarSign, Users, Package, Filter, RefreshCw, AlertCircle, User } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { reportsAPI } from '../services/api';
@@ -90,6 +90,9 @@ const Reports = () => {
                 case 'summary':
                     data = await reportsAPI.getSummaryReport(filters);
                     break;
+                case 'agent':
+                    data = await reportsAPI.getAgentReport(filters);
+                    break;
                 default:
                     data = null;
             }
@@ -131,7 +134,8 @@ const Reports = () => {
         { id: 'service', label: 'Service Report', icon: Package },
         { id: 'customer', label: 'Customer Report', icon: Users },
         { id: 'driver', label: 'Driver Report', icon: Users },
-        { id: 'summary', label: 'Summary Report', icon: BarChart3 }
+        { id: 'summary', label: 'Summary Report', icon: BarChart3 },
+        { id: 'agent', label: 'Agent Report', icon: User }
     ];
 
     const isLoading = loadingStates.services || loadingStates.customers || loadingStates.drivers || loading;
@@ -341,6 +345,12 @@ const Reports = () => {
                             )}
                             {activeTab === 'summary' && (
                                 <SummaryReport 
+                                    data={reportData} 
+                                    formatCurrency={formatCurrency}
+                                />
+                            )}
+                            {activeTab === 'agent' && (
+                                <AgentReport 
                                     data={reportData} 
                                     formatCurrency={formatCurrency}
                                 />
@@ -811,6 +821,142 @@ const SummaryReport = ({ data, formatCurrency }) => {
                         </table>
                     </div>
                 </div>
+            </div>
+        </>
+    );
+};
+
+// Agent Report Component
+const AgentReport = ({ data, formatCurrency }) => {
+    if (!data || !data.agents) return null;
+
+    const totalInvoices = data.agents.reduce((sum, a) => sum + (a.invoiceCount || 0), 0);
+    const totalRevenue = data.agents.reduce((sum, a) => sum + (a.totalRevenue || 0), 0);
+    const totalPaid = data.agents.reduce((sum, a) => sum + (a.totalPaid || 0), 0);
+    const totalOutstanding = data.agents.reduce((sum, a) => sum + (a.totalOutstanding || 0), 0);
+
+    return (
+        <>
+            {/* Summary Cards */}
+            <div className="row g-3 p-4">
+                <div className="col-md-3">
+                    <div className="card border-0 bg-primary bg-opacity-10 h-100">
+                        <div className="card-body py-3">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Total Invoices</p>
+                                    <h4 className="mb-0 text-primary fw-bold">{totalInvoices}</h4>
+                                </div>
+                                <div className="bg-primary bg-opacity-25 rounded-circle p-2">
+                                    <User size={24} className="text-primary" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-3">
+                    <div className="card border-0 bg-success bg-opacity-10 h-100">
+                        <div className="card-body py-3">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Total Revenue</p>
+                                    <h4 className="mb-0 text-success fw-bold">{formatCurrency(totalRevenue)}</h4>
+                                </div>
+                                <div className="bg-success bg-opacity-25 rounded-circle p-2">
+                                    <DollarSign size={24} className="text-success" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-3">
+                    <div className="card border-0 bg-warning bg-opacity-10 h-100">
+                        <div className="card-body py-3">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Total Paid</p>
+                                    <h4 className="mb-0 text-warning fw-bold">{formatCurrency(totalPaid)}</h4>
+                                </div>
+                                <div className="bg-warning bg-opacity-25 rounded-circle p-2">
+                                    <TrendingUp size={24} className="text-warning" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-3">
+                    <div className="card border-0 bg-danger bg-opacity-10 h-100">
+                        <div className="card-body py-3">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <p className="text-muted small mb-1">Outstanding</p>
+                                    <h4 className="mb-0 text-danger fw-bold">{formatCurrency(totalOutstanding)}</h4>
+                                </div>
+                                <div className="bg-danger bg-opacity-25 rounded-circle p-2">
+                                    <TrendingUp size={24} className="text-danger" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Table */}
+            <div className="table-responsive">
+                <table className="table table-hover mb-0">
+                    <thead className="table-light">
+                        <tr>
+                            <th className="px-4 py-3">Agent Name</th>
+                            <th className="px-4 py-3">Username</th>
+                            <th className="px-4 py-3">Email</th>
+                            <th className="px-4 py-3 text-end">Invoices</th>
+                            <th className="px-4 py-3 text-end">Total Revenue</th>
+                            <th className="px-4 py-3 text-end">Avg. Invoice</th>
+                            <th className="px-4 py-3 text-end">Paid</th>
+                            <th className="px-4 py-3 text-end">Outstanding</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {data.agents.length === 0 ? (
+                            <tr>
+                                <td colSpan="8" className="text-center py-4 text-muted">
+                                    No agents found for the selected period
+                                </td>
+                            </tr>
+                        ) : (
+                            data.agents.map((agent, index) => (
+                                <tr key={index}>
+                                    <td className="px-4 py-3 fw-medium">{agent.agentName}</td>
+                                    <td className="px-4 py-3 text-muted">{agent.username || '-'}</td>
+                                    <td className="px-4 py-3 text-muted">{agent.email || '-'}</td>
+                                    <td className="px-4 py-3 text-end fw-bold text-primary">{agent.invoiceCount || 0}</td>
+                                    <td className="px-4 py-3 text-end fw-bold text-success">{formatCurrency(agent.totalRevenue)}</td>
+                                    <td className="px-4 py-3 text-end text-muted">{formatCurrency(agent.averageInvoice)}</td>
+                                    <td className="px-4 py-3 text-end text-warning">{formatCurrency(agent.totalPaid)}</td>
+                                    <td className="px-4 py-3 text-end">
+                                        {agent.totalOutstanding > 0 ? (
+                                            <span className="text-danger fw-medium">{formatCurrency(agent.totalOutstanding)}</span>
+                                        ) : (
+                                            <span className="text-success">-</span>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                    {data.agents.length > 0 && (
+                        <tfoot className="table-light fw-bold">
+                            <tr>
+                                <td className="px-4 py-3" colSpan="3">Total</td>
+                                <td className="px-4 py-3 text-end text-primary">{totalInvoices}</td>
+                                <td className="px-4 py-3 text-end text-success">{formatCurrency(totalRevenue)}</td>
+                                <td className="px-4 py-3 text-end">{formatCurrency(totalRevenue / totalInvoices || 0)}</td>
+                                <td className="px-4 py-3 text-end text-warning">{formatCurrency(totalPaid)}</td>
+                                <td className="px-4 py-3 text-end text-danger">{formatCurrency(totalOutstanding)}</td>
+                            </tr>
+                        </tfoot>
+                    )}
+                </table>
             </div>
         </>
     );

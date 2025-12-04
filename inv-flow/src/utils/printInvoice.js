@@ -36,7 +36,37 @@ export const calculateInvoiceVAT = (invoice) => {
 const getDriverContactHTML = (invoice, drivers) => {
     if (!invoice.driver || !drivers) return '';
     const driver = drivers.find(d => d.name === invoice.driver);
-    return driver ? `<p class="mb-0 text-muted" style="font-size: 10pt">Contact: ${driver.phone}</p>` : '';
+    return driver ? `<p class="mb-0 text-muted" style="font-size: 11pt">Contact: ${driver.phone}</p>` : '';
+};
+
+/**
+ * Get trip type and trip mode badges HTML
+ */
+const getTripInfoHTML = (invoice) => {
+    if (!invoice.tripType && !invoice.tripMode) return '';
+    
+    const badges = [];
+    
+    if (invoice.tripType) {
+        const isNight = invoice.tripType === 'Night';
+        const badgeStyle = isNight 
+            ? 'background-color: #333; color: #fff;' 
+            : 'background-color: #FFA500; color: #000;';
+        const icon = isNight ? '🌙' : '☀️';
+        badges.push(`<span class="badge" style="${badgeStyle} font-size: 12px; padding: 4px 10px;">${icon} ${invoice.tripType}</span>`);
+    }
+    
+    if (invoice.tripMode) {
+        const isPrivate = invoice.tripMode === 'Private';
+        const badgeStyle = isPrivate 
+            ? 'background-color: #007bff; color: #fff;' 
+            : 'background-color: #6c757d; color: #fff;';
+        badges.push(`<span class="badge" style="${badgeStyle} font-size: 12px; padding: 4px 10px;">${invoice.tripMode}</span>`);
+    }
+    
+    return badges.length > 0 
+        ? `<div class="d-flex gap-2 align-items-center mt-1">${badges.join('')}</div>` 
+        : '';
 };
 
 /**
@@ -123,8 +153,11 @@ export const printInvoice = (invoice, options = {}) => {
 
     // Driver notes HTML
     const driverNotesHTML = invoice.driverNotes 
-        ? `<p class="mb-0 text-muted" style="font-size: 9pt"><em>Notes: ${invoice.driverNotes}</em></p>` 
+        ? `<p class="mb-0 text-muted" style="font-size: 10pt"><em>Notes: ${invoice.driverNotes}</em></p>` 
         : '';
+
+    // Trip info HTML (tripType and tripMode)
+    const tripInfoHTML = getTripInfoHTML(invoice);
 
     // Payment status info
     const isPaid = invoice.status === 'paid';
@@ -139,18 +172,18 @@ export const printInvoice = (invoice, options = {}) => {
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
         <style>
             @media print {
-                body { padding: 15px; font-size: 10pt; }
-                @page { size: A4; margin: 7mm; }
+                body { padding: 17px; font-size: 11pt; }
+                @page { size: A4; margin: 8mm; }
                 .container { padding: 0 !important; max-width: 100%; }
-                .table { margin-bottom: 10px; }
+                .table { margin-bottom: 11px; }
                 .gold { color: ${GOLD_COLOR}; }
                 .gold-bg { background-color: ${GOLD_COLOR}; color: white; }
                 a { text-decoration: none !important; }
             }
             .gold { color: ${GOLD_COLOR}; }
             .gold-bg { background-color: ${GOLD_COLOR}; color: white; }
-            .policy-box { background-color: #fff9e6; border: 1px solid ${GOLD_COLOR}; border-radius: 4px; padding: 8px; font-size: 9pt; }
-            .social-link { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-size: 9pt; margin: 0 8px; }
+            .policy-box { background-color: #fff9e6; border: 1px solid ${GOLD_COLOR}; border-radius: 4px; padding: 9px; font-size: 10pt; }
+            .social-link { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-size: 10pt; margin: 0 9px; }
         </style>
     </head>
     <body>
@@ -158,19 +191,19 @@ export const printInvoice = (invoice, options = {}) => {
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-start mb-3 pb-2 border-bottom" style="border-color: ${GOLD_COLOR}">
                 <div class="d-flex align-items-start gap-3">
-                    <img src="${logoSrc}" alt="Company Logo" style="height: 70px; width: auto;" onerror="this.style.display='none'"/>
+                    <img src="${logoSrc}" alt="Company Logo" style="height: 77px; width: auto;" onerror="this.style.display='none'"/>
                     <div>
                     <h5 class="fw-bold mb-1 gold">${companyName}</h5>
-                    <p class="mb-0 text-muted" style="font-size: 10pt">${companyAddress}</p>
-                    <p class="mb-0 text-muted" style="font-size: 10pt">Mob: ${companyPhone}</p>
-                    <p class="mb-0 text-muted" style="font-size: 10pt">Email: ${companyEmail} | Website: ${companyWebsite}</p>
-                    <p class="mb-0 fw-medium" style="font-size: 10pt">TRN: ${companyTRN}</p>
+                    <p class="mb-0 text-muted" style="font-size: 11pt">${companyAddress}</p>
+                    <p class="mb-0 text-muted" style="font-size: 11pt">Mob: ${companyPhone}</p>
+                    <p class="mb-0 text-muted" style="font-size: 11pt">Email: ${companyEmail} | Website: ${companyWebsite}</p>
+                    <p class="mb-0 fw-medium" style="font-size: 11pt">TRN: ${companyTRN}</p>
                     </div>
                 </div>
                 <div class="text-end">
-                    <p class="fw-bold text-muted mb-1" style="font-size: 10pt">INVOICE</p>
+                    <p class="fw-bold text-muted mb-1" style="font-size: 11pt">INVOICE</p>
                     <h5 class="fw-bold gold mb-1">${invoice.number}</h5>
-                    <p class="mb-0" style="font-size: 10pt">Date: ${new Date(invoice.date).toLocaleDateString()}</p>
+                    <p class="mb-0" style="font-size: 11pt">Date: ${new Date(invoice.date).toLocaleDateString()}</p>
                     <div class="mt-2">
                         <a href="https://www.instagram.com/sktuae/" class="social-link" style="color: #E4405F">${instagramSvg}</a>
                         <a href="https://api.whatsapp.com/send/?phone=971557523374" class="social-link" style="color: #25D366">${whatsappSvg}</a>
@@ -182,13 +215,14 @@ export const printInvoice = (invoice, options = {}) => {
             <!-- Customer & Driver -->
             <div class="row g-0 mb-3 pb-2 border-bottom">
                 <div class="col-6">
-                    <p class="fw-bold mb-1 gold" style="font-size: 11pt">ISSUED TO:</p>
-                    <p class="mb-1 fw-medium">${invoice.customer}</p>
-                    <p class="mb-0 text-muted" style="font-size: 10pt">Pax: <strong>${invoice.persons}</strong> person(s)</p>
+                    <p class="fw-bold mb-1 gold" style="font-size: 12pt">ISSUED TO:</p>
+                    <p class="mb-1 fw-medium" style="font-size: 14pt">${invoice.customer}</p>
+                    <p class="mb-1 text-muted" style="font-size: 11pt">Pax: <strong>${invoice.persons}</strong> person(s)</p>
+                    ${tripInfoHTML}
                 </div>
                 <div class="col-6 text-end">
-                    <p class="fw-bold mb-1 gold" style="font-size: 11pt">DRIVER:</p>
-                    <p class="mb-1">${invoice.driver || "Not assigned"}</p>
+                    <p class="fw-bold mb-1 gold" style="font-size: 12pt">DRIVER:</p>
+                    <p class="mb-1" style="font-size: 14pt">${invoice.driver || "Not assigned"}</p>
                     ${driverContactHTML}
                     ${driverNotesHTML}
                 </div>
@@ -196,8 +230,8 @@ export const printInvoice = (invoice, options = {}) => {
             
             <!-- Services -->
             <div class="mb-3">
-                <p class="fw-bold mb-2 gold" style="font-size: 11pt">SERVICES</p>
-                <table class="table table-bordered table-sm" style="font-size: 10pt">
+                <p class="fw-bold mb-2 gold" style="font-size: 12pt">SERVICES</p>
+                <table class="table table-bordered table-sm" style="font-size: 11pt">
                     <thead class="gold-bg">
                         <tr>
                             <th>Description</th>
@@ -216,16 +250,16 @@ export const printInvoice = (invoice, options = {}) => {
             <!-- Payment Info -->
             <div class="row g-0 mb-3 pt-2 border-top">
                 <div class="col-6">
-                    <p class="fw-bold mb-2 gold" style="font-size: 11pt">PAYMENT INFORMATION:</p>
-                    <p class="mb-0" style="font-size: 10pt">Status: <strong>${statusText}</strong></p>
-                    <p class="mb-0" style="font-size: 10pt">Amount Paid: AED ${invoice.paid.toFixed(2)}</p>
-                    <p class="mb-0" style="font-size: 10pt">Balance Due: <strong>AED ${balanceDue.toFixed(2)}</strong></p>
+                    <p class="fw-bold mb-2 gold" style="font-size: 12pt">PAYMENT INFORMATION:</p>
+                    <p class="mb-0" style="font-size: 11pt">Status: <strong>${statusText}</strong></p>
+                    <p class="mb-0" style="font-size: 11pt">Amount Paid: AED ${invoice.paid.toFixed(2)}</p>
+                    <p class="mb-0" style="font-size: 11pt">Balance Due: <strong>AED ${balanceDue.toFixed(2)}</strong></p>
                 </div>
                 <div class="col-6 text-end">
                     <div class="mt-3 pt-3">
                         ${signatureHTML}
                         <div class="border-top pt-1 w-75 ms-auto" style="border-color: ${GOLD_COLOR}">
-                            <p class="mb-0" style="font-size: 10pt">Authorized Signature</p>
+                            <p class="mb-0" style="font-size: 11pt">Authorized Signature</p>
                         </div>
                     </div>
                 </div>
@@ -253,7 +287,7 @@ export const printInvoice = (invoice, options = {}) => {
                     <a href="https://api.whatsapp.com/send/?phone=971557523374" class="social-link" style="color: #25D366">${whatsappSvg} ${companyPhone}</a>
                     <a href="https://www.facebook.com/sktuae" class="social-link" style="color: #1877F2">${facebookSvg} /sktuae</a>
                 </div>
-                <p class="mb-0 text-muted" style="font-size: 9pt">This is a computer-generated document.</p>
+                <p class="mb-0 text-muted" style="font-size: 10pt">This is a computer-generated document.</p>
             </div>
         </div>
     </body>

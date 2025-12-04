@@ -16,6 +16,8 @@ public class DriverScheduleInvoiceDto
     public string Customer { get; set; } = string.Empty;
     public int Persons { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string TripType { get; set; } = "Day";
+    public string TripMode { get; set; } = "Shared";
     public decimal Total { get; set; }
     public string? DriverNotes { get; set; }
     public List<string> Services { get; set; } = new();

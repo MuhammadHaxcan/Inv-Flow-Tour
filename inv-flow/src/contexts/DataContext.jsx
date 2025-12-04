@@ -419,6 +419,8 @@ export function DataProvider({ children }) {
                 driverId: invoiceData.driverId,
                 driverNotes: invoiceData.driverNotes || null,
                 persons: invoiceData.persons || 1,
+                tripType: invoiceData.tripType || 'Day',
+                tripMode: invoiceData.tripMode || 'Shared',
                 services: invoiceData.services || [],
                 expenses: invoiceData.expenses || [],
                 payments: invoiceData.payments || []

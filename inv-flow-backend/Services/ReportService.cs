@@ -223,4 +223,62 @@ public class ReportService : IReportService
             TopServices = topServices
         };
     }
+
+    public async Task<AgentReportDto> GetAgentReportAsync(ReportFilterDto filter)
+    {
+        filter ??= new ReportFilterDto();
+
+        // Build query with filters - filter by CreatedAt date
+        var query = _context.Invoices
+            .Include(i => i.CreatedByUser)
+            .Include(i => i.InvoiceServices)
+            .Where(i => i.CreatedByUserId != null)
+            .AsQueryable();
+
+        // Apply date filters - filter by invoice creation date (CreatedAt)
+        if (filter.StartDate.HasValue)
+            query = query.Where(i => DateOnly.FromDateTime(i.CreatedAt.Date) >= filter.StartDate.Value);
+        if (filter.EndDate.HasValue)
+            query = query.Where(i => DateOnly.FromDateTime(i.CreatedAt.Date) <= filter.EndDate.Value);
+        if (filter.CustomerId.HasValue)
+            query = query.Where(i => i.CustomerId == filter.CustomerId.Value);
+        if (filter.DriverId.HasValue)
+            query = query.Where(i => i.DriverId == filter.DriverId.Value);
+
+        // Apply service filter if specified
+        if (filter.ServiceId.HasValue)
+            query = query.Where(i => i.InvoiceServices.Any(isr => isr.ServiceId == filter.ServiceId.Value));
+
+        var invoices = await query
+            .AsNoTracking()
+            .ToListAsync();
+
+        if (!invoices.Any())
+            return new AgentReportDto { Agents = new List<AgentReportItemDto>() };
+
+        var agentGroups = invoices
+            .GroupBy(i => new 
+            { 
+                i.CreatedByUserId, 
+                AgentName = i.CreatedByUser != null ? (i.CreatedByUser.FullName ?? i.CreatedByUser.Username) : "Unknown",
+                Email = i.CreatedByUser != null ? i.CreatedByUser.Email : null,
+                Username = i.CreatedByUser != null ? i.CreatedByUser.Username : "Unknown"
+            })
+            .Select(g => new AgentReportItemDto
+            {
+                UserId = g.Key.CreatedByUserId ?? 0,
+                AgentName = g.Key.AgentName,
+                Email = g.Key.Email,
+                Username = g.Key.Username,
+                InvoiceCount = g.Count(),
+                TotalRevenue = g.Sum(i => i.Total),
+                AverageInvoice = g.Average(i => i.Total),
+                TotalPaid = g.Sum(i => i.Paid),
+                TotalOutstanding = g.Sum(i => i.Total - i.Paid)
+            })
+            .OrderByDescending(a => a.InvoiceCount)
+            .ToList();
+
+        return new AgentReportDto { Agents = agentGroups };
+    }
 }

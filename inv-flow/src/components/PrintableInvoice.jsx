@@ -85,31 +85,31 @@ const PrintableInvoice = ({ invoice }) => {
                     <img 
                         src={logo} 
                         alt="Siyyad Khan Tourism" 
-                        style={{ height: '75px', width: 'auto' }} 
+                        style={{ height: '83px', width: 'auto' }} 
                         onError={(e) => { e.target.style.display = 'none'; }}
                     />
                     <div>
                         <h5 className="fw-bold mb-1" style={{ color: goldColor }}>SIYYAD KHAN TOURISM LLC</h5>
-                        <p className="mb-0 text-muted" style={{ fontSize: '11px' }}>1513, 15th floor, Tamani Art Building</p>
-                        <p className="mb-0 text-muted" style={{ fontSize: '11px' }}>Dubai, UAE | Mob: +971 55 752 3374</p>
-                        <p className="mb-0 text-muted" style={{ fontSize: '11px' }}>Email: info@skt.ae | Website: www.skt.ae</p>
-                        <p className="mb-0 fw-medium" style={{ fontSize: '11px' }}>TRN: 104082040700003</p>
+                        <p className="mb-0 text-muted" style={{ fontSize: '12px' }}>1513, 15th floor, Tamani Art Building</p>
+                        <p className="mb-0 text-muted" style={{ fontSize: '12px' }}>Dubai, UAE | Mob: +971 55 752 3374</p>
+                        <p className="mb-0 text-muted" style={{ fontSize: '12px' }}>Email: info@skt.ae | Website: www.skt.ae</p>
+                        <p className="mb-0 fw-medium" style={{ fontSize: '12px' }}>TRN: 104082040700003</p>
                     </div>
                 </div>
                 <div className="text-end">
-                    <p className="fw-bold text-muted mb-1" style={{ fontSize: '12px' }}>INVOICE</p>
+                    <p className="fw-bold text-muted mb-1" style={{ fontSize: '13px' }}>INVOICE</p>
                     <h5 className="fw-bold mb-1" style={{ color: goldColor }}>{invoice.number}</h5>
-                    <p className="mb-0" style={{ fontSize: '11px' }}>Date: {new Date(invoice.date).toLocaleDateString()}</p>
+                    <p className="mb-0" style={{ fontSize: '12px' }}>Date: {new Date(invoice.date).toLocaleDateString()}</p>
                     {/* Social Media Links */}
                     <div className="d-flex justify-content-end gap-2 mt-2">
                         <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" title="Instagram">
-                            <InstagramIcon size={18} />
+                            <InstagramIcon size={20} />
                         </a>
                         <a href={socialLinks.whatsapp} target="_blank" rel="noopener noreferrer" title="WhatsApp">
-                            <WhatsAppIcon size={18} />
+                            <WhatsAppIcon size={20} />
                         </a>
                         <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" title="Facebook">
-                            <FacebookIcon size={18} />
+                            <FacebookIcon size={20} />
                         </a>
                     </div>
                 </div>
@@ -119,15 +119,39 @@ const PrintableInvoice = ({ invoice }) => {
             <div className="mb-3 pb-2 border-bottom">
                 <div className="row g-0">
                     <div className="col-6">
-                        <p className="fw-bold mb-1" style={{ fontSize: '12px', color: goldColor }}>ISSUED TO:</p>
-                        <p className="mb-1 fw-medium" style={{ fontSize: '13px' }}>{invoice.customer}</p>
-                        <p className="mb-0 text-muted" style={{ fontSize: '11px' }}>Pax: <strong>{invoice.persons}</strong> person(s)</p>
+                        <p className="fw-bold mb-1" style={{ fontSize: '13px', color: goldColor }}>ISSUED TO:</p>
+                        <p className="mb-1 fw-medium" style={{ fontSize: '14px' }}>{invoice.customer}</p>
+                        <p className="mb-1 text-muted" style={{ fontSize: '12px' }}>Pax: <strong>{invoice.persons}</strong> person(s)</p>
+                        {(invoice.tripType || invoice.tripMode) && (
+                            <div className="d-flex gap-2 align-items-center">
+                                {invoice.tripType && (
+                                    <span className="badge" style={{ 
+                                        backgroundColor: invoice.tripType === 'Night' ? '#333' : '#FFA500', 
+                                        color: invoice.tripType === 'Night' ? '#fff' : '#000',
+                                        fontSize: '12px',
+                                        padding: '4px 10px'
+                                    }}>
+                                        {invoice.tripType === 'Night' ? '🌙 Night' : '☀️ Day'}
+                                    </span>
+                                )}
+                                {invoice.tripMode && (
+                                    <span className="badge" style={{ 
+                                        backgroundColor: invoice.tripMode === 'Private' ? '#007bff' : '#6c757d', 
+                                        color: '#fff',
+                                        fontSize: '12px',
+                                        padding: '4px 10px'
+                                    }}>
+                                        {invoice.tripMode}
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
                     <div className="col-6 text-end">
-                        <p className="fw-bold mb-1" style={{ fontSize: '12px', color: goldColor }}>DRIVER:</p>
-                        <p className="mb-1" style={{ fontSize: '13px' }}>{invoice.driver || "Not assigned"}</p>
+                        <p className="fw-bold mb-1" style={{ fontSize: '13px', color: goldColor }}>DRIVER:</p>
+                        <p className="mb-1" style={{ fontSize: '14px' }}>{invoice.driver || "Not assigned"}</p>
                         {driverContact && (
-                            <p className="mb-0 text-muted" style={{ fontSize: '11px' }}>Contact: {driverContact}</p>
+                            <p className="mb-0 text-muted" style={{ fontSize: '12px' }}>Contact: {driverContact}</p>
                         )}
                     </div>
                 </div>
@@ -135,9 +159,9 @@ const PrintableInvoice = ({ invoice }) => {
 
             {/* Services Table */}
             <div className="mb-3">
-                <p className="fw-bold mb-2" style={{ fontSize: '12px', color: goldColor }}>SERVICES</p>
+                <p className="fw-bold mb-2" style={{ fontSize: '13px', color: goldColor }}>SERVICES</p>
                 <div className="table-responsive px-0">
-                    <table className="table table-bordered table-sm mb-0" style={{ fontSize: '12px' }}>
+                    <table className="table table-bordered table-sm mb-0" style={{ fontSize: '13px' }}>
                         <thead style={{ backgroundColor: goldColor, color: 'white' }}>
                             <tr>
                                 <th>Description</th>
@@ -173,9 +197,9 @@ const PrintableInvoice = ({ invoice }) => {
             {/* Expenses Table (if any) */}
             {invoice.expenses && invoice.expenses.length > 0 && (
                 <div className="mb-3">
-                    <p className="fw-bold mb-2" style={{ fontSize: '12px', color: goldColor }}>EXPENSES</p>
+                    <p className="fw-bold mb-2" style={{ fontSize: '13px', color: goldColor }}>EXPENSES</p>
                     <div className="table-responsive px-0">
-                        <table className="table table-bordered table-sm mb-0" style={{ fontSize: '12px' }}>
+                        <table className="table table-bordered table-sm mb-0" style={{ fontSize: '13px' }}>
                             <thead className="table-light">
                                 <tr>
                                     <th>Type</th>
@@ -207,17 +231,17 @@ const PrintableInvoice = ({ invoice }) => {
             <div className="mb-3 mt-3 pt-3 border-top">
                 <div className="row g-0">
                     <div className="col-6">
-                        <p className="fw-bold mb-2" style={{ fontSize: '12px', color: goldColor }}>PAYMENT INFORMATION:</p>
-                        <p className="mb-0" style={{ fontSize: '11px' }}>
+                        <p className="fw-bold mb-2" style={{ fontSize: '13px', color: goldColor }}>PAYMENT INFORMATION:</p>
+                        <p className="mb-0" style={{ fontSize: '12px' }}>
                             Status: <span className="fw-bold">{invoice.status === 'paid' ? 'Paid' : invoice.status === 'partial' ? 'Partially Paid' : 'Unpaid'}</span>
                         </p>
-                        <p className="mb-0" style={{ fontSize: '11px' }}>Amount Paid: {formatCurrency(invoice.paid)}</p>
-                        <p className="mb-0" style={{ fontSize: '11px' }}>Balance Due: <strong>{formatCurrency(subtotal - invoice.paid)}</strong></p>
+                        <p className="mb-0" style={{ fontSize: '12px' }}>Amount Paid: {formatCurrency(invoice.paid)}</p>
+                        <p className="mb-0" style={{ fontSize: '12px' }}>Balance Due: <strong>{formatCurrency(subtotal - invoice.paid)}</strong></p>
                     </div>
                     <div className="col-6 text-end">
                         <div className="mt-3 pt-3">
                             <div className="border-top pt-1 w-75 ms-auto" style={{ borderColor: goldColor }}>
-                                <p className="mb-0" style={{ fontSize: '11px' }}>Authorized Signature</p>
+                                <p className="mb-0" style={{ fontSize: '12px' }}>Authorized Signature</p>
                             </div>
                         </div>
                     </div>
@@ -225,7 +249,7 @@ const PrintableInvoice = ({ invoice }) => {
             </div>
 
             {/* Policy Notice */}
-            <div className="mt-3 p-2 border rounded" style={{ backgroundColor: '#fff9e6', borderColor: goldColor, fontSize: '10px' }}>
+            <div className="mt-3 p-2 border rounded" style={{ backgroundColor: '#fff9e6', borderColor: goldColor, fontSize: '11px' }}>
                 <div className="row">
                     <div className="col-6">
                         <p className="mb-1 fw-bold" style={{ color: goldColor }}>Cancellation Policy:</p>
@@ -240,19 +264,19 @@ const PrintableInvoice = ({ invoice }) => {
 
             {/* Footer with Social Icons */}
             <div className="text-center mt-4 pt-2 border-top" style={{ borderColor: goldColor }}>
-                <p className="mb-1 fw-bold" style={{ fontSize: '12px', color: goldColor }}>Thank you for choosing Siyyad Khan Tourism!</p>
+                <p className="mb-1 fw-bold" style={{ fontSize: '13px', color: goldColor }}>Thank you for choosing Siyyad Khan Tourism!</p>
                 <div className="d-flex justify-content-center gap-3 mb-1">
-                    <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="d-flex align-items-center gap-1 text-decoration-none" style={{ fontSize: '10px', color: '#E4405F' }}>
-                        <InstagramIcon size={14} /> @sktuae
+                    <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="d-flex align-items-center gap-1 text-decoration-none" style={{ fontSize: '11px', color: '#E4405F' }}>
+                        <InstagramIcon size={15} /> @sktuae
                     </a>
-                    <a href={socialLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="d-flex align-items-center gap-1 text-decoration-none" style={{ fontSize: '10px', color: '#25D366' }}>
-                        <WhatsAppIcon size={14} /> +971 55 752 3374
+                    <a href={socialLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="d-flex align-items-center gap-1 text-decoration-none" style={{ fontSize: '11px', color: '#25D366' }}>
+                        <WhatsAppIcon size={15} /> +971 55 752 3374
                     </a>
-                    <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="d-flex align-items-center gap-1 text-decoration-none" style={{ fontSize: '10px', color: '#1877F2' }}>
-                        <FacebookIcon size={14} /> /sktuae
+                    <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="d-flex align-items-center gap-1 text-decoration-none" style={{ fontSize: '11px', color: '#1877F2' }}>
+                        <FacebookIcon size={15} /> /sktuae
                     </a>
                 </div>
-                <p className="mb-0 text-muted" style={{ fontSize: '9px' }}>This is a computer-generated document.</p>
+                <p className="mb-0 text-muted" style={{ fontSize: '10px' }}>This is a computer-generated document.</p>
             </div>
         </div>
     );

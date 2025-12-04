@@ -45,6 +45,9 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => src.Customer != null ? src.Customer.Email : null))
             .ForMember(dest => dest.Driver, opt => opt.MapFrom(src => src.Driver != null ? src.Driver.Name : null))
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString().ToLower()))
+            .ForMember(dest => dest.TripType, opt => opt.MapFrom(src => src.TripType.ToString()))
+            .ForMember(dest => dest.TripMode, opt => opt.MapFrom(src => src.TripMode.ToString()))
+            .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => src.CreatedByUser != null ? (src.CreatedByUser.FullName ?? src.CreatedByUser.Username) : null))
             .ForMember(dest => dest.Services, opt => opt.MapFrom(src => src.InvoiceServices != null ? src.InvoiceServices : new List<InvoiceServiceItem>()))
             .ForMember(dest => dest.Expenses, opt => opt.MapFrom(src => src.InvoiceExpenses != null ? src.InvoiceExpenses : new List<InvoiceExpense>()))
             .ForMember(dest => dest.Payments, opt => opt.MapFrom(src => src.Payments != null ? src.Payments : new List<Payment>()));

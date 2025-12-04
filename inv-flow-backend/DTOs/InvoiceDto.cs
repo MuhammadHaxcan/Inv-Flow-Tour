@@ -18,6 +18,9 @@ public class InvoiceDto
     public string Status { get; set; } = string.Empty;
     public decimal? Vat { get; set; }
     public DateTime? EmailSentAt { get; set; }
+    public string TripType { get; set; } = "Day";
+    public string TripMode { get; set; } = "Shared";
+    public string? CreatedBy { get; set; }
     public List<InvoiceServiceDto> Services { get; set; } = new();
     public List<InvoiceExpenseDto> Expenses { get; set; } = new();
     public List<PaymentDto> Payments { get; set; } = new();
@@ -66,6 +69,8 @@ public class CreateInvoiceDto
     public int? DriverId { get; set; }
     public string? DriverNotes { get; set; }
     public int Persons { get; set; }
+    public string TripType { get; set; } = "Day";
+    public string TripMode { get; set; } = "Shared";
     public List<CreateInvoiceServiceDto> Services { get; set; } = new();
     public List<CreateInvoiceExpenseDto> Expenses { get; set; } = new();
     public List<CreatePaymentDto> Payments { get; set; } = new();
