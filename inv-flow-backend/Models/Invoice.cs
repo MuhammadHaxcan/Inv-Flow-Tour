@@ -25,7 +25,10 @@ public class Invoice
     public string? DriverNotes { get; set; }
 
     [Required]
-    public int Persons { get; set; }
+    public int Adults { get; set; }
+
+    [Required]
+    public int Children { get; set; }
 
     [Required]
     [Column(TypeName = "decimal(18,2)")]

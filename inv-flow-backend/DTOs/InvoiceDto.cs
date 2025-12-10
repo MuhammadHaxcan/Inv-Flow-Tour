@@ -12,7 +12,8 @@ public class InvoiceDto
     public int? DriverId { get; set; }
     public string? Driver { get; set; }
     public string? DriverNotes { get; set; }
-    public int Persons { get; set; }
+    public int Adults { get; set; }
+    public int Children { get; set; }
     public decimal Total { get; set; }
     public decimal Paid { get; set; }
     public string Status { get; set; } = string.Empty;
@@ -68,7 +69,8 @@ public class CreateInvoiceDto
     public int CustomerId { get; set; }
     public int? DriverId { get; set; }
     public string? DriverNotes { get; set; }
-    public int Persons { get; set; }
+    public int Adults { get; set; }
+    public int Children { get; set; }
     public string TripType { get; set; } = "Day";
     public string TripMode { get; set; } = "Shared";
     public List<CreateInvoiceServiceDto> Services { get; set; } = new();

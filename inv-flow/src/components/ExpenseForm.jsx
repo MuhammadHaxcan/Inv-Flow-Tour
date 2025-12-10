@@ -16,6 +16,9 @@ const ExpenseForm = ({ expenseTypes, vendors = [], onSave, onCancel, invoice, ex
         pax: expense?.pax || ''
     });
 
+    // Guest count helper (adults + children)
+    const guestCount = (invoice?.adults ?? 0) + (invoice?.children ?? 0);
+
     // Check if selected expense type is pax-based
     const selectedExpenseType = expenses.find(exp => exp.name === formData.type);
     const isPaxBased = selectedExpenseType?.isPaxBased || false;
@@ -51,13 +54,13 @@ const ExpenseForm = ({ expenseTypes, vendors = [], onSave, onCancel, invoice, ex
 
     // When expense type changes and is pax-based, auto-populate pax from invoice
     useEffect(() => {
-        if (isPaxBased && invoice?.persons && !formData.pax) {
+        if (isPaxBased && guestCount > 0 && !formData.pax) {
             setFormData(prev => ({
                 ...prev,
-                pax: invoice.persons
+                pax: guestCount
             }));
         }
-    }, [isPaxBased, invoice?.persons, formData.pax]);
+    }, [isPaxBased, guestCount, formData.pax]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -72,8 +75,8 @@ const ExpenseForm = ({ expenseTypes, vendors = [], onSave, onCancel, invoice, ex
             };
             
             // If the new expense type is pax-based, auto-populate pax from invoice
-            if (selectedExpense?.isPaxBased && invoice?.persons) {
-                newFormData.pax = invoice.persons;
+            if (selectedExpense?.isPaxBased && guestCount > 0) {
+                newFormData.pax = guestCount;
             } else if (!selectedExpense?.isPaxBased) {
                 // Clear pax if expense type is not pax-based
                 newFormData.pax = '';
@@ -131,14 +134,14 @@ const ExpenseForm = ({ expenseTypes, vendors = [], onSave, onCancel, invoice, ex
             {isPaxBased && (
                 <>
                     <div className="mb-3">
-                        <label className="form-label">Number of Persons (Pax)</label>
+                        <label className="form-label">Guests (Adults + Children)</label>
                         <input
                             type="number"
                             name="pax"
                             value={formData.pax}
                             onChange={handleChange}
                             className="form-control"
-                            placeholder="Number of persons"
+                            placeholder="Total guests"
                             min="1"
                             required
                         />

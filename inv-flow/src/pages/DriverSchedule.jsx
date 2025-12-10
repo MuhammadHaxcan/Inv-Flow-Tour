@@ -460,11 +460,11 @@ const DriverSchedule = () => {
                               </div>
                               <div className="small">
                                 <Users size={14} className="me-1" />
-                                <strong>Persons:</strong> {invoice.persons}
+                                <strong>Guests:</strong> {invoice.adults ?? 0}A / {invoice.children ?? 0}C
                               </div>
                               {invoice.tripMode && (
                                 <div className="small mt-1">
-                                  <strong>Driver:</strong> {schedule.driverName} [{invoice.tripMode}] [{invoice.persons} pax]
+                                  <strong>Driver:</strong> {schedule.driverName} [{invoice.tripMode}] [{(invoice.adults ?? 0) + (invoice.children ?? 0)} pax]
                                 </div>
                               )}
                             </div>
@@ -552,11 +552,11 @@ const DriverSchedule = () => {
                             </div>
                             <div className="small">
                               <Users size={14} className="me-1" />
-                              <strong>Persons:</strong> {invoice.persons}
+                              <strong>Guests:</strong> {invoice.adults ?? 0}A / {invoice.children ?? 0}C
                             </div>
                             {invoice.tripMode && (
                               <div className="small mt-1">
-                                <strong>Driver:</strong> {selectedScheduleItem.driverName} [{invoice.tripMode}] [{invoice.persons} pax]
+                                <strong>Driver:</strong> {selectedScheduleItem.driverName} [{invoice.tripMode}] [{(invoice.adults ?? 0) + (invoice.children ?? 0)} pax]
                               </div>
                             )}
                           </div>

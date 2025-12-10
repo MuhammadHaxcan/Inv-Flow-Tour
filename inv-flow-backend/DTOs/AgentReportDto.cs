@@ -16,5 +16,15 @@ public class AgentReportItemDto
     public decimal AverageInvoice { get; set; }
     public decimal TotalPaid { get; set; }
     public decimal TotalOutstanding { get; set; }
+    public List<AgentInvoiceDto> Invoices { get; set; } = new();
+}
+
+public class AgentInvoiceDto
+{
+    public int InvoiceId { get; set; }
+    public string Number { get; set; } = string.Empty;
+    public DateOnly Date { get; set; }
+    public string? Customer { get; set; }
+    public decimal Total { get; set; }
 }
 

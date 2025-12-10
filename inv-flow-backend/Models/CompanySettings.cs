@@ -33,6 +33,26 @@ public class CompanySettings
     [MaxLength(50)]
     public string? TRN { get; set; } // Tax Registration Number
 
+    // Email / SMTP settings
+    [MaxLength(200)]
+    public string? SmtpHost { get; set; }
+
+    public int? SmtpPort { get; set; }
+
+    [MaxLength(200)]
+    public string? SmtpUser { get; set; }
+
+    [MaxLength(500)]
+    public string? SmtpPassword { get; set; }
+
+    [MaxLength(200)]
+    public string? FromEmail { get; set; }
+
+    [MaxLength(200)]
+    public string? FromName { get; set; }
+
+    public bool EnableSsl { get; set; } = true;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 

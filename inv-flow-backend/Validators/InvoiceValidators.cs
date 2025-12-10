@@ -13,8 +13,15 @@ public class CreateInvoiceDtoValidator : AbstractValidator<CreateInvoiceDto>
         RuleFor(x => x.CustomerId)
             .GreaterThan(0).WithMessage("Customer is required");
 
-        RuleFor(x => x.Persons)
-            .GreaterThan(0).WithMessage("Number of persons must be greater than 0");
+        RuleFor(x => x.Adults)
+            .GreaterThanOrEqualTo(0).WithMessage("Adults must be zero or more");
+
+        RuleFor(x => x.Children)
+            .GreaterThanOrEqualTo(0).WithMessage("Children must be zero or more");
+
+        RuleFor(x => x)
+            .Must(x => (x.Adults + x.Children) > 0)
+            .WithMessage("Total guests (adults + children) must be greater than 0");
 
         RuleFor(x => x.Services)
             .NotEmpty().WithMessage("At least one service is required");

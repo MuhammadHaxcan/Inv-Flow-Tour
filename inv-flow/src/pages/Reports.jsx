@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, BarChart3, TrendingUp, DollarSign, Users, Package, Filter, RefreshCw, AlertCircle, User } from 'lucide-react';
+import { Calendar, BarChart3, TrendingUp, DollarSign, Users, Package, Filter, RefreshCw, AlertCircle, User, ChevronDown, ChevronUp } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { reportsAPI } from '../services/api';
@@ -12,16 +12,33 @@ const Reports = () => {
     const { canReadReports } = usePermissions();
     
     const [activeTab, setActiveTab] = useState('service');
-    const [dateRange, setDateRange] = useState({
-        startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0]
+
+    const today = new Date().toISOString().split('T')[0];
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+
+    const initialFilterState = {
+        startDate: monthStart,
+        endDate: today,
+        selectedService: 'all',
+        selectedCustomer: 'all',
+        selectedDriver: 'all',
+        selectedAgent: 'all'
+    };
+
+    const [filtersByTab, setFiltersByTab] = useState({
+        service: { ...initialFilterState },
+        customer: { ...initialFilterState },
+        driver: { ...initialFilterState },
+        summary: { ...initialFilterState },
+        agent: { ...initialFilterState },
     });
-    const [selectedService, setSelectedService] = useState('all');
-    const [selectedCustomer, setSelectedCustomer] = useState('all');
-    const [selectedDriver, setSelectedDriver] = useState('all');
+
     const [reportData, setReportData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    const currentFilters = filtersByTab[activeTab];
+    const { startDate, endDate, selectedService, selectedCustomer, selectedDriver, selectedAgent } = currentFilters;
 
     // Redirect if user doesn't have permission
     if (!canReadReports) {
@@ -38,7 +55,7 @@ const Reports = () => {
         if (canReadReports) {
             loadReportData();
         }
-    }, [activeTab, dateRange.startDate, dateRange.endDate, selectedService, selectedCustomer, selectedDriver, canReadReports]);
+    }, [activeTab, startDate, endDate, selectedService, selectedCustomer, selectedDriver, selectedAgent, canReadReports]);
 
     const loadReportData = async () => {
         // Don't load if user doesn't have permission
@@ -52,11 +69,11 @@ const Reports = () => {
             let data;
             const filters = {};
             
-            if (dateRange.startDate) {
-                filters.startDate = dateRange.startDate;
+            if (startDate) {
+                filters.startDate = startDate;
             }
-            if (dateRange.endDate) {
-                filters.endDate = dateRange.endDate;
+            if (endDate) {
+                filters.endDate = endDate;
             }
             if (selectedService && selectedService !== 'all') {
                 const serviceId = parseInt(selectedService);
@@ -74,6 +91,12 @@ const Reports = () => {
                 const driverId = parseInt(selectedDriver);
                 if (!isNaN(driverId)) {
                     filters.driverId = driverId;
+                }
+            }
+            if (activeTab === 'agent' && selectedAgent && selectedAgent !== 'all') {
+                const agentId = parseInt(selectedAgent);
+                if (!isNaN(agentId)) {
+                    filters.agentId = agentId;
                 }
             }
 
@@ -120,14 +143,22 @@ const Reports = () => {
         return `AED ${parseFloat(amount || 0).toFixed(2)}`;
     };
 
-    const handleReset = () => {
-        setDateRange({
-            startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-            endDate: new Date().toISOString().split('T')[0]
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '-';
+        const date = new Date(dateStr);
+        if (isNaN(date)) return dateStr;
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
         });
-        setSelectedService('all');
-        setSelectedCustomer('all');
-        setSelectedDriver('all');
+    };
+
+    const handleReset = () => {
+        setFiltersByTab(prev => ({
+            ...prev,
+            [activeTab]: { ...initialFilterState }
+        }));
     };
 
     const tabs = [
@@ -172,32 +203,28 @@ const Reports = () => {
                     <div className="row align-items-end g-3">
                         <div className="col-md-2">
                             <label className="form-label small fw-medium mb-1">From Date</label>
-                            <div className="input-group input-group-sm">
-                                <input
-                                    type="date"
-                                    value={dateRange.startDate}
-                                    onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                                    className="form-control"
-                                />
-                                <span className="input-group-text">
-                                    <Calendar size={14} className="text-muted" />
-                                </span>
-                            </div>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setFiltersByTab(prev => ({
+                                    ...prev,
+                                    [activeTab]: { ...prev[activeTab], startDate: e.target.value }
+                                }))}
+                                className="form-control form-control-sm"
+                            />
                         </div>
 
                         <div className="col-md-2">
                             <label className="form-label small fw-medium mb-1">To Date</label>
-                            <div className="input-group input-group-sm">
-                                <input
-                                    type="date"
-                                    value={dateRange.endDate}
-                                    onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                                    className="form-control"
-                                />
-                                <span className="input-group-text">
-                                    <Calendar size={14} className="text-muted" />
-                                </span>
-                            </div>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setFiltersByTab(prev => ({
+                                    ...prev,
+                                    [activeTab]: { ...prev[activeTab], endDate: e.target.value }
+                                }))}
+                                className="form-control form-control-sm"
+                            />
                         </div>
 
                         {activeTab === 'service' && (
@@ -205,7 +232,10 @@ const Reports = () => {
                                 <label className="form-label small fw-medium mb-1">Service</label>
                                 <SearchableSelect
                                     value={selectedService}
-                                    onChange={(e) => setSelectedService(e.target.value)}
+                                    onChange={(e) => setFiltersByTab(prev => ({
+                                        ...prev,
+                                        [activeTab]: { ...prev[activeTab], selectedService: e.target.value }
+                                    }))}
                                     options={[
                                         { value: 'all', label: 'All Services' },
                                         ...services.map(service => ({ value: service.id.toString(), label: service.name }))
@@ -221,7 +251,10 @@ const Reports = () => {
                                 <label className="form-label small fw-medium mb-1">Customer</label>
                                 <SearchableSelect
                                     value={selectedCustomer}
-                                    onChange={(e) => setSelectedCustomer(e.target.value)}
+                                    onChange={(e) => setFiltersByTab(prev => ({
+                                        ...prev,
+                                        [activeTab]: { ...prev[activeTab], selectedCustomer: e.target.value }
+                                    }))}
                                     options={[
                                         { value: 'all', label: 'All Customers' },
                                         ...customers.map(customer => ({ value: customer.id.toString(), label: customer.name }))
@@ -237,7 +270,10 @@ const Reports = () => {
                                 <label className="form-label small fw-medium mb-1">Driver</label>
                                 <SearchableSelect
                                     value={selectedDriver}
-                                    onChange={(e) => setSelectedDriver(e.target.value)}
+                                    onChange={(e) => setFiltersByTab(prev => ({
+                                        ...prev,
+                                        [activeTab]: { ...prev[activeTab], selectedDriver: e.target.value }
+                                    }))}
                                     options={[
                                         { value: 'all', label: 'All Drivers' },
                                         ...drivers.map(driver => ({ value: driver.id.toString(), label: driver.name }))
@@ -249,6 +285,29 @@ const Reports = () => {
                         )}
 
                         {activeTab === 'summary' && <div className="col-md-3"></div>}
+                        {activeTab === 'agent' && (
+                            <div className="col-md-3">
+                                <label className="form-label small fw-medium mb-1">Agent</label>
+                                <SearchableSelect
+                                    value={selectedAgent}
+                                    onChange={(e) => setFiltersByTab(prev => ({
+                                        ...prev,
+                                        [activeTab]: { ...prev[activeTab], selectedAgent: e.target.value }
+                                    }))}
+                                    options={[
+                                        { value: 'all', label: 'All Agents' },
+                                        ...(reportData?.agents || [])
+                                            .filter(agent => agent.userId && agent.userId > 0)
+                                            .map(agent => ({
+                                                value: agent.userId.toString(),
+                                                label: agent.agentName || agent.username || agent.email || 'Agent'
+                                            }))
+                                    ]}
+                                    placeholder="All Agents"
+                                    size="sm"
+                                />
+                            </div>
+                        )}
 
                         <div className="col-md-auto ms-auto">
                             <div className="d-flex gap-2">
@@ -353,6 +412,7 @@ const Reports = () => {
                                 <AgentReport 
                                     data={reportData} 
                                     formatCurrency={formatCurrency}
+                                    formatDate={formatDate}
                                 />
                             )}
                         </>
@@ -827,13 +887,21 @@ const SummaryReport = ({ data, formatCurrency }) => {
 };
 
 // Agent Report Component
-const AgentReport = ({ data, formatCurrency }) => {
+const AgentReport = ({ data, formatCurrency, formatDate }) => {
+    const [expandedAgents, setExpandedAgents] = useState([]);
+
     if (!data || !data.agents) return null;
 
     const totalInvoices = data.agents.reduce((sum, a) => sum + (a.invoiceCount || 0), 0);
     const totalRevenue = data.agents.reduce((sum, a) => sum + (a.totalRevenue || 0), 0);
     const totalPaid = data.agents.reduce((sum, a) => sum + (a.totalPaid || 0), 0);
     const totalOutstanding = data.agents.reduce((sum, a) => sum + (a.totalOutstanding || 0), 0);
+
+    const toggleAgent = (id) => {
+        setExpandedAgents((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+        );
+    };
 
     return (
         <>
@@ -901,62 +969,71 @@ const AgentReport = ({ data, formatCurrency }) => {
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="table-responsive">
-                <table className="table table-hover mb-0">
-                    <thead className="table-light">
-                        <tr>
-                            <th className="px-4 py-3">Agent Name</th>
-                            <th className="px-4 py-3">Username</th>
-                            <th className="px-4 py-3">Email</th>
-                            <th className="px-4 py-3 text-end">Invoices</th>
-                            <th className="px-4 py-3 text-end">Total Revenue</th>
-                            <th className="px-4 py-3 text-end">Avg. Invoice</th>
-                            <th className="px-4 py-3 text-end">Paid</th>
-                            <th className="px-4 py-3 text-end">Outstanding</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {data.agents.length === 0 ? (
-                            <tr>
-                                <td colSpan="8" className="text-center py-4 text-muted">
-                                    No agents found for the selected period
-                                </td>
-                            </tr>
-                        ) : (
-                            data.agents.map((agent, index) => (
-                                <tr key={index}>
-                                    <td className="px-4 py-3 fw-medium">{agent.agentName}</td>
-                                    <td className="px-4 py-3 text-muted">{agent.username || '-'}</td>
-                                    <td className="px-4 py-3 text-muted">{agent.email || '-'}</td>
-                                    <td className="px-4 py-3 text-end fw-bold text-primary">{agent.invoiceCount || 0}</td>
-                                    <td className="px-4 py-3 text-end fw-bold text-success">{formatCurrency(agent.totalRevenue)}</td>
-                                    <td className="px-4 py-3 text-end text-muted">{formatCurrency(agent.averageInvoice)}</td>
-                                    <td className="px-4 py-3 text-end text-warning">{formatCurrency(agent.totalPaid)}</td>
-                                    <td className="px-4 py-3 text-end">
-                                        {agent.totalOutstanding > 0 ? (
-                                            <span className="text-danger fw-medium">{formatCurrency(agent.totalOutstanding)}</span>
-                                        ) : (
-                                            <span className="text-success">-</span>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                    {data.agents.length > 0 && (
-                        <tfoot className="table-light fw-bold">
-                            <tr>
-                                <td className="px-4 py-3" colSpan="3">Total</td>
-                                <td className="px-4 py-3 text-end text-primary">{totalInvoices}</td>
-                                <td className="px-4 py-3 text-end text-success">{formatCurrency(totalRevenue)}</td>
-                                <td className="px-4 py-3 text-end">{formatCurrency(totalRevenue / totalInvoices || 0)}</td>
-                                <td className="px-4 py-3 text-end text-warning">{formatCurrency(totalPaid)}</td>
-                                <td className="px-4 py-3 text-end text-danger">{formatCurrency(totalOutstanding)}</td>
-                            </tr>
-                        </tfoot>
-                    )}
-                </table>
+            {/* Agent accordion with invoice breakdown */}
+            <div className="p-4 border-top">
+                <h6 className="fw-bold text-muted text-uppercase small mb-3">Agent Invoices</h6>
+                {data.agents.length === 0 && (
+                    <div className="text-muted small">No agents found for the selected period.</div>
+                )}
+                {data.agents.map((agent, idx) => {
+                    const agentId = agent.userId || agent.agentId || idx;
+                    const isExpanded = expandedAgents.includes(agentId);
+                    return (
+                        <div key={agentId} className="border rounded mb-3">
+                            <button
+                                type="button"
+                                className="w-100 bg-white border-0 d-flex justify-content-between align-items-center p-3"
+                                onClick={() => toggleAgent(agentId)}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                <div className="d-flex flex-column text-start">
+                                    <span className="fw-bold">{agent.agentName || agent.username || 'Agent'}</span>
+                                    <span className="text-muted small">{agent.email || '-'}</span>
+                                </div>
+                                <div className="d-flex align-items-center gap-3">
+                                    <span className="text-muted small">
+                                        {agent.invoiceCount || 0} invoices | {formatCurrency(agent.totalRevenue || 0)}
+                                    </span>
+                                    {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </div>
+                            </button>
+                            {isExpanded && (
+                                <div className="px-3 pb-3">
+                                    <div className="table-responsive">
+                                        <table className="table table-sm table-striped mb-0">
+                                            <thead className="table-light">
+                                                <tr>
+                                                    <th className="px-3 py-2">Invoice #</th>
+                                                    <th className="px-3 py-2">Date</th>
+                                                    <th className="px-3 py-2">Customer</th>
+                                                    <th className="px-3 py-2 text-end">Amount</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {agent.invoices && agent.invoices.length > 0 ? (
+                                                    agent.invoices.map((inv, invIdx) => (
+                                                        <tr key={invIdx}>
+                                                            <td className="px-3 py-2">{inv.number || inv.invoiceNumber || '-'}</td>
+                                                <td className="px-3 py-2">{formatDate(inv.date)}</td>
+                                                            <td className="px-3 py-2">{inv.customer || inv.customerName || '-'}</td>
+                                                            <td className="px-3 py-2 text-end">{formatCurrency(inv.total || inv.amount || 0)}</td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan="4" className="text-center text-muted small py-3">
+                                                            No invoices found for this agent in the selected period.
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
         </>
     );

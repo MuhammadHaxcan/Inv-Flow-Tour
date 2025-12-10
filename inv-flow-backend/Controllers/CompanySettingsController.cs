@@ -37,6 +37,22 @@ public class CompanySettingsController : ControllerBase
         return Ok(settings);
     }
 
+    [HttpGet("email")]
+    [RequirePermission("companysettings.write")]
+    public async Task<ActionResult<CompanySettingsDto>> GetEmailSettings()
+    {
+        var settings = await _settingsService.GetEmailSettingsAsync();
+        return Ok(settings);
+    }
+
+    [HttpPut("email")]
+    [RequirePermission("companysettings.write")]
+    public async Task<ActionResult<CompanySettingsDto>> UpdateEmailSettings([FromBody] UpdateCompanySettingsDto dto)
+    {
+        var settings = await _settingsService.UpdateEmailSettingsAsync(dto);
+        return Ok(settings);
+    }
+
     [HttpPost("logo")]
     [RequirePermission("companysettings.write")]
     public async Task<ActionResult<CompanySettingsDto>> UpdateLogo([FromBody] UpdateLogoDto dto)

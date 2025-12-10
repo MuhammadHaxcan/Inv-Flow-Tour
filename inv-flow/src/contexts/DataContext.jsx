@@ -204,11 +204,11 @@ export function DataProvider({ children }) {
         setLoadingStates(prev => ({ ...prev, nextInvoiceNumber: true }));
         try {
             const data = await invoicesAPI.getNextNumber();
-            setNextInvoiceNumber(data.number || 'INV-2025-0001');
+            setNextInvoiceNumber(data.number || 'SKT-INV-2025-0001');
             setLoaded(prev => ({ ...prev, nextInvoiceNumber: true }));
         } catch (error) {
             console.error('Error loading next invoice number:', error);
-            setNextInvoiceNumber('INV-2025-0001');
+            setNextInvoiceNumber('SKT-INV-2025-0001');
         } finally {
             setLoadingStates(prev => ({ ...prev, nextInvoiceNumber: false }));
         }
@@ -418,7 +418,8 @@ export function DataProvider({ children }) {
                 customerId: invoiceData.customerId,
                 driverId: invoiceData.driverId,
                 driverNotes: invoiceData.driverNotes || null,
-                persons: invoiceData.persons || 1,
+                adults: invoiceData.adults ?? invoiceData.persons ?? 0,
+                children: invoiceData.children ?? 0,
                 tripType: invoiceData.tripType || 'Day',
                 tripMode: invoiceData.tripMode || 'Shared',
                 services: invoiceData.services || [],

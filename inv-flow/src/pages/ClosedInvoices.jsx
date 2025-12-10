@@ -148,7 +148,9 @@ const ClosedInvoices = () => {
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <div className="fw-medium">{invoice.customer}</div>
-                                                        <div className="text-muted small">{invoice.persons} persons</div>
+                                                        <div className="text-muted small">
+                                                            {invoice.adults ?? 0} adult(s), {invoice.children ?? 0} child(ren)
+                                                        </div>
                                                         {(invoice.tripType || invoice.tripMode) && (
                                                             <div className="d-flex gap-1 mt-1">
                                                                 {invoice.tripType && (
@@ -177,7 +179,7 @@ const ClosedInvoices = () => {
                                                     <td className="px-4 py-3 text-end fw-medium">
                                                         {formatCurrency(invoice.total)}
                                                     </td>
-                                                    <td className="px-4 py-3 text-end">
+                                                    <td className="px-4 py-3 text-end text-danger fw-bold">
                                                         {formatCurrency(calculateVAT(invoice))}
                                                     </td>
                                                     <td className="px-4 py-3 text-end">
@@ -196,8 +198,9 @@ const ClosedInvoices = () => {
                                                                     <div className="d-flex justify-content-between align-items-center">
                                                                         <h6 className="card-title mb-0 fw-bold">Invoice Details</h6>
                                                                         <div className="d-flex align-items-center gap-2">
-                                                                            <div className="text-muted small me-3">
-                                                                                Driver: {invoice.driver || 'Not Assigned'}
+                                                                            <div className="small me-3">
+                                                                                <span className="fw-bold text-primary">Driver:</span>{' '}
+                                                                                <span className="fw-bold">{invoice.driver || 'Not Assigned'}</span>
                                                                             </div>
                                                                             <button
                                                                                 onClick={(e) => handleDirectPrint(invoice, e)}

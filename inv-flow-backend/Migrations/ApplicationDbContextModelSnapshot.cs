@@ -59,6 +59,88 @@ namespace inv_flow_backend.Migrations
                     b.ToTable("Accounts");
                 });
 
+            modelBuilder.Entity("inv_flow_backend.Models.CompanySettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("ActiveSignatureId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("EnableSsl")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("FromEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("FromName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("LogoFileName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("LogoImageData")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("SmtpHost")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("SmtpPassword")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int?>("SmtpPort")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SmtpUser")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("TRN")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Website")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActiveSignatureId");
+
+                    b.ToTable("CompanySettings");
+                });
+
             modelBuilder.Entity("inv_flow_backend.Models.Customer", b =>
                 {
                     b.Property<int>("Id")
@@ -161,8 +243,17 @@ namespace inv_flow_backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("Adults")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Children")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("CreatedByUserId")
+                        .HasColumnType("integer");
 
                     b.Property<int>("CustomerId")
                         .HasColumnType("integer");
@@ -173,6 +264,13 @@ namespace inv_flow_backend.Migrations
                     b.Property<int?>("DriverId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("DriverNotes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("EmailSentAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Number")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -181,14 +279,17 @@ namespace inv_flow_backend.Migrations
                     b.Property<decimal>("Paid")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("Persons")
-                        .HasColumnType("integer");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
                     b.Property<decimal>("Total")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TripMode")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TripType")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -197,6 +298,8 @@ namespace inv_flow_backend.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("CustomerId");
 
@@ -475,6 +578,40 @@ namespace inv_flow_backend.Migrations
                     b.ToTable("Services");
                 });
 
+            modelBuilder.Entity("inv_flow_backend.Models.Signature", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ImageData")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Signatures");
+                });
+
             modelBuilder.Entity("inv_flow_backend.Models.Transaction", b =>
                 {
                     b.Property<int>("Id")
@@ -646,8 +783,22 @@ namespace inv_flow_backend.Migrations
                     b.ToTable("Vendors");
                 });
 
+            modelBuilder.Entity("inv_flow_backend.Models.CompanySettings", b =>
+                {
+                    b.HasOne("inv_flow_backend.Models.Signature", "ActiveSignature")
+                        .WithMany()
+                        .HasForeignKey("ActiveSignatureId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ActiveSignature");
+                });
+
             modelBuilder.Entity("inv_flow_backend.Models.Invoice", b =>
                 {
+                    b.HasOne("inv_flow_backend.Models.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId");
+
                     b.HasOne("inv_flow_backend.Models.Customer", "Customer")
                         .WithMany("Invoices")
                         .HasForeignKey("CustomerId")
@@ -659,6 +810,8 @@ namespace inv_flow_backend.Migrations
                         .HasForeignKey("DriverId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.Navigation("CreatedByUser");
+
                     b.Navigation("Customer");
 
                     b.Navigation("Driver");
@@ -668,7 +821,8 @@ namespace inv_flow_backend.Migrations
                 {
                     b.HasOne("inv_flow_backend.Models.Account", "Account")
                         .WithMany()
-                        .HasForeignKey("AccountId");
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("inv_flow_backend.Models.ExpenseType", "ExpenseType")
                         .WithMany("InvoiceExpenses")

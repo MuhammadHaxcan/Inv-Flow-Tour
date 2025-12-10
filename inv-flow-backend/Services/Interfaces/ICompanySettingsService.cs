@@ -9,6 +9,8 @@ public interface ICompanySettingsService
     Task<CompanySettingsDto> UpdateLogoAsync(UpdateLogoDto dto);
     Task<CompanySettingsDto> SetActiveSignatureAsync(int signatureId);
     Task<CompanySettingsDto> ClearLogoAsync();
+    Task<CompanySettingsDto> GetEmailSettingsAsync();
+    Task<CompanySettingsDto> UpdateEmailSettingsAsync(UpdateCompanySettingsDto dto);
 }
 
 

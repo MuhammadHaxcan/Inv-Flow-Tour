@@ -121,7 +121,9 @@ const PrintableInvoice = ({ invoice }) => {
                     <div className="col-6">
                         <p className="fw-bold mb-1" style={{ fontSize: '13px', color: goldColor }}>ISSUED TO:</p>
                         <p className="mb-1 fw-medium" style={{ fontSize: '14px' }}>{invoice.customer}</p>
-                        <p className="mb-1 text-muted" style={{ fontSize: '12px' }}>Pax: <strong>{invoice.persons}</strong> person(s)</p>
+                        <p className="mb-1 text-muted" style={{ fontSize: '12px' }}>
+                            Guests: <strong>{invoice.adults ?? 0}</strong> adult(s), <strong>{invoice.children ?? 0}</strong> child(ren)
+                        </p>
                         {(invoice.tripType || invoice.tripMode) && (
                             <div className="d-flex gap-2 align-items-center">
                                 {invoice.tripType && (

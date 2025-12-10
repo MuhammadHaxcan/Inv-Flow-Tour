@@ -1,8 +1,8 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import { FileText, Building2, FileCheck2, CheckCircle, CreditCard, Tag, Calendar, Users, LogOut, BarChart3, Receipt, Truck } from 'lucide-react'
 import './App.css'
-import { DataProvider } from './contexts/DataContext'
+import { DataProvider, useData } from './contexts/DataContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { usePermissions } from './hooks/usePermissions'
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -71,7 +71,14 @@ function ProtectedRoute({ children, requiredPermission, requiredPermissions }) {
 }
 
 function Navbar() {
-    const { user, logout } = useAuth();
+    const { user, logout, isAuthenticated } = useAuth();
+    const { companySettings, loadCompanySettings } = useData();
+    const companyName = companySettings?.companyName || 'SKT-Tourisn';
+    const logoSrc = companySettings?.logoImageData;
+
+    useEffect(() => {
+        loadCompanySettings();
+    }, [loadCompanySettings]);
     const {
         // Invoice permissions
         canReadInvoices,
@@ -105,12 +112,26 @@ function Navbar() {
     // Check if user has any invoice-related permissions
     const showInvoicesDropdown = canReadInvoices || canWriteInvoices || canReadClosedInvoices;
 
+    // Hide navbar (and logout) when user is not authenticated, e.g., on login page
+    if (!isAuthenticated) {
+        return null;
+    }
+
     return (
         <nav className="bg-white border-bottom shadow-sm w-100">
             <div className="px-4">
                 <div className="d-flex align-items-center justify-content-between py-3">
                     <div className="d-flex align-items-center">
-                        <h1 className="h3 fw-bold mb-0 text-primary me-5">Inv-Flow</h1>
+                        {logoSrc ? (
+                            <img
+                                src={logoSrc}
+                                alt={companyName}
+                                style={{ maxHeight: '60px', width: 'auto', objectFit: 'contain' }}
+                                className="me-3"
+                            />
+                        ) : (
+                            <h1 className="h3 fw-bold mb-0 text-primary me-5">{companyName}</h1>
+                        )}
                         <div className="d-flex">
                             {showInvoicesDropdown && (
                                 <div className="dropdown">

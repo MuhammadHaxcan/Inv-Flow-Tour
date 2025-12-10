@@ -18,5 +18,8 @@ public class ReportFilterDto
     
     [JsonPropertyName("driverId")]
     public int? DriverId { get; set; }
+
+    [JsonPropertyName("agentId")]
+    public int? AgentId { get; set; }
 }
 

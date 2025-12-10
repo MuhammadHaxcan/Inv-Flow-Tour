@@ -19,6 +19,7 @@ const Admin = () => {
     const [showUserModal, setShowUserModal] = useState(false);
     const [showRoleModal, setShowRoleModal] = useState(false);
     const [showSignatureModal, setShowSignatureModal] = useState(false);
+    const [showEmailModal, setShowEmailModal] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [currentRole, setCurrentRole] = useState(null);
     const [userForm, setUserForm] = useState({
@@ -34,6 +35,15 @@ const Admin = () => {
         permissionIds: []
     });
     const logoInputRef = useRef(null);
+    const [emailForm, setEmailForm] = useState({
+        smtpHost: '',
+        smtpPort: '',
+        smtpUser: '',
+        smtpPassword: '',
+        fromEmail: '',
+        fromName: '',
+        enableSsl: true,
+    });
 
     // Confirmation modals state
     const [deleteUserModal, setDeleteUserModal] = useState({ show: false, user: null });
@@ -90,6 +100,15 @@ const Admin = () => {
                 ]);
                 setSignatures(signaturesData);
                 setCompanySettings(settingsData);
+                setEmailForm({
+                    smtpHost: settingsData.smtpHost || '',
+                    smtpPort: settingsData.smtpPort || '',
+                    smtpUser: settingsData.smtpUser || '',
+                    smtpPassword: settingsData.smtpPassword || '',
+                    fromEmail: settingsData.fromEmail || '',
+                    fromName: settingsData.fromName || '',
+                    enableSsl: settingsData.enableSsl !== undefined ? settingsData.enableSsl : true,
+                });
             }
         } catch (error) {
             console.error('Error loading data:', error);
@@ -195,6 +214,26 @@ const Admin = () => {
             description: '',
             permissionIds: []
         });
+    };
+
+    const handleSaveEmailSettings = async (e) => {
+        e.preventDefault();
+        try {
+            await companySettingsAPI.updateEmail({
+                smtpHost: emailForm.smtpHost,
+                smtpPort: emailForm.smtpPort ? parseInt(emailForm.smtpPort, 10) : null,
+                smtpUser: emailForm.smtpUser,
+                smtpPassword: emailForm.smtpPassword,
+                fromEmail: emailForm.fromEmail,
+                fromName: emailForm.fromName,
+                enableSsl: emailForm.enableSsl,
+            });
+            showAlert('Email settings saved', 'success');
+            setShowEmailModal(false);
+            loadData();
+        } catch (error) {
+            showAlert('Error saving email settings: ' + error.message, 'error');
+        }
     };
 
     const handleSaveSignature = async (name, imageData) => {
@@ -646,27 +685,47 @@ const Admin = () => {
 
                                         {/* Company Information Section */}
                                         {companySettings && (
-                                            <div className="col-12">
-                                                <div className="card border">
-                                                    <div className="card-header bg-light py-2">
-                                                        <h6 className="mb-0">Company Information</h6>
-                                                    </div>
-                                                    <div className="card-body">
-                                                        <div className="row">
-                                                            <div className="col-md-6">
-                                                                <p className="mb-2 small"><strong>Company Name:</strong> {companySettings.companyName}</p>
-                                                                <p className="mb-2 small"><strong>Address:</strong> {companySettings.address || '-'}</p>
-                                                                <p className="mb-2 small"><strong>Phone:</strong> {companySettings.phone || '-'}</p>
-                                                            </div>
-                                                            <div className="col-md-6">
-                                                                <p className="mb-2 small"><strong>Email:</strong> {companySettings.email || '-'}</p>
-                                                                <p className="mb-2 small"><strong>Website:</strong> {companySettings.website || '-'}</p>
-                                                                <p className="mb-2 small"><strong>TRN:</strong> {companySettings.trn || '-'}</p>
-                                                            </div>
+                                            <>
+                                                <div className="col-md-6">
+                                                    <div className="card border h-100">
+                                                        <div className="card-header bg-light py-2">
+                                                            <h6 className="mb-0">Company Information</h6>
+                                                        </div>
+                                                        <div className="card-body">
+                                                            <p className="mb-2 small"><strong>Company Name:</strong> {companySettings.companyName}</p>
+                                                            <p className="mb-2 small"><strong>Address:</strong> {companySettings.address || '-'}</p>
+                                                            <p className="mb-2 small"><strong>Phone:</strong> {companySettings.phone || '-'}</p>
+                                                            <p className="mb-2 small"><strong>Email:</strong> {companySettings.email || '-'}</p>
+                                                            <p className="mb-2 small"><strong>Website:</strong> {companySettings.website || '-'}</p>
+                                                            <p className="mb-0 small"><strong>TRN:</strong> {companySettings.trn || '-'}</p>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
+
+                                                {/* Email / SMTP Section */}
+                                                <div className="col-md-6">
+                                                    <div className="card border h-100">
+                                                        <div className="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                                                            <h6 className="mb-0">Email / SMTP</h6>
+                                                            {canWriteCompanySettings && (
+                                                                <button
+                                                                    className="btn btn-sm btn-primary"
+                                                                    onClick={() => setShowEmailModal(true)}
+                                                                >
+                                                                    Configure
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        <div className="card-body">
+                                                            <p className="mb-2 small"><strong>SMTP Host:</strong> {companySettings.smtpHost || '-'}</p>
+                                                            <p className="mb-2 small"><strong>Port:</strong> {companySettings.smtpPort || '-'}</p>
+                                                            <p className="mb-2 small"><strong>User:</strong> {companySettings.smtpUser || '-'}</p>
+                                                            <p className="mb-2 small"><strong>From Email:</strong> {companySettings.fromEmail || companySettings.smtpUser || '-'}</p>
+                                                            <p className="mb-0 small"><strong>SSL:</strong> {companySettings.enableSsl ? 'Enabled' : 'Disabled'}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
                                         )}
                                     </div>
                                 </div>
@@ -675,6 +734,90 @@ const Admin = () => {
                     )}
                 </div>
             </div>
+
+            {/* Email Settings Modal */}
+            <Modal
+                show={showEmailModal}
+                onClose={() => setShowEmailModal(false)}
+                title="Email / SMTP Settings"
+            >
+                <form onSubmit={handleSaveEmailSettings}>
+                    <div className="mb-3">
+                        <label className="form-label small fw-medium">SMTP Host</label>
+                        <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            value={emailForm.smtpHost}
+                            onChange={(e) => setEmailForm({ ...emailForm, smtpHost: e.target.value })}
+                            required
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label className="form-label small fw-medium">SMTP Port</label>
+                        <input
+                            type="number"
+                            className="form-control form-control-sm"
+                            value={emailForm.smtpPort}
+                            onChange={(e) => setEmailForm({ ...emailForm, smtpPort: e.target.value })}
+                            required
+                            min="1"
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label className="form-label small fw-medium">SMTP User</label>
+                        <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            value={emailForm.smtpUser}
+                            onChange={(e) => setEmailForm({ ...emailForm, smtpUser: e.target.value })}
+                            required
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label className="form-label small fw-medium">SMTP Password</label>
+                        <input
+                            type="password"
+                            className="form-control form-control-sm"
+                            value={emailForm.smtpPassword}
+                            onChange={(e) => setEmailForm({ ...emailForm, smtpPassword: e.target.value })}
+                            required
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label className="form-label small fw-medium">From Email</label>
+                        <input
+                            type="email"
+                            className="form-control form-control-sm"
+                            value={emailForm.fromEmail}
+                            onChange={(e) => setEmailForm({ ...emailForm, fromEmail: e.target.value })}
+                            required
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label className="form-label small fw-medium">From Name</label>
+                        <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            value={emailForm.fromName}
+                            onChange={(e) => setEmailForm({ ...emailForm, fromName: e.target.value })}
+                        />
+                    </div>
+                    <div className="form-check form-switch mb-3">
+                        <input
+                            className="form-check-input"
+                            type="checkbox"
+                            id="enableSsl"
+                            checked={emailForm.enableSsl}
+                            onChange={(e) => setEmailForm({ ...emailForm, enableSsl: e.target.checked })}
+                        />
+                        <label className="form-check-label" htmlFor="enableSsl">Enable SSL</label>
+                    </div>
+                    <div className="d-flex justify-content-end gap-2">
+                        <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowEmailModal(false)}>Cancel</button>
+                        <button type="submit" className="btn btn-sm btn-primary">Save</button>
+                    </div>
+                </form>
+            </Modal>
 
             {/* User Modal */}
             <Modal

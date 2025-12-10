@@ -84,6 +84,10 @@ public class ReportService : IReportService
         if (filter.ServiceId.HasValue)
             query = query.Where(i => i.InvoiceServices.Any(isr => isr.ServiceId == filter.ServiceId.Value));
 
+        // Apply agent filter if specified
+        if (filter.AgentId.HasValue)
+            query = query.Where(i => i.CreatedByUserId == filter.AgentId.Value);
+
         var invoices = await query
             .Where(i => i.Customer != null)
             .AsNoTracking()
@@ -232,6 +236,7 @@ public class ReportService : IReportService
         var query = _context.Invoices
             .Include(i => i.CreatedByUser)
             .Include(i => i.InvoiceServices)
+            .Include(i => i.Customer)
             .Where(i => i.CreatedByUserId != null)
             .AsQueryable();
 
@@ -274,7 +279,18 @@ public class ReportService : IReportService
                 TotalRevenue = g.Sum(i => i.Total),
                 AverageInvoice = g.Average(i => i.Total),
                 TotalPaid = g.Sum(i => i.Paid),
-                TotalOutstanding = g.Sum(i => i.Total - i.Paid)
+                TotalOutstanding = g.Sum(i => i.Total - i.Paid),
+                Invoices = g
+                    .OrderByDescending(i => i.Date)
+                    .Select(i => new AgentInvoiceDto
+                    {
+                        InvoiceId = i.Id,
+                        Number = i.Number,
+                        Date = i.Date,
+                        Customer = i.Customer != null ? i.Customer.Name : null,
+                        Total = i.Total
+                    })
+                    .ToList()
             })
             .OrderByDescending(a => a.InvoiceCount)
             .ToList();

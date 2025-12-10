@@ -217,7 +217,7 @@ export const printInvoice = (invoice, options = {}) => {
                 <div class="col-6">
                     <p class="fw-bold mb-1 gold" style="font-size: 12pt">ISSUED TO:</p>
                     <p class="mb-1 fw-medium" style="font-size: 14pt">${invoice.customer}</p>
-                    <p class="mb-1 text-muted" style="font-size: 11pt">Pax: <strong>${invoice.persons}</strong> person(s)</p>
+                    <p class="mb-1 text-muted" style="font-size: 11pt">Guests: <strong>${invoice.adults ?? 0}</strong> adult(s), <strong>${invoice.children ?? 0}</strong> child(ren)</p>
                     ${tripInfoHTML}
                 </div>
                 <div class="col-6 text-end">

@@ -12,12 +12,14 @@ public class CompanySettingsService : ICompanySettingsService
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<CompanySettingsService> _logger;
+    private readonly IConfiguration _configuration;
 
-    public CompanySettingsService(ApplicationDbContext context, IMapper mapper, ILogger<CompanySettingsService> logger)
+    public CompanySettingsService(ApplicationDbContext context, IMapper mapper, ILogger<CompanySettingsService> logger, IConfiguration configuration)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _configuration = configuration;
     }
 
     private async Task<CompanySettings> GetOrCreateSettingsAsync()
@@ -36,7 +38,14 @@ public class CompanySettingsService : ICompanySettingsService
                 Phone = "+971 55 752 3374",
                 Email = "info@skt.ae",
                 Website = "www.skt.ae",
-                TRN = "104082040700003"
+                TRN = "104082040700003",
+                SmtpHost = _configuration["Email:SmtpHost"],
+                SmtpPort = int.TryParse(_configuration["Email:SmtpPort"], out var port) ? port : 587,
+                SmtpUser = _configuration["Email:SmtpUser"],
+                SmtpPassword = _configuration["Email:SmtpPassword"],
+                FromEmail = _configuration["Email:FromEmail"] ?? _configuration["Email:SmtpUser"],
+                FromName = _configuration["Email:FromName"] ?? "Invoice System",
+                EnableSsl = bool.TryParse(_configuration["Email:EnableSsl"], out var ssl) ? ssl : true
             };
             _context.CompanySettings.Add(settings);
             await _context.SaveChangesAsync();
@@ -82,6 +91,27 @@ public class CompanySettingsService : ICompanySettingsService
 
         if (!string.IsNullOrEmpty(dto.TRN))
             settings.TRN = dto.TRN;
+
+        if (!string.IsNullOrEmpty(dto.SmtpHost))
+            settings.SmtpHost = dto.SmtpHost;
+
+        if (dto.SmtpPort.HasValue)
+            settings.SmtpPort = dto.SmtpPort;
+
+        if (!string.IsNullOrEmpty(dto.SmtpUser))
+            settings.SmtpUser = dto.SmtpUser;
+
+        if (!string.IsNullOrEmpty(dto.SmtpPassword))
+            settings.SmtpPassword = dto.SmtpPassword;
+
+        if (!string.IsNullOrEmpty(dto.FromEmail))
+            settings.FromEmail = dto.FromEmail;
+
+        if (!string.IsNullOrEmpty(dto.FromName))
+            settings.FromName = dto.FromName;
+
+        if (dto.EnableSsl.HasValue)
+            settings.EnableSsl = dto.EnableSsl.Value;
 
         settings.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
@@ -165,5 +195,42 @@ public class CompanySettingsService : ICompanySettingsService
 
         _logger.LogInformation("Cleared company logo");
         return _mapper.Map<CompanySettingsDto>(settings!);
+    }
+
+    public async Task<CompanySettingsDto> GetEmailSettingsAsync()
+    {
+        var settings = await GetOrCreateSettingsAsync();
+        return _mapper.Map<CompanySettingsDto>(settings);
+    }
+
+    public async Task<CompanySettingsDto> UpdateEmailSettingsAsync(UpdateCompanySettingsDto dto)
+    {
+        var settings = await GetOrCreateSettingsAsync();
+
+        if (!string.IsNullOrEmpty(dto.SmtpHost))
+            settings.SmtpHost = dto.SmtpHost;
+
+        if (dto.SmtpPort.HasValue)
+            settings.SmtpPort = dto.SmtpPort;
+
+        if (!string.IsNullOrEmpty(dto.SmtpUser))
+            settings.SmtpUser = dto.SmtpUser;
+
+        if (!string.IsNullOrEmpty(dto.SmtpPassword))
+            settings.SmtpPassword = dto.SmtpPassword;
+
+        if (!string.IsNullOrEmpty(dto.FromEmail))
+            settings.FromEmail = dto.FromEmail;
+
+        if (!string.IsNullOrEmpty(dto.FromName))
+            settings.FromName = dto.FromName;
+
+        if (dto.EnableSsl.HasValue)
+            settings.EnableSsl = dto.EnableSsl.Value;
+
+        settings.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return _mapper.Map<CompanySettingsDto>(settings);
     }
 }

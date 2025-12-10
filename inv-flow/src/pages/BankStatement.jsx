@@ -127,32 +127,22 @@ const BankStatement = () => {
 
                         <div className="col-md-2">
                             <label className="form-label small fw-medium mb-1">From Date</label>
-                            <div className="input-group input-group-sm">
-                                <input
-                                    type="date"
-                                    value={dateRange.startDate}
-                                    onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                                    className="form-control"
-                                />
-                                <span className="input-group-text">
-                                    <Calendar size={14} className="text-muted" />
-                                </span>
-                            </div>
+                            <input
+                                type="date"
+                                value={dateRange.startDate}
+                                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                                className="form-control form-control-sm"
+                            />
                         </div>
 
                         <div className="col-md-2">
                             <label className="form-label small fw-medium mb-1">To Date</label>
-                            <div className="input-group input-group-sm">
-                                <input
-                                    type="date"
-                                    value={dateRange.endDate}
-                                    onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                                    className="form-control"
-                                />
-                                <span className="input-group-text">
-                                    <Calendar size={14} className="text-muted" />
-                                </span>
-                            </div>
+                            <input
+                                type="date"
+                                value={dateRange.endDate}
+                                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                                className="form-control form-control-sm"
+                            />
                         </div>
 
                         <div className="col-md-auto ms-auto">
@@ -298,7 +288,7 @@ const BankStatement = () => {
                                                             <div className="card-body py-3">
                                                                 <div className="row">
                                                                     <div className="col-md-6">
-                                                                        <p className="mb-1 small"><strong>Date:</strong> {new Date(transaction.date).toLocaleDateString()}</p>
+                                                                        <p className="mb-1 small"><strong>Date:</strong> {new Date(transaction.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}</p>
                                                                         {transaction.invoiceNumber && (
                                                                             <p className="mb-1 small"><strong>Invoice:</strong> {transaction.invoiceNumber}</p>
                                                                         )}

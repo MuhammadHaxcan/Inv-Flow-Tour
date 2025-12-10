@@ -79,14 +79,35 @@ public class EmailService : IEmailService
         // Get company settings for branding
         var companySettings = await _companySettingsService.GetSettingsAsync();
 
-        // Get email configuration
-        var smtpHost = _configuration["Email:SmtpHost"] ?? throw new InvalidOperationException("SMTP Host not configured");
-        var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
-        var smtpUser = _configuration["Email:SmtpUser"] ?? throw new InvalidOperationException("SMTP User not configured");
-        var smtpPassword = _configuration["Email:SmtpPassword"] ?? throw new InvalidOperationException("SMTP Password not configured");
-        var fromEmail = _configuration["Email:FromEmail"] ?? smtpUser;
-        var fromName = _configuration["Email:FromName"] ?? companySettings?.CompanyName ?? "Invoice System";
-        var enableSsl = bool.Parse(_configuration["Email:EnableSsl"] ?? "true");
+        // Get email configuration strictly from stored company settings
+        if (companySettings == null)
+        {
+            throw new InvalidOperationException("Company settings not found; cannot resolve SMTP configuration.");
+        }
+
+        var smtpHost = !string.IsNullOrWhiteSpace(companySettings.SmtpHost)
+            ? companySettings.SmtpHost
+            : throw new InvalidOperationException("SMTP Host not configured");
+
+        var smtpPort = companySettings.SmtpPort ?? throw new InvalidOperationException("SMTP Port not configured");
+
+        var smtpUser = !string.IsNullOrWhiteSpace(companySettings.SmtpUser)
+            ? companySettings.SmtpUser
+            : throw new InvalidOperationException("SMTP User not configured");
+
+        var smtpPassword = !string.IsNullOrWhiteSpace(companySettings.SmtpPassword)
+            ? companySettings.SmtpPassword
+            : throw new InvalidOperationException("SMTP Password not configured");
+
+        var fromEmail = !string.IsNullOrWhiteSpace(companySettings.FromEmail)
+            ? companySettings.FromEmail
+            : smtpUser;
+
+        var fromName = !string.IsNullOrWhiteSpace(companySettings.FromName)
+            ? companySettings.FromName
+            : companySettings.CompanyName ?? "Invoice System";
+
+        var enableSsl = companySettings.EnableSsl;
 
         // Build the invoice HTML for PDF
         var invoiceHtml = BuildInvoicePdfHtml(invoice, companySettings);
@@ -291,7 +312,7 @@ public class EmailService : IEmailService
                 <td style='vertical-align: top; width: 50%;'>
                     <p style='color: {goldColor}; font-weight: bold; margin: 0 0 5px 0;'>ISSUED TO:</p>
                     <p style='font-weight: bold; margin: 0;'>{invoice.Customer.Name}</p>
-                    <p style='color: #666; font-size: 10pt; margin: 3px 0;'>Pax: <strong>{invoice.Persons}</strong> person(s)</p>
+                    <p style='color: #666; font-size: 10pt; margin: 3px 0;'>Guests: <strong>{invoice.Adults}</strong> adult(s), <strong>{invoice.Children}</strong> child(ren)</p>
                 </td>
                 <td style='text-align: right; vertical-align: top;'>
                     <p style='color: {goldColor}; font-weight: bold; margin: 0 0 5px 0;'>DRIVER:</p>

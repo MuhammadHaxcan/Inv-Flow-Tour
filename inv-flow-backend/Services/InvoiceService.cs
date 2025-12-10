@@ -93,7 +93,7 @@ public class InvoiceService : IInvoiceService
     public async Task<string> GetNextInvoiceNumberAsync()
     {
         var currentYear = DateTime.Now.Year;
-        var prefix = $"INV-{currentYear}-";
+        var prefix = $"SKT-INV-{currentYear}-";
         
         // Use SQL LIKE for better performance (PostgreSQL compatible)
         var lastInvoice = await _context.Invoices
@@ -106,7 +106,7 @@ public class InvoiceService : IInvoiceService
             return $"{prefix}0001";
 
         var parts = lastInvoice.Split('-');
-        if (parts.Length == 3 && int.TryParse(parts[2], out int lastNum))
+        if (parts.Length == 4 && int.TryParse(parts[3], out int lastNum))
         {
             return $"{prefix}{(lastNum + 1).ToString().PadLeft(4, '0')}";
         }
@@ -128,7 +128,8 @@ public class InvoiceService : IInvoiceService
             CustomerId = dto.CustomerId,
             DriverId = dto.DriverId,
             DriverNotes = dto.DriverNotes,
-            Persons = dto.Persons,
+            Adults = dto.Adults,
+            Children = dto.Children,
             Total = total,
             Paid = paid,
             Status = status,
@@ -649,7 +650,8 @@ public class InvoiceService : IInvoiceService
                         InvoiceId = i.Id,
                         InvoiceNumber = i.Number,
                         Customer = i.Customer?.Name ?? "Unknown",
-                        Persons = i.Persons,
+                        Adults = i.Adults,
+                        Children = i.Children,
                         Status = i.Status.ToString().ToLower(),
                         TripType = i.TripType.ToString(),
                         TripMode = i.TripMode.ToString(),

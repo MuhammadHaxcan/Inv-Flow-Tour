@@ -340,4 +340,6 @@ export const companySettingsAPI = {
     updateLogo: (data) => apiCall('/companysettings/logo', { method: 'POST', body: JSON.stringify(data) }),
     clearLogo: () => apiCall('/companysettings/logo', { method: 'DELETE' }),
     setActiveSignature: (signatureId) => apiCall(`/companysettings/signature/${signatureId}`, { method: 'POST' }),
+    getEmail: () => apiCall('/companysettings/email'),
+    updateEmail: (data) => apiCall('/companysettings/email', { method: 'PUT', body: JSON.stringify(data) }),
 };

@@ -409,7 +409,9 @@ const OpenInvoices = () => {
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <div className="fw-medium">{invoice.customer}</div>
-                                                        <div className="text-muted small">{invoice.persons} persons</div>
+                                                        <div className="text-muted small">
+                                                            {invoice.adults ?? 0} adult(s), {invoice.children ?? 0} child(ren)
+                                                        </div>
                                                         {(invoice.tripType || invoice.tripMode) && (
                                                             <div className="d-flex gap-1 mt-1">
                                                                 {invoice.tripType && (
@@ -426,23 +428,23 @@ const OpenInvoices = () => {
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        <div className="d-flex align-items-center gap-2">
-                                                            <div>
-                                                                {invoice.driver ? (
-                                                                    <div>
-                                                                        <div className="fw-medium">{invoice.driver}</div>
-                                                                        {invoice.driverNotes && (
-                                                                            <div className="text-muted small" style={{ maxWidth: '150px' }} title={invoice.driverNotes}>
-                                                                                {invoice.driverNotes.length > 30 
-                                                                                    ? invoice.driverNotes.substring(0, 30) + '...' 
-                                                                                    : invoice.driverNotes}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                ) : (
-                                                                    <span className="text-warning">Not assigned</span>
-                                                                )}
-                                                            </div>
+                                                            <div className="d-flex align-items-center gap-2">
+                                                                <div>
+                                                                    {invoice.driver ? (
+                                                                        <div>
+                                                                        <div className="fw-bold text-primary">{invoice.driver}</div>
+                                                                            {invoice.driverNotes && (
+                                                                                <div className="text-muted small" style={{ maxWidth: '150px' }} title={invoice.driverNotes}>
+                                                                                    {invoice.driverNotes.length > 30 
+                                                                                        ? invoice.driverNotes.substring(0, 30) + '...' 
+                                                                                        : invoice.driverNotes}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="text-warning">Not assigned</span>
+                                                                    )}
+                                                                </div>
                                                             {canWriteInvoices && (
                                                                 <button
                                                                     onClick={(e) => openDriverModal(invoice, e)}
@@ -462,7 +464,7 @@ const OpenInvoices = () => {
                                                                     Sent
                                                                 </span>
                                                                 <small className="text-muted" style={{ fontSize: '10px' }}>
-                                                                    {new Date(invoice.emailSentAt).toLocaleDateString()}
+                                                                    {new Date(invoice.emailSentAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                                                                 </small>
                                                             </div>
                                                         ) : canWriteInvoices ? (
@@ -498,8 +500,11 @@ const OpenInvoices = () => {
                                                                     </button>
                                                                 )}
                                                             </div>
-                                                            <span className="text-muted small">
+                                                            <span className="text-danger small fw-bold">
                                                                 VAT: {formatCurrency(calculateTotalVAT(invoice))}
+                                                            </span>
+                                                            <span className="text-success small fw-bold">
+                                                                Paid: {formatCurrency(invoice.paid)}
                                                             </span>
                                                         </div>
                                                         <span className={`badge ${getStatusColor(invoice.status)} rounded-pill`}>

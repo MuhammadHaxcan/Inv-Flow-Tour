@@ -410,8 +410,8 @@ const CalendarView = () => {
                         </div>
                         <div className="d-flex align-items-center mb-2">
                           <Users size={16} className="me-2 text-primary" />
-                          <strong>Persons:</strong>
-                          <span className="ms-2">{invoice.persons}</span>
+                          <strong>Guests:</strong>
+                          <span className="ms-2">{(invoice.adults ?? 0) + (invoice.children ?? 0)}</span>
                         </div>
                         <div className="d-flex align-items-center mb-2">
                           <Truck size={16} className="me-2 text-primary" />
@@ -508,8 +508,8 @@ const CalendarView = () => {
                         </div>
                         <div className="d-flex align-items-center mb-2">
                           <Users size={16} className="me-2 text-primary" />
-                          <strong>Persons:</strong>
-                          <span className="ms-2">{invoice.persons}</span>
+                          <strong>Guests:</strong>
+                          <span className="ms-2">{(invoice.adults ?? 0) + (invoice.children ?? 0)}</span>
                         </div>
                         <div className="d-flex align-items-center mb-2">
                           <Truck size={16} className="me-2 text-primary" />

@@ -13,6 +13,13 @@ public class CompanySettingsDto
     public string? Email { get; set; }
     public string? Website { get; set; }
     public string? TRN { get; set; }
+    public string? SmtpHost { get; set; }
+    public int? SmtpPort { get; set; }
+    public string? SmtpUser { get; set; }
+    public string? SmtpPassword { get; set; }
+    public string? FromEmail { get; set; }
+    public string? FromName { get; set; }
+    public bool EnableSsl { get; set; } = true;
 }
 
 public class UpdateCompanySettingsDto
@@ -26,6 +33,13 @@ public class UpdateCompanySettingsDto
     public string? Email { get; set; }
     public string? Website { get; set; }
     public string? TRN { get; set; }
+    public string? SmtpHost { get; set; }
+    public int? SmtpPort { get; set; }
+    public string? SmtpUser { get; set; }
+    public string? SmtpPassword { get; set; }
+    public string? FromEmail { get; set; }
+    public string? FromName { get; set; }
+    public bool? EnableSsl { get; set; }
 }
 
 public class UpdateLogoDto
