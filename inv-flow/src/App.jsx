@@ -10,7 +10,6 @@ import { AdminProvider } from './contexts/AdminContext'
 import { usePermissions } from './hooks/usePermissions'
 import ErrorBoundary from './components/ErrorBoundary'
 import LoadingOverlay from './components/LoadingOverlay'
-import 'bootstrap/dist/css/bootstrap.min.css';
 
 // Lazy load pages for code splitting
 const Login = lazy(() => import('./pages/Login'));
@@ -411,7 +410,11 @@ function AppContent() {
                                             <Login />
                                         </ErrorBoundary>
                                     } />
-                                    <Route path="/" element={<HomeRedirect />} />
+                                    <Route path="/" element={
+                                        <ErrorBoundary>
+                                            <HomeRedirect />
+                                        </ErrorBoundary>
+                                    } />
                                     <Route path="/generateinvoice" element={
                                         <ProtectedRoute requiredPermission="invoices.write">
                                             <ErrorBoundary>

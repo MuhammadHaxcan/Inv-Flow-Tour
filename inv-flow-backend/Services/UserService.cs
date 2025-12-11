@@ -128,6 +128,11 @@ public class UserService : IUserService
             user.IsActive = dto.IsActive.Value;
         }
 
+        if (!string.IsNullOrEmpty(dto.Password))
+        {
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+        }
+
         user.UpdatedAt = DateTime.UtcNow;
 
         // Update roles

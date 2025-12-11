@@ -109,12 +109,17 @@ const Admin = () => {
         e.preventDefault();
         try {
             if (currentUser) {
-                await updateUser(currentUser.id, {
+                const updateData = {
                     email: userForm.email,
                     fullName: userForm.fullName,
                     roleIds: userForm.roleIds,
                     isActive: userForm.isActive
-                });
+                };
+                // Only include password if it's not empty (leave blank to keep existing)
+                if (userForm.password.trim()) {
+                    updateData.password = userForm.password;
+                }
+                await updateUser(currentUser.id, updateData);
             } else {
                 await createUser(userForm);
             }
@@ -861,18 +866,20 @@ const Admin = () => {
                             required
                         />
                     </div>
-                    {!currentUser && (
-                        <div className="mb-3">
-                            <label className="form-label small fw-medium">Password</label>
-                            <input
-                                type="password"
-                                className="form-control form-control-sm"
-                                value={userForm.password}
-                                onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                                required={!currentUser}
-                            />
-                        </div>
-                    )}
+                    <div className="mb-3">
+                        <label className="form-label small fw-medium">Password</label>
+                        <input
+                            type="password"
+                            className="form-control form-control-sm"
+                            value={userForm.password}
+                            placeholder={currentUser ? "Leave blank to keep existing password" : ""}
+                            onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                            required={!currentUser}
+                        />
+                        <small className="text-muted d-block mt-1">
+                            {currentUser ? "Leave blank to keep the current password" : "Required for new users"}
+                        </small>
+                    </div>
                     <div className="mb-3">
                         <label className="form-label small fw-medium">Full Name</label>
                         <input

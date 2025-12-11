@@ -29,6 +29,10 @@ public class UpdateUserDtoValidator : AbstractValidator<UpdateUserDto>
         RuleFor(x => x.Email)
             .EmailAddress().WithMessage("Invalid email address")
             .When(x => !string.IsNullOrEmpty(x.Email));
+
+        RuleFor(x => x.Password)
+            .MinimumLength(6).WithMessage("Password must be at least 6 characters")
+            .When(x => !string.IsNullOrEmpty(x.Password));
     }
 }
 
