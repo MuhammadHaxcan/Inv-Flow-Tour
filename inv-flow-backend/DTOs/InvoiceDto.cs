@@ -4,7 +4,7 @@ public class InvoiceDto
 {
     public int Id { get; set; }
     public string Number { get; set; } = string.Empty;
-    public DateOnly Date { get; set; } // Service date
+    public DateOnly Date { get; set; } // Tour date
     public DateTime CreatedAt { get; set; } // Creation date/time
     public int CustomerId { get; set; }
     public string Customer { get; set; } = string.Empty;
@@ -19,7 +19,7 @@ public class InvoiceDto
     public string Status { get; set; } = string.Empty;
     public decimal? Vat { get; set; }
     public DateTime? EmailSentAt { get; set; }
-    public string TripType { get; set; } = "Day";
+    public string TripType { get; set; } = "Morning";
     public string TripMode { get; set; } = "Shared";
     public string? CreatedBy { get; set; }
     public List<InvoiceServiceDto> Services { get; set; } = new();
@@ -41,7 +41,7 @@ public class InvoiceExpenseDto
     public int ExpenseTypeId { get; set; }
     public string Type { get; set; } = string.Empty;
     public decimal Amount { get; set; }
-    public DateOnly Date { get; set; }
+    public DateOnly Date { get; set; } // Tour date
     public int? AccountId { get; set; }
     public string? AccountName { get; set; }
     public int? VendorId { get; set; }
@@ -57,7 +57,7 @@ public class PaymentDto
     public int AccountId { get; set; }
     public string Method { get; set; } = string.Empty;
     public decimal Amount { get; set; }
-    public DateOnly Date { get; set; }
+    public DateOnly Date { get; set; } // Tour date
     public string? Reference { get; set; }
     public decimal Vat { get; set; }
     public string? Notes { get; set; }
@@ -65,13 +65,13 @@ public class PaymentDto
 
 public class CreateInvoiceDto
 {
-    public DateOnly Date { get; set; }
+    public DateOnly Date { get; set; } // Tour date
     public int CustomerId { get; set; }
     public int? DriverId { get; set; }
     public string? DriverNotes { get; set; }
     public int Adults { get; set; }
     public int Children { get; set; }
-    public string TripType { get; set; } = "Day";
+    public string TripType { get; set; } = "Morning";
     public string TripMode { get; set; } = "Shared";
     public List<CreateInvoiceServiceDto> Services { get; set; } = new();
     public List<CreateInvoiceExpenseDto> Expenses { get; set; } = new();

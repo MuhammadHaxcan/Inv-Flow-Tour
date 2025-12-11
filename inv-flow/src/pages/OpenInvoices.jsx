@@ -9,13 +9,15 @@ import PrintableInvoice from '../components/PrintableInvoice';
 import ConfirmationModal from '../components/ConfirmationModal';
 import AlertModal from '../components/AlertModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
-import { useData } from '../contexts/DataContext';
+import { useInvoice } from '../contexts/InvoiceContext';
 import { usePermissions } from '../hooks/usePermissions';
+import { CACHE_KEYS } from '../utils/cacheInvalidation';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import defaultLogoImg from '../assets/SiyyadKhanLogo.png';
 import { printInvoice, calculateInvoiceVAT } from '../utils/printInvoice';
 
 const OpenInvoices = () => {
+    // Use invoice context instead of local state
     const {
         openInvoices,
         drivers,
@@ -32,9 +34,16 @@ const OpenInvoices = () => {
         removeExpense,
         removeInvoiceService,
         sendInvoiceEmail,
-        loadOpenInvoices, loadDrivers, loadServices, loadAccounts, loadExpenses, loadVendors, loadCompanySettings,
+        loadOpenInvoices,
+        loadDrivers,
+        loadServices,
+        loadAccounts,
+        loadExpenses,
+        loadVendors,
+        loadCompanySettings,
+        invalidateKeys,
         loadingStates
-    } = useData();
+    } = useInvoice();
 
     // Permissions
     // Note: Removing services/expenses from invoices requires 'invoices.write', not 'invoices.delete'
@@ -53,13 +62,8 @@ const OpenInvoices = () => {
         loadExpenses();
         loadVendors();
         loadCompanySettings(true); // Force reload to get latest logo and signature
-    }, [loadOpenInvoices, loadDrivers, loadServices, loadAccounts, loadExpenses, loadVendors, loadCompanySettings]);
-
-    // Debug: Log invoices when they change
-    useEffect(() => {
-        console.log('OpenInvoices - Current invoices:', openInvoices);
-        console.log('OpenInvoices - Count:', openInvoices?.length || 0);
-    }, [openInvoices]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
 
     const [expandedInvoice, setExpandedInvoice] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -92,8 +96,8 @@ const OpenInvoices = () => {
         setAlertModal({ show: true, message, type, title });
     };
 
-    // Show loading state if data is being loaded
-    const isLoading = loadingStates.openInvoices || loadingStates.drivers || loadingStates.services || loadingStates.accounts || loadingStates.expenses;
+    // Show loading state only if critical data (openInvoices) is loading and we don't have data yet
+    const isLoading = loadingStates.openInvoices && openInvoices.length === 0;
 
     // Show loading state
     if (isLoading) {
@@ -176,7 +180,7 @@ const OpenInvoices = () => {
         return `AED ${parseFloat(amount || 0).toFixed(2)}`;
     };
 
-    const handleAddPayment = (amount, method, date, reference, notes) => {
+    const handleAddPayment = async (amount, method, date, reference, notes) => {
         if (!currentInvoice) return;
 
         const paymentData = {
@@ -187,8 +191,13 @@ const OpenInvoices = () => {
             notes
         };
 
-        addPayment(currentInvoice.id, paymentData);
-        setShowPaymentModal(false);
+        try {
+            await addPayment(currentInvoice.id, paymentData);
+            setShowPaymentModal(false);
+        } catch (error) {
+            console.error('Error adding payment:', error);
+            showAlert('Error adding payment: ' + (error.message || 'Unknown error'), 'error');
+        }
     };
 
     const handleAddOrUpdateExpense = async (type, amount, date, description, vendorName, pax) => {
@@ -205,19 +214,18 @@ const OpenInvoices = () => {
 
         try {
             if (currentExpense) {
-                // Update existing expense - pass only the new data, let DataContext handle ID resolution
+                // Update existing expense - pass only the new data, let InvoiceContext handle ID resolution
                 await updateExpense(currentInvoice.id, currentExpense.id, expenseData);
             } else {
                 // Add new expense
                 await addExpense(currentInvoice.id, expenseData);
             }
+            setCurrentExpense(null);
+            setShowExpenseModal(false);
         } catch (error) {
             console.error('Error saving expense:', error);
-            showAlert('Error saving expense: ' + error.message, 'error');
+            showAlert('Error saving expense: ' + (error.message || 'Unknown error'), 'error');
         }
-
-        setCurrentExpense(null);
-        setShowExpenseModal(false);
     };
 
     const requestDeleteExpense = (invoiceId, expense) => {
@@ -228,12 +236,12 @@ const OpenInvoices = () => {
     const confirmDeleteExpense = async () => {
         try {
             await removeExpense(expenseToDelete.invoiceId, expenseToDelete.expenseId);
+            setShowDeleteExpenseModal(false);
+            setExpenseToDelete({ invoiceId: null, expenseId: null, type: '' });
         } catch (error) {
             console.error('Error deleting expense:', error);
-            showAlert('Error deleting expense: ' + error.message, 'error');
+            showAlert('Error deleting expense: ' + (error.message || 'Unknown error'), 'error');
         }
-        setShowDeleteExpenseModal(false);
-        setExpenseToDelete({ invoiceId: null, expenseId: null, type: '' });
     };
 
     // Update this function to handle service updates correctly
@@ -257,13 +265,12 @@ const OpenInvoices = () => {
                 // For new services
                 await addInvoiceService(currentInvoice.id, serviceData);
             }
+            setCurrentService(null);
+            setShowServiceModal(false);
         } catch (error) {
             console.error('Error saving service:', error);
-            showAlert('Error saving service: ' + error.message, 'error');
+            showAlert('Error saving service: ' + (error.message || 'Unknown error'), 'error');
         }
-        
-        setCurrentService(null);
-        setShowServiceModal(false);
     };
 
     const requestDeleteService = (invoiceId, service) => {
@@ -280,12 +287,12 @@ const OpenInvoices = () => {
     const confirmDeleteService = async () => {
         try {
             await removeInvoiceService(serviceToDelete.invoiceId, serviceToDelete.serviceId);
+            setShowDeleteServiceModal(false);
+            setServiceToDelete({ invoiceId: null, serviceId: null, service: '' });
         } catch (error) {
             console.error('Error deleting service:', error);
-            showAlert('Error deleting service: ' + error.message, 'error');
+            showAlert('Error deleting service: ' + (error.message || 'Unknown error'), 'error');
         }
-        setShowDeleteServiceModal(false);
-        setServiceToDelete({ invoiceId: null, serviceId: null, service: '' });
     };
 
     // Handle print using unified utility
@@ -450,6 +457,7 @@ const OpenInvoices = () => {
                                                                     onClick={(e) => openDriverModal(invoice, e)}
                                                                     className="btn btn-sm btn-outline-primary"
                                                                     title={invoice.driver ? 'Change Driver' : 'Assign Driver'}
+                                                                    aria-label={invoice.driver ? `Change driver for invoice ${invoice.invoiceNumber}` : `Assign driver to invoice ${invoice.invoiceNumber}`}
                                                                 >
                                                                     <Edit2 size={14} />
                                                                 </button>
@@ -473,11 +481,12 @@ const OpenInvoices = () => {
                                                                 className={`btn btn-sm ${invoice.customerEmail ? 'btn-outline-info' : 'btn-outline-secondary'}`}
                                                                 disabled={sendingEmail[invoice.id] || !invoice.customerEmail}
                                                                 title={invoice.customerEmail ? `Send to ${invoice.customerEmail}` : 'No email address'}
+                                                                aria-label={invoice.customerEmail ? `Send invoice ${invoice.invoiceNumber} to ${invoice.customerEmail}` : 'No email address available'}
                                                             >
                                                                 {sendingEmail[invoice.id] ? (
-                                                                    <span className="spinner-border spinner-border-sm" role="status" />
+                                                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
                                                                 ) : (
-                                                                    <Mail size={14} />
+                                                                    <Mail size={14} aria-hidden="true" />
                                                                 )}
                                                             </button>
                                                         ) : (
@@ -495,8 +504,9 @@ const OpenInvoices = () => {
                                                                         onClick={e => handleDirectPrint(invoice, e)}
                                                                         className="btn btn-sm btn-primary d-flex align-items-center gap-1"
                                                                         title="Print Invoice"
+                                                                        aria-label={`Print invoice ${invoice.invoiceNumber}`}
                                                                     >
-                                                                        <Printer size={14} />
+                                                                        <Printer size={14} aria-hidden="true" />
                                                                     </button>
                                                                 )}
                                                             </div>
@@ -537,15 +547,17 @@ const OpenInvoices = () => {
                                                                                 <button
                                                                                     onClick={e => openServiceModal(invoice, null, e)}
                                                                                     className="btn btn-sm btn-dark d-flex align-items-center gap-1"
+                                                                                    aria-label={`Add service to invoice ${invoice.invoiceNumber}`}
                                                                                 >
-                                                                                    <Plus size={14} />
+                                                                                    <Plus size={14} aria-hidden="true" />
                                                                                     Add Service
                                                                                 </button>
                                                                                 <button
                                                                                     onClick={e => openPaymentModal(invoice, e)}
                                                                                     className="btn btn-sm btn-success d-flex align-items-center gap-1"
+                                                                                    aria-label={`Add payment to invoice ${invoice.invoiceNumber}`}
                                                                                 >
-                                                                                    <DollarSign size={14} />
+                                                                                    <DollarSign size={14} aria-hidden="true" />
                                                                                     Add Payment
                                                                                 </button>
                                                                             </div>
@@ -575,8 +587,9 @@ const OpenInvoices = () => {
                                                                                                             onClick={e => openServiceModal(invoice, service, e)}
                                                                                                             className="btn btn-sm btn-outline-primary"
                                                                                                             title="Edit Service"
+                                                                                                            aria-label={`Edit service ${service.service} for invoice ${invoice.invoiceNumber}`}
                                                                                                         >
-                                                                                                            <Edit2 size={14} />
+                                                                                                            <Edit2 size={14} aria-hidden="true" />
                                                                                                         </button>
                                                                                                     )}
                                                                                                     {canWriteInvoices && invoice.services.length > 1 && (
@@ -584,8 +597,9 @@ const OpenInvoices = () => {
                                                                                                             onClick={e => requestDeleteService(invoice.id, service)}
                                                                                                             className="btn btn-sm btn-outline-danger"
                                                                                                             title="Delete Service"
+                                                                                                            aria-label={`Delete service ${service.service} from invoice ${invoice.invoiceNumber}`}
                                                                                                         >
-                                                                                                            <Trash2 size={14} />
+                                                                                                            <Trash2 size={14} aria-hidden="true" />
                                                                                                         </button>
                                                                                                     )}
                                                                                                 </div>
@@ -612,8 +626,9 @@ const OpenInvoices = () => {
                                                                                 <button
                                                                                     onClick={e => openExpenseModal(invoice, null, e)}
                                                                                     className="btn btn-sm btn-dark d-flex align-items-center gap-1"
+                                                                                    aria-label={`Add expense to invoice ${invoice.invoiceNumber}`}
                                                                                 >
-                                                                                    <Plus size={14} />
+                                                                                    <Plus size={14} aria-hidden="true" />
                                                                                     Add Expense
                                                                                 </button>
                                                                             </div>
@@ -658,8 +673,9 @@ const OpenInvoices = () => {
                                                                                                                 onClick={e => openExpenseModal(invoice, exp, e)}
                                                                                                                 className="btn btn-sm btn-outline-primary"
                                                                                                                 title="Edit Expense"
+                                                                                                                aria-label={`Edit expense ${exp.type} for invoice ${invoice.invoiceNumber}`}
                                                                                                             >
-                                                                                                                <Edit2 size={14} />
+                                                                                                                <Edit2 size={14} aria-hidden="true" />
                                                                                                             </button>
                                                                                                         )}
                                                                                                         {canWriteInvoices && (
@@ -667,8 +683,9 @@ const OpenInvoices = () => {
                                                                                                                 onClick={e => requestDeleteExpense(invoice.id, exp)}
                                                                                                                 className="btn btn-sm btn-outline-danger"
                                                                                                                 title="Delete Expense"
+                                                                                                                aria-label={`Delete expense ${exp.type} from invoice ${invoice.invoiceNumber}`}
                                                                                                             >
-                                                                                                                <Trash2 size={14} />
+                                                                                                                <Trash2 size={14} aria-hidden="true" />
                                                                                                             </button>
                                                                                                         )}
                                                                                                     </div>
@@ -810,11 +827,21 @@ const OpenInvoices = () => {
             <DriverModal
                 show={showDriverModal}
                 onClose={() => setShowDriverModal(false)}
-                onSave={(driver, notes, date) => {
-                    setDriverToAssign(driver);
-                    setDriverNotesToAssign(notes || '');
-                    assignDriver(currentInvoice.id, driver, notes, date);
-                    setShowDriverModal(false);
+                onSave={async (driver, notes, date) => {
+                    try {
+                        // Assign driver (this will clear cache and reload invoices)
+                        await assignDriver(currentInvoice.id, driver, notes, date);
+                        
+                        // Wait a brief moment to ensure state has updated
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        
+                        setDriverToAssign(driver);
+                        setDriverNotesToAssign(notes || '');
+                        setShowDriverModal(false);
+                    } catch (error) {
+                        console.error('Error assigning driver:', error);
+                        showAlert('Error assigning driver: ' + (error.message || 'Unknown error'), 'error');
+                    }
                 }}
                 drivers={drivers}
                 currentDriver={driverToAssign}

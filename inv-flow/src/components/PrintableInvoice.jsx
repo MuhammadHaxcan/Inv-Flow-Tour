@@ -128,12 +128,12 @@ const PrintableInvoice = ({ invoice }) => {
                             <div className="d-flex gap-2 align-items-center">
                                 {invoice.tripType && (
                                     <span className="badge" style={{ 
-                                        backgroundColor: invoice.tripType === 'Night' ? '#333' : '#FFA500', 
-                                        color: invoice.tripType === 'Night' ? '#fff' : '#000',
+                                        backgroundColor: invoice.tripType === 'Evening' ? '#333' : '#FFA500',
+                                        color: invoice.tripType === 'Evening' ? '#fff' : '#000',
                                         fontSize: '12px',
                                         padding: '4px 10px'
                                     }}>
-                                        {invoice.tripType === 'Night' ? '🌙 Night' : '☀️ Day'}
+                                        {invoice.tripType === 'Evening' ? '🌙 Evening' : '☀️ Morning'}
                                     </span>
                                 )}
                                 {invoice.tripMode && (

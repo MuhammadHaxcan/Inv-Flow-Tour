@@ -22,8 +22,8 @@ public class ReportsController : ControllerBase
     [RequirePermission("reports.read")]
     public async Task<ActionResult<ServiceReportDto>> GetServiceReport([FromBody] ReportFilterDto? filter)
     {
-        if (filter == null)
-            filter = new ReportFilterDto();
+        // If filter is null or dates are not provided, all data will be returned (null dates = no date filter)
+        filter ??= new ReportFilterDto();
         
         var report = await _reportService.GetServiceReportAsync(filter);
         return Ok(report);
@@ -33,8 +33,8 @@ public class ReportsController : ControllerBase
     [RequirePermission("reports.read")]
     public async Task<ActionResult<CustomerReportDto>> GetCustomerReport([FromBody] ReportFilterDto? filter)
     {
-        if (filter == null)
-            filter = new ReportFilterDto();
+        // If filter is null or dates are not provided, all data will be returned (null dates = no date filter)
+        filter ??= new ReportFilterDto();
         
         var report = await _reportService.GetCustomerReportAsync(filter);
         return Ok(report);
@@ -44,8 +44,8 @@ public class ReportsController : ControllerBase
     [RequirePermission("reports.read")]
     public async Task<ActionResult<DriverReportDto>> GetDriverReport([FromBody] ReportFilterDto? filter)
     {
-        if (filter == null)
-            filter = new ReportFilterDto();
+        // If filter is null or dates are not provided, all data will be returned (null dates = no date filter)
+        filter ??= new ReportFilterDto();
         
         var report = await _reportService.GetDriverReportAsync(filter);
         return Ok(report);
@@ -55,8 +55,8 @@ public class ReportsController : ControllerBase
     [RequirePermission("reports.read")]
     public async Task<ActionResult<SummaryReportDto>> GetSummaryReport([FromBody] ReportFilterDto? filter)
     {
-        if (filter == null)
-            filter = new ReportFilterDto();
+        // If filter is null or dates are not provided, all data will be returned (null dates = no date filter)
+        filter ??= new ReportFilterDto();
         
         var report = await _reportService.GetSummaryReportAsync(filter);
         return Ok(report);
@@ -66,8 +66,8 @@ public class ReportsController : ControllerBase
     [RequirePermission("reports.read")]
     public async Task<ActionResult<AgentReportDto>> GetAgentReport([FromBody] ReportFilterDto? filter)
     {
-        if (filter == null)
-            filter = new ReportFilterDto();
+        // If filter is null or dates are not provided, all data will be returned (null dates = no date filter)
+        filter ??= new ReportFilterDto();
         
         var report = await _reportService.GetAgentReportAsync(filter);
         return Ok(report);

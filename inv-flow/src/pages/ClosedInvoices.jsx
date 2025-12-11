@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, FileText, DollarSign, Receipt, Printer } from 'lucide-react';
-import { useData } from '../contexts/DataContext';
+import { useInvoice } from '../contexts/InvoiceContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import defaultLogoImg from '../assets/SiyyadKhanLogo.png';
 import { printInvoice, calculateInvoiceVAT } from '../utils/printInvoice';
@@ -8,7 +8,15 @@ import { printInvoice, calculateInvoiceVAT } from '../utils/printInvoice';
 const ClosedInvoices = () => {
     const [expandedInvoice, setExpandedInvoice] = useState(null);
 
-    // Use data context instead of local state
+    // Filter state
+    const [filteredInvoices, setFilteredInvoices] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [dateRange, setDateRange] = useState({
+        startDate: '',
+        endDate: ''
+    });
+
+    // Use invoice context instead of local state
     const {
         closedInvoices,
         accounts,
@@ -16,7 +24,7 @@ const ClosedInvoices = () => {
         companySettings,
         loadClosedInvoices, loadAccounts, loadDrivers, loadCompanySettings,
         loadingStates
-    } = useData();
+    } = useInvoice();
 
     // Load only needed data when component mounts
     useEffect(() => {
@@ -24,13 +32,43 @@ const ClosedInvoices = () => {
         loadAccounts();
         loadDrivers();
         loadCompanySettings(true); // Force reload to get latest logo and signature
-    }, [loadClosedInvoices, loadAccounts, loadDrivers, loadCompanySettings]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
 
-    // Debug: Log invoices when they change
+    // Filter invoices based on search and date criteria
     useEffect(() => {
-        console.log('ClosedInvoices - Current invoices:', closedInvoices);
-        console.log('ClosedInvoices - Count:', closedInvoices?.length || 0);
-    }, [closedInvoices]);
+        let filtered = [...closedInvoices];
+
+        // Filter by search term
+        const term = searchTerm.trim().toLowerCase();
+        if (term) {
+            filtered = filtered.filter(invoice =>
+                invoice.number?.toLowerCase().includes(term) ||
+                invoice.customer?.toLowerCase().includes(term) ||
+                invoice.driver?.toLowerCase().includes(term)
+            );
+        }
+
+        // Filter by date range
+        if (dateRange.startDate) {
+            const startDate = new Date(dateRange.startDate);
+            filtered = filtered.filter(invoice => {
+                const invoiceDate = new Date(invoice.date);
+                return invoiceDate >= startDate;
+            });
+        }
+
+        if (dateRange.endDate) {
+            const endDate = new Date(dateRange.endDate);
+            endDate.setHours(23, 59, 59); // Include the entire end date
+            filtered = filtered.filter(invoice => {
+                const invoiceDate = new Date(invoice.date);
+                return invoiceDate <= endDate;
+            });
+        }
+
+        setFilteredInvoices(filtered);
+    }, [closedInvoices, searchTerm, dateRange]);
 
     const toggleExpand = (id) => {
         setExpandedInvoice(expandedInvoice === id ? null : id);
@@ -58,9 +96,9 @@ const ClosedInvoices = () => {
 
     // Calculate totals for footer row
     const calculateTotals = () => {
-        if (!closedInvoices.length) return { total: 0, vat: 0, expenses: 0, net: 0 };
+        if (!filteredInvoices.length) return { total: 0, vat: 0, expenses: 0, net: 0 };
 
-        return closedInvoices.reduce((acc, invoice) => {
+        return filteredInvoices.reduce((acc, invoice) => {
             const vatAmount = calculateVAT(invoice);
             const expensesTotal = calculateExpensesTotal(invoice.expenses);
             
@@ -103,6 +141,52 @@ const ClosedInvoices = () => {
                             </p>
                         </div>
                     </div>
+
+                    {/* Filters Section */}
+                    <div className="border-bottom bg-white py-3 px-4">
+                        <div className="row align-items-end g-3">
+                            <div className="col-md-3">
+                                <label className="form-label small fw-medium mb-1">Search</label>
+                                <input
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="form-control form-control-sm"
+                                    placeholder="Search by invoice #, customer, driver"
+                                />
+                            </div>
+                            <div className="col-md-2">
+                                <label className="form-label small fw-medium mb-1">From Date</label>
+                                <input
+                                    type="date"
+                                    value={dateRange.startDate}
+                                    onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                                    className="form-control form-control-sm"
+                                />
+                            </div>
+                            <div className="col-md-2">
+                                <label className="form-label small fw-medium mb-1">To Date</label>
+                                <input
+                                    type="date"
+                                    value={dateRange.endDate}
+                                    onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                                    className="form-control form-control-sm"
+                                />
+                            </div>
+                            <div className="col-md-auto ms-auto">
+                                <button
+                                    onClick={() => {
+                                        setSearchTerm('');
+                                        setDateRange({ startDate: '', endDate: '' });
+                                    }}
+                                    className="btn btn-sm btn-outline-secondary"
+                                >
+                                    Clear Filters
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="card-body p-0">
                         <div className="table-responsive">
                             <table className="table table-hover mb-0">
@@ -118,14 +202,15 @@ const ClosedInvoices = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {closedInvoices.length === 0 ? (
+                                    {filteredInvoices.length === 0 ? (
                                         <tr>
                                             <td colSpan="7" className="text-center py-4 text-muted">
                                                 No closed invoices found
+                                                {searchTerm || dateRange.startDate || dateRange.endDate ? ' matching your filters' : ''}
                                             </td>
                                         </tr>
                                     ) : (
-                                        closedInvoices.map(invoice => (
+                                        filteredInvoices.map(invoice => (
                                             <React.Fragment key={invoice.id}>
                                                 <tr
                                                     onClick={() => toggleExpand(invoice.id)}
@@ -154,7 +239,7 @@ const ClosedInvoices = () => {
                                                         {(invoice.tripType || invoice.tripMode) && (
                                                             <div className="d-flex gap-1 mt-1">
                                                                 {invoice.tripType && (
-                                                                    <span className={`badge ${invoice.tripType === 'Night' ? 'bg-dark' : 'bg-warning text-dark'}`}>
+                                                                    <span className={`badge ${invoice.tripType === 'Evening' ? 'bg-dark' : 'bg-warning text-dark'}`}>
                                                                         {invoice.tripType}
                                                                     </span>
                                                                 )}

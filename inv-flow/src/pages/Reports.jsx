@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, BarChart3, TrendingUp, DollarSign, Users, Package, Filter, RefreshCw, AlertCircle, User, ChevronDown, ChevronUp } from 'lucide-react';
-import { useData } from '../contexts/DataContext';
+import { useInvoice } from '../contexts/InvoiceContext';
 import { usePermissions } from '../hooks/usePermissions';
-import { reportsAPI } from '../services/api';
+import { reportsAPI, usersAPI } from '../services/api';
 import SearchableSelect from '../components/SearchableSelect';
 import { Navigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Reports = () => {
-    const { services, customers, drivers, loadServices, loadCustomers, loadDrivers, loadingStates } = useData();
+    const { services, customers, drivers, loadServices, loadCustomers, loadDrivers, loadingStates } = useInvoice();
     const { canReadReports } = usePermissions();
+
+    // Separate state for agents (used for filter options)
+    const [agents, setAgents] = useState([]);
+    const [loadingAgents, setLoadingAgents] = useState(false);
     
     const [activeTab, setActiveTab] = useState('service');
 
@@ -45,17 +49,42 @@ const Reports = () => {
         return <Navigate to="/" replace />;
     }
 
+    // Load agents for filter options
+    const loadAgents = async () => {
+        if (agents.length > 0) return; // Already loaded
+        setLoadingAgents(true);
+        try {
+            const users = await usersAPI.getAll();
+            // Get all users who have Agent role or can create invoices (all invoice creators)
+            const agentUsers = users.filter(user => 
+                (user.roles && user.roles.some(role => role.name === 'Agent')) ||
+                (user.permissions && user.permissions.includes('invoices.write'))
+            );
+            // Sort by ID for consistent display
+            agentUsers.sort((a, b) => a.id - b.id);
+            setAgents(agentUsers);
+        } catch (error) {
+            console.error('Error loading agents:', error);
+            setAgents([]);
+        } finally {
+            setLoadingAgents(false);
+        }
+    };
+
     useEffect(() => {
         loadServices();
         loadCustomers();
         loadDrivers();
-    }, [loadServices, loadCustomers, loadDrivers]);
+        loadAgents();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
 
+    // Load initial data when component mounts or tab changes
     useEffect(() => {
         if (canReadReports) {
             loadReportData();
         }
-    }, [activeTab, startDate, endDate, selectedService, selectedCustomer, selectedDriver, selectedAgent, canReadReports]);
+    }, [activeTab, canReadReports]);
 
     const loadReportData = async () => {
         // Don't load if user doesn't have permission
@@ -69,10 +98,11 @@ const Reports = () => {
             let data;
             const filters = {};
             
-            if (startDate) {
+            // Only include date filters if dates are provided (empty strings or null means no date filter = all data)
+            if (startDate && startDate.trim() !== '') {
                 filters.startDate = startDate;
             }
-            if (endDate) {
+            if (endDate && endDate.trim() !== '') {
                 filters.endDate = endDate;
             }
             if (selectedService && selectedService !== 'all') {
@@ -157,7 +187,14 @@ const Reports = () => {
     const handleReset = () => {
         setFiltersByTab(prev => ({
             ...prev,
-            [activeTab]: { ...initialFilterState }
+            [activeTab]: { 
+                startDate: '',  // Empty date = show all data
+                endDate: '',    // Empty date = show all data
+                selectedService: 'all',
+                selectedCustomer: 'all',
+                selectedDriver: 'all',
+                selectedAgent: 'all'
+            }
         }));
     };
 
@@ -169,7 +206,7 @@ const Reports = () => {
         { id: 'agent', label: 'Agent Report', icon: User }
     ];
 
-    const isLoading = loadingStates.services || loadingStates.customers || loadingStates.drivers || loading;
+    const isLoading = loadingStates.services || loadingStates.customers || loadingStates.drivers || loadingAgents || loading;
 
     if (isLoading && !reportData) {
         return (
@@ -296,12 +333,10 @@ const Reports = () => {
                                     }))}
                                     options={[
                                         { value: 'all', label: 'All Agents' },
-                                        ...(reportData?.agents || [])
-                                            .filter(agent => agent.userId && agent.userId > 0)
-                                            .map(agent => ({
-                                                value: agent.userId.toString(),
-                                                label: agent.agentName || agent.username || agent.email || 'Agent'
-                                            }))
+                                        ...agents.map(agent => ({
+                                            value: agent.id.toString(),
+                                            label: `${agent.id} - ${agent.fullName || agent.username || agent.email || 'Agent'}`
+                                        }))
                                     ]}
                                     placeholder="All Agents"
                                     size="sm"

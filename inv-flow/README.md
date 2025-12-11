@@ -1,16 +1,170 @@
-# React + Vite
+# Inv-Flow Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A comprehensive invoice and expense management system built with React, Vite, and Bootstrap. This frontend application provides a modern, responsive interface for managing invoices, customers, drivers, expenses, and financial reporting.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Invoice Management**: Create, edit, and track invoices with VAT calculations
+- **Customer Management**: Manage customer information and contact details
+- **Driver Management**: Assign drivers to invoices and track schedules
+- **Expense Tracking**: Record and manage business expenses
+- **Financial Reports**: Comprehensive reporting with filtering capabilities
+- **Bank Statement**: View transaction history and account balances
+- **Calendar View**: Visual calendar for invoice and driver scheduling
+- **Role-based Access Control**: Secure authentication and authorization
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **React 18** - Modern React with hooks and functional components
+- **Vite** - Fast build tool and development server
+- **Bootstrap 5** - Responsive CSS framework
+- **React Router** - Client-side routing
+- **Lucide React** - Modern icon library
+- **Axios** - HTTP client for API communication
+- **React Phone Input** - International phone number input
+- **FullCalendar** - Calendar component for scheduling
 
-## Expanding the ESLint configuration
+## 📋 Prerequisites
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Node.js 18+ and npm
+- Backend API server (see backend documentation)
+
+## 🚀 Getting Started
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd inv-flow
+
+# Install dependencies
+npm install
+```
+
+### Environment Configuration
+
+Create a `.env` file in the root directory:
+
+```env
+# API Configuration
+# Development: http://localhost:5104/api
+# Production: https://your-api-domain.com/api
+VITE_API_URL=http://localhost:5104/api
+
+# Application Environment
+VITE_NODE_ENV=development
+
+# Debug logging (optional)
+VITE_DEBUG=true
+```
+
+### Development
+
+```bash
+# Start development server
+npm run dev
+
+# Open http://localhost:5173 in your browser
+```
+
+### Build for Production
+
+```bash
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+## 📁 Project Structure
+
+```
+src/
+├── components/          # Reusable UI components
+│   ├── Modal.jsx       # Base modal component
+│   ├── StatusModal.jsx # Unified modal for alerts/confirmations
+│   ├── SearchableSelect.jsx
+│   └── ...
+├── pages/              # Page components
+│   ├── Reports.jsx
+│   ├── OpenInvoices.jsx
+│   └── ...
+├── contexts/           # React contexts for state management
+│   ├── DataContext.jsx
+│   └── AuthContext.jsx
+├── hooks/              # Custom React hooks
+├── services/           # API service functions
+├── utils/              # Utility functions
+└── constants/          # Application constants
+```
+
+## 🔧 Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+
+## 🔒 Security Features
+
+- JWT-based authentication
+- Role-based access control
+- Input validation and sanitization
+- Secure API communication
+- XSS protection
+
+## 🎨 UI/UX Features
+
+- Responsive Bootstrap design
+- Dark/light mode support
+- Accessible components with ARIA labels
+- Loading states and error handling
+- Mobile-friendly interface
+
+## 📊 Key Components
+
+### Reports System
+- Service, Customer, Driver, and Summary reports
+- Date range filtering
+- Export capabilities
+- Real-time data updates
+
+### Invoice Management
+- Create invoices with services and expenses
+- VAT calculation (5%)
+- Driver assignment
+- Email notifications
+- Print functionality
+
+### Financial Tracking
+- Bank statement with transaction history
+- Expense management
+- Payment processing
+- Outstanding balance tracking
+
+## 🔄 Recent Improvements
+
+- ✅ Fixed filtering logic in Reports page
+- ✅ Added comprehensive filtering to invoice pages
+- ✅ Removed conflicting CSS dependencies
+- ✅ Created shared modal components
+- ✅ Fixed performance issues in DataContext
+- ✅ Improved error handling and user feedback
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
+
+## 📝 License
+
+This project is proprietary software. See LICENSE file for details.
+
+## 🆘 Support
+
+For support and questions, please contact the development team.

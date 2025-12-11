@@ -6,7 +6,7 @@ import ServiceForm from '../components/ServiceForm';
 import DriverModal from '../components/DriverModal';
 import AlertModal from '../components/AlertModal';
 import SearchableSelect from '../components/SearchableSelect';
-import { useData } from '../contexts/DataContext';
+import { useInvoice } from '../contexts/InvoiceContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -15,14 +15,14 @@ const GenerateInvoice = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
 
-    // Use data context
+    // Use invoice context
     const {
         customers, addCustomer,
         drivers, services, accounts,
         nextInvoiceNumber, generateInvoice,
         loadCustomers, loadDrivers, loadServices, loadAccounts, loadNextInvoiceNumber,
         loadingStates
-    } = useData();
+    } = useInvoice();
 
     // Load only needed data when component mounts
     useEffect(() => {
@@ -31,7 +31,8 @@ const GenerateInvoice = () => {
         loadServices();
         loadAccounts();
         loadNextInvoiceNumber();
-    }, [loadCustomers, loadDrivers, loadServices, loadAccounts, loadNextInvoiceNumber]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
 
     // Invoice state
     const [showDriverModal, setShowDriverModal] = useState(false);
@@ -58,7 +59,7 @@ const GenerateInvoice = () => {
     const [driverNotes, setDriverNotes] = useState('');
     const [adults, setAdults] = useState('');
     const [children, setChildren] = useState('');
-    const [tripType, setTripType] = useState('Day'); // 'Day' or 'Night'
+    const [tripType, setTripType] = useState('Morning'); // 'Morning' or 'Evening'
     const [tripMode, setTripMode] = useState('Shared'); // 'Shared' or 'Private'
     const [invoiceServices, setInvoiceServices] = useState([{ service: '', rate: '' }]);
     // Expenses removed from this flow
@@ -135,13 +136,13 @@ const GenerateInvoice = () => {
     };
 
     const handleAddService = (service, rate) => {
-        // Find the service to get the VAT included rate
+        // Store rates excluding VAT to avoid double-charging when totals add 5%
         const serviceInfo = services.find(s => s.name === service);
-        const vatIncludedRate = serviceInfo ? serviceInfo.vatIncluded : rate;
+        const exVatRate = serviceInfo ? serviceInfo.charge : rate;
 
         const newService = {
             service,
-            rate: vatIncludedRate // Use VAT included rate
+            rate: parseFloat(exVatRate || 0)
         };
         setInvoiceServices([...invoiceServices, newService]);
         setShowServiceModal(false);
@@ -232,9 +233,11 @@ const GenerateInvoice = () => {
         }
     };
 
-    // Show loading state if data is being loaded
-    const isLoading = loadingStates.customers || loadingStates.drivers || loadingStates.services || 
-                     loadingStates.accounts || loadingStates.nextInvoiceNumber;
+    // Show loading state only if critical data is loading and we don't have data yet
+    const isLoading = (loadingStates.customers && customers.length === 0) || 
+                     (loadingStates.drivers && drivers.length === 0) ||
+                     (loadingStates.services && services.length === 0) ||
+                     (loadingStates.accounts && accounts.length === 0);
 
     if (isLoading) {
         return (
@@ -351,8 +354,9 @@ const GenerateInvoice = () => {
                                                         onClick={() => setShowDriverModal(true)}
                                                         className="btn btn-sm btn-outline-secondary py-0 px-1"
                                                         title="Change Driver"
+                                                        aria-label="Change assigned driver"
                                                     >
-                                                        <Edit2 size={14} />
+                                                        <Edit2 size={14} aria-hidden="true" />
                                                     </button>
                                                     <button
                                                         type="button"
@@ -362,8 +366,9 @@ const GenerateInvoice = () => {
                                                         }}
                                                         className="btn btn-sm btn-outline-danger py-0 px-1"
                                                         title="Remove Driver"
+                                                        aria-label="Remove assigned driver"
                                                     >
-                                                        <X size={14} />
+                                                        <X size={14} aria-hidden="true" />
                                                     </button>
                                                 </div>
                                             </div>
@@ -372,8 +377,9 @@ const GenerateInvoice = () => {
                                                 type="button"
                                                 onClick={() => setShowDriverModal(true)}
                                                 className="btn btn-sm btn-outline-dark d-flex align-items-center gap-1"
+                                                aria-label="Assign driver to invoice"
                                             >
-                                                <Truck size={16} />
+                                                <Truck size={16} aria-hidden="true" />
                                                 Assign Driver
                                             </button>
                                         )}
@@ -414,13 +420,13 @@ const GenerateInvoice = () => {
                                                 className="form-check-input"
                                                 type="radio"
                                                 name="tripType"
-                                                id="tripTypeDay"
-                                                value="Day"
-                                                checked={tripType === 'Day'}
+                                                id="tripTypeMorning"
+                                                value="Morning"
+                                                checked={tripType === 'Morning'}
                                                 onChange={(e) => setTripType(e.target.value)}
                                             />
-                                            <label className="form-check-label" htmlFor="tripTypeDay">
-                                                Day Trip
+                                            <label className="form-check-label" htmlFor="tripTypeMorning">
+                                                Morning Trip
                                             </label>
                                         </div>
                                         <div className="form-check">
@@ -428,13 +434,13 @@ const GenerateInvoice = () => {
                                                 className="form-check-input"
                                                 type="radio"
                                                 name="tripType"
-                                                id="tripTypeNight"
-                                                value="Night"
-                                                checked={tripType === 'Night'}
+                                                id="tripTypeEvening"
+                                                value="Evening"
+                                                checked={tripType === 'Evening'}
                                                 onChange={(e) => setTripType(e.target.value)}
                                             />
-                                            <label className="form-check-label" htmlFor="tripTypeNight">
-                                                Night Trip
+                                            <label className="form-check-label" htmlFor="tripTypeEvening">
+                                                Evening Trip
                                             </label>
                                         </div>
                                     </div>
@@ -581,6 +587,7 @@ const GenerateInvoice = () => {
                                                     className="btn btn-primary flex-grow-1 py-2"
                                                     onClick={handleSaveInvoice}
                                                     disabled={!selectedCustomer || ((parseInt(adults || 0, 10) || 0) + (parseInt(children || 0, 10) || 0) <= 0) || invoiceServices[0].service === '' || invoiceServices[0].rate === ''}
+                                                    aria-label="Save invoice"
                                                 >
                                                     Save Invoice
                                                 </button>
@@ -588,6 +595,7 @@ const GenerateInvoice = () => {
                                                     type="button"
                                                     className="btn btn-outline-secondary py-2"
                                                     onClick={() => navigate('/')}
+                                                    aria-label="Cancel and return to dashboard"
                                                 >
                                                     Cancel
                                                 </button>

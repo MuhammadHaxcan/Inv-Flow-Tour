@@ -1,18 +1,18 @@
 namespace inv_flow_backend.Models.Enums;
 
 /// <summary>
-/// Represents the type of trip (day or night)
+/// Represents the type of trip (morning or evening)
 /// </summary>
 public enum TripType
 {
     /// <summary>
-    /// Day trip
+    /// Morning trip
     /// </summary>
-    Day = 0,
-    
+    Morning = 0,
+
     /// <summary>
-    /// Night trip
+    /// Evening trip
     /// </summary>
-    Night = 1
+    Evening = 1
 }
 

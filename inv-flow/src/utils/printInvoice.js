@@ -48,7 +48,7 @@ const getTripInfoHTML = (invoice) => {
     const badges = [];
     
     if (invoice.tripType) {
-        const isNight = invoice.tripType === 'Night';
+        const isNight = invoice.tripType === 'Evening';
         const badgeStyle = isNight 
             ? 'background-color: #333; color: #fff;' 
             : 'background-color: #FFA500; color: #000;';

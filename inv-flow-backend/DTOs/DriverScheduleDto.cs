@@ -17,7 +17,7 @@ public class DriverScheduleInvoiceDto
     public int Adults { get; set; }
     public int Children { get; set; }
     public string Status { get; set; } = string.Empty;
-    public string TripType { get; set; } = "Day";
+    public string TripType { get; set; } = "Morning";
     public string TripMode { get; set; } = "Shared";
     public decimal Total { get; set; }
     public string? DriverNotes { get; set; }

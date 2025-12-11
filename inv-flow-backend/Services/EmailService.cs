@@ -313,6 +313,8 @@ public class EmailService : IEmailService
                     <p style='color: {goldColor}; font-weight: bold; margin: 0 0 5px 0;'>ISSUED TO:</p>
                     <p style='font-weight: bold; margin: 0;'>{invoice.Customer.Name}</p>
                     <p style='color: #666; font-size: 10pt; margin: 3px 0;'>Guests: <strong>{invoice.Adults}</strong> adult(s), <strong>{invoice.Children}</strong> child(ren)</p>
+                    <p style='color: #666; font-size: 10pt; margin: 3px 0;'>Trip Type: <strong>{invoice.TripType}</strong></p>
+                    <p style='color: #666; font-size: 10pt; margin: 3px 0;'>Trip Mode: <strong>{invoice.TripMode}</strong></p>
                 </td>
                 <td style='text-align: right; vertical-align: top;'>
                     <p style='color: {goldColor}; font-weight: bold; margin: 0 0 5px 0;'>DRIVER:</p>
@@ -458,6 +460,14 @@ public class EmailService : IEmailService
                 <tr>
                     <td style='padding: 12px; border: 1px solid #ddd;'><strong>Amount Paid</strong></td>
                     <td style='padding: 12px; border: 1px solid #ddd;'>AED {invoice.Paid:F2}</td>
+                </tr>
+                <tr style='background-color: #f9f9f9;'>
+                    <td style='padding: 12px; border: 1px solid #ddd;'><strong>Trip Type</strong></td>
+                    <td style='padding: 12px; border: 1px solid #ddd;'>{invoice.TripType}</td>
+                </tr>
+                <tr>
+                    <td style='padding: 12px; border: 1px solid #ddd;'><strong>Trip Mode</strong></td>
+                    <td style='padding: 12px; border: 1px solid #ddd;'>{invoice.TripMode}</td>
                 </tr>
                 <tr style='background-color: {goldColor}; color: white;'>
                     <td style='padding: 12px; border: 1px solid #ddd;'><strong>Balance Due</strong></td>

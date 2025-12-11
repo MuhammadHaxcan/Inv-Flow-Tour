@@ -3,13 +3,13 @@ import { Plus, Edit2, Trash2, Info, Package } from 'lucide-react';
 import ServiceModal from '../components/ServiceModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import AlertModal from '../components/AlertModal';
-import { useData } from '../contexts/DataContext';
+import { useServices } from '../contexts/ServicesContext';
 import { usePermissions } from '../hooks/usePermissions';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Services = () => {
-    // Use data context
-    const { services, addService, updateService, deleteService, loadServices, loadingStates } = useData();
+    // Use services context
+    const { services, addService, updateService, deleteService, loadServices, loadingStates } = useServices();
 
     // Permissions
     const { canWriteServices, canDeleteServices } = usePermissions();
@@ -17,11 +17,13 @@ const Services = () => {
     // Load services when component mounts
     useEffect(() => {
         loadServices();
-    }, [loadServices]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
     
     // States
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentService, setCurrentService] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
     
     // Delete confirmation modal state
     const [deleteModal, setDeleteModal] = useState({ show: false, service: null });
@@ -94,6 +96,15 @@ const Services = () => {
         }
     };
 
+    const filteredServices = services.filter(service => {
+        if (!searchTerm.trim()) return true;
+        const term = searchTerm.toLowerCase();
+        return (
+            (service.name || '').toLowerCase().includes(term) ||
+            (service.description || '').toLowerCase().includes(term)
+        );
+    });
+
     if (loadingStates.services) {
         return (
             <div className="content-wrapper">
@@ -129,9 +140,22 @@ const Services = () => {
                     </div>      
                     
                     <div className="border-bottom bg-white py-3 px-4">
-                        <div className="alert alert-info mb-0 py-2 d-flex align-items-center gap-2">
-                            <Info size={16} />
-                            <span className="small">Service prices can be entered with or without VAT. The system will automatically calculate the other amount.</span>
+                        <div className="row g-3 align-items-center">
+                            <div className="col-md">
+                                <div className="alert alert-info mb-0 py-2 d-flex align-items-center gap-2">
+                                    <Info size={16} />
+                                    <span className="small">Service prices can be entered with or without VAT. The system will automatically calculate the other amount.</span>
+                                </div>
+                            </div>
+                            <div className="col-md-auto">
+                                <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    placeholder="Search services..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
                         </div>
                     </div>
                     
@@ -150,7 +174,7 @@ const Services = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {services.length === 0 ? (
+                                    {filteredServices.length === 0 ? (
                                         <tr>
                                             <td colSpan={(canWriteServices || canDeleteServices) ? "5" : "4"} className="text-center py-5 text-muted">
                                                 <Package size={48} className="mb-3 opacity-50" />
@@ -161,7 +185,7 @@ const Services = () => {
                                             </td>
                                         </tr>
                                     ) : (
-                                        services.map(service => (
+                                        filteredServices.map(service => (
                                             <tr key={service.id}>
                                                 <td className="px-4 py-3 fw-medium">{service.name}</td>
                                                 <td className="px-4 py-3 text-muted">{service.description || '-'}</td>

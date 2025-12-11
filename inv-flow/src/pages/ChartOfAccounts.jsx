@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Truck, Receipt, CreditCard, Building2, Plus, Edit2, Trash2 } from 'lucide-react';
 import CustomerModal from '../components/CustomerModal';
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
 import ConfirmationModal from '../components/ConfirmationModal';
 import AlertModal from '../components/AlertModal';
-import { useData } from '../contexts/DataContext';
+import PhoneField from '../components/PhoneField';
+import { useInvoice } from '../contexts/InvoiceContext';
 import { usePermissions } from '../hooks/usePermissions';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -21,8 +22,8 @@ const ChartOfAccounts = () => {
     // Alert modal state
     const [alertModal, setAlertModal] = useState({ show: false, message: '', type: 'info', title: '' });
 
-    // Use data context
-    const { 
+    // Use invoice context
+    const {
         customers, addCustomer, updateCustomer, deleteCustomer,
         drivers, addDriver, updateDriver, deleteDriver,
         expenses, addExpenseType, updateExpenseType, deleteExpenseType,
@@ -30,7 +31,7 @@ const ChartOfAccounts = () => {
         vendors, addVendor, updateVendor, deleteVendor,
         loadCustomers, loadDrivers, loadExpenses, loadAccounts, loadVendors,
         loadingStates
-    } = useData();
+    } = useInvoice();
 
     // Permissions
     const { 
@@ -44,6 +45,11 @@ const ChartOfAccounts = () => {
 
     const showAlert = (message, type = 'info', title = '') => {
         setAlertModal({ show: true, message, type, title });
+    };
+
+    const formatCurrency = (amount) => {
+        const parsed = parseFloat(amount || 0);
+        return `AED ${Number.isFinite(parsed) ? parsed.toFixed(2) : '0.00'}`;
     };
 
     // Load all data when component mounts
@@ -129,7 +135,12 @@ const ChartOfAccounts = () => {
                 if (activeCategory === 'driver') {
                     await updateDriver({ ...editingItem, ...formData });
                 } else if (activeCategory === 'expense') {
-                    await updateExpenseType({ ...editingItem, ...formData });
+                    const parsedDefaultValue = parseFloat(formData.defaultValue);
+                    await updateExpenseType({ 
+                        ...editingItem, 
+                        ...formData, 
+                        defaultValue: formData.defaultValue === '' || Number.isNaN(parsedDefaultValue) ? null : parsedDefaultValue 
+                    });
                 } else if (activeCategory === 'bank') {
                     await updateAccount({ ...editingItem, ...formData });
                 } else if (activeCategory === 'vendor') {
@@ -140,7 +151,11 @@ const ChartOfAccounts = () => {
                 if (activeCategory === 'driver') {
                     await addDriver(formData);
                 } else if (activeCategory === 'expense') {
-                    await addExpenseType(formData);
+                    const parsedDefaultValue = parseFloat(formData.defaultValue);
+                    await addExpenseType({ 
+                        ...formData, 
+                        defaultValue: formData.defaultValue === '' || Number.isNaN(parsedDefaultValue) ? null : parsedDefaultValue 
+                    });
                 } else if (activeCategory === 'bank') {
                     await addAccount(formData);
                 } else if (activeCategory === 'vendor') {
@@ -163,6 +178,14 @@ const ChartOfAccounts = () => {
         { id: 'bank', label: 'Bank Account', icon: CreditCard }
     ];
 
+    const loadingKeyMap = {
+        customer: 'customers',
+        driver: 'drivers',
+        vendor: 'vendors',
+        expense: 'expenses',
+        bank: 'accounts'
+    };
+
     let data = [];
     let columns = [];
 
@@ -183,6 +206,8 @@ const ChartOfAccounts = () => {
         columns = ['Name', 'Account Number', 'Details'];
     }
 
+    const isLoading = loadingStates?.[loadingKeyMap[activeCategory]];
+
     const getCategoryLabel = (category) => {
         const cat = categories.find(c => c.id === category);
         return cat ? cat.label : category;
@@ -196,18 +221,32 @@ const ChartOfAccounts = () => {
             if (activeCategory === 'bank') {
                 return { accountType: 'bank' };
             }
+            if (activeCategory === 'expense') {
+                return { defaultValue: '', isPaxBased: false };
+            }
             return {};
         };
         
         const [formData, setFormData] = useState(getInitialFormData());
+        const [phoneError, setPhoneError] = useState('');
+        const defaultValueInputRef = useRef(null);
 
         // Re-initialize formData when modal opens or activeCategory changes
         useEffect(() => {
-            setFormData(getInitialFormData());
+            if (showAddModal) {
+                const initialData = getInitialFormData();
+                // Convert defaultValue to string for number inputs
+                if (initialData.defaultValue != null && initialData.defaultValue !== '') {
+                    initialData.defaultValue = String(initialData.defaultValue);
+                }
+                setFormData(initialData);
+                setPhoneError('');
+            }
         }, [showAddModal, activeCategory, editingItem]);
 
         const handleSubmit = (e) => {
             e.preventDefault();
+            if (phoneError) return;
             handleSave(formData);
         };
 
@@ -231,12 +270,14 @@ const ChartOfAccounts = () => {
                                 />
                             </div>
                             <div className="mb-3">
-                                <label className="form-label">Phone</label>
-                                <input
-                                    type="tel"
+                                <PhoneField
+                                    label="Phone"
                                     value={formData.phone || ''}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    className="form-control"
+                                    onChange={(val) => {
+                                        setFormData({ ...formData, phone: val || '' });
+                                        setPhoneError('');
+                                    }}
+                                    error={phoneError}
                                     required
                                 />
                             </div>
@@ -256,12 +297,14 @@ const ChartOfAccounts = () => {
                                 />
                             </div>
                             <div className="mb-3">
-                                <label className="form-label">Phone</label>
-                                <input
-                                    type="tel"
+                                <PhoneField
+                                    label="Phone"
                                     value={formData.phone || ''}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    className="form-control"
+                                    onChange={(val) => {
+                                        setFormData({ ...formData, phone: val || '' });
+                                        setPhoneError('');
+                                    }}
+                                    error={phoneError}
                                 />
                             </div>
                             <div className="mb-3">
@@ -309,9 +352,14 @@ const ChartOfAccounts = () => {
                             <div className="mb-3">
                                 <label className="form-label">Default Value (AED)</label>
                                 <input
+                                    ref={defaultValueInputRef}
                                     type="number"
-                                    value={formData.defaultValue || ''}
-                                    onChange={(e) => setFormData({ ...formData, defaultValue: e.target.value })}
+                                    step="0.01"
+                                    value={formData.defaultValue === 0 ? '0' : (formData.defaultValue || '')}
+                                    onChange={(e) => {
+                                        const { value } = e.target;
+                                        setFormData({ ...formData, defaultValue: value });
+                                    }}
                                     className="form-control"
                                     required
                                 />
@@ -399,6 +447,21 @@ const ChartOfAccounts = () => {
         );
     };
 
+    if (isLoading) {
+        return (
+            <div className="content-wrapper">
+                <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                    <div className="text-center">
+                        <div className="spinner-border text-primary mb-3" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                        <p className="text-muted mb-0">Loading {getCategoryLabel(activeCategory).toLowerCase()}s...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <>
             <div className="content-wrapper">
@@ -453,18 +516,21 @@ const ChartOfAccounts = () => {
                                 <thead className="table-light">
                                     <tr>
                                         {columns.map((col, i) => (
-                                            <th key={i} className="px-4 py-3">{col}</th>
+                                            <th key={i} className={`px-4 py-3 ${col.includes('Value') ? 'text-end' : ''}`}>{col}</th>
                                         ))}
                                         {(canWrite || canDelete) && (
-                                            <th className="px-4 py-3 text-center" style={{ width: '100px' }}>Actions</th>
+                                            <th className="px-4 py-3 text-center" style={{ width: '120px' }}>Actions</th>
                                         )}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {data.length === 0 ? (
                                         <tr>
-                                            <td colSpan={(canWrite || canDelete) ? columns.length + 1 : columns.length} className="text-center py-4 text-muted">
-                                                No records found. {canWrite ? 'Click "Add New" to create one.' : ''}
+                                            <td colSpan={(canWrite || canDelete) ? columns.length + 1 : columns.length} className="text-center py-5 text-muted">
+                                                <p className="mb-1">No {getCategoryLabel(activeCategory).toLowerCase()} records found.</p>
+                                                {canWrite && (
+                                                    <small>Click "Add New" to create the first record.</small>
+                                                )}
                                             </td>
                                         </tr>
                                     ) : (
@@ -495,7 +561,7 @@ const ChartOfAccounts = () => {
                                                 {activeCategory === 'expense' && (
                                                     <>
                                                         <td className="px-4 py-3 fw-medium">{item.name}</td>
-                                                        <td className="px-4 py-3">AED {item.defaultValue}</td>
+                                                        <td className="px-4 py-3 text-end">{item.defaultValue == null ? '-' : formatCurrency(item.defaultValue)}</td>
                                                         <td className="px-4 py-3">
                                                             {item.isPaxBased ? (
                                                                 <span className="badge bg-primary">Yes</span>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit2, Trash2, Lock, User as UserIcon, Image, PenTool, Check, Upload, X } from 'lucide-react';
-import { usersAPI, rolesAPI, permissionsAPI, signaturesAPI, companySettingsAPI } from '../services/api';
+import { useAdmin } from '../contexts/AdminContext';
 import SignatureCanvas from '../components/SignatureCanvas';
 import Modal from '../components/Modal';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -9,17 +9,20 @@ import { usePermissions } from '../hooks/usePermissions';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Admin = () => {
+    const {
+        users, roles, permissions, signatures, companySettings,
+        loadingStates,
+        loadUsers, loadRoles, loadPermissions, loadSignatures, loadCompanySettings,
+        createUser, updateUser, deleteUser,
+        createRole, updateRole, deleteRole,
+        createSignature, setActiveSignature, deleteSignature,
+        updateEmailSettings, updateLogo, clearLogo
+    } = useAdmin();
+
     const [activeTab, setActiveTab] = useState('users');
-    const [users, setUsers] = useState([]);
-    const [roles, setRoles] = useState([]);
-    const [permissions, setPermissions] = useState([]);
-    const [signatures, setSignatures] = useState([]);
-    const [companySettings, setCompanySettings] = useState(null);
-    const [loading, setLoading] = useState(false);
     const [showUserModal, setShowUserModal] = useState(false);
     const [showRoleModal, setShowRoleModal] = useState(false);
     const [showSignatureModal, setShowSignatureModal] = useState(false);
-    const [showEmailModal, setShowEmailModal] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [currentRole, setCurrentRole] = useState(null);
     const [userForm, setUserForm] = useState({
@@ -27,23 +30,24 @@ const Admin = () => {
         email: '',
         password: '',
         fullName: '',
-        roleIds: []
+        roleIds: [],
+        isActive: true
     });
     const [roleForm, setRoleForm] = useState({
         name: '',
         description: '',
         permissionIds: []
     });
-    const logoInputRef = useRef(null);
-    const [emailForm, setEmailForm] = useState({
+    const [smtpForm, setSmtpForm] = useState({
         smtpHost: '',
         smtpPort: '',
         smtpUser: '',
         smtpPassword: '',
         fromEmail: '',
         fromName: '',
-        enableSsl: true,
+        enableSsl: true
     });
+    const logoInputRef = useRef(null);
 
     // Confirmation modals state
     const [deleteUserModal, setDeleteUserModal] = useState({ show: false, user: null });
@@ -73,66 +77,52 @@ const Admin = () => {
     ];
 
     useEffect(() => {
-        loadData();
+        if (activeTab === 'users') {
+            loadUsers(true);
+            loadRoles(true);
+        } else if (activeTab === 'roles') {
+            loadRoles(true);
+            loadPermissions(true);
+        } else if (activeTab === 'invoice-settings') {
+            loadSignatures(true);
+            loadCompanySettings(true);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab]);
 
-    const loadData = async () => {
-        setLoading(true);
-        try {
-            if (activeTab === 'users') {
-                const [usersData, rolesData] = await Promise.all([
-                    usersAPI.getAll(),
-                    rolesAPI.getAll()
-                ]);
-                setUsers(usersData);
-                setRoles(rolesData);
-            } else if (activeTab === 'roles') {
-                const [rolesData, permissionsData] = await Promise.all([
-                    rolesAPI.getAll(),
-                    permissionsAPI.getAll()
-                ]);
-                setRoles(rolesData);
-                setPermissions(permissionsData);
-            } else if (activeTab === 'invoice-settings') {
-                const [signaturesData, settingsData] = await Promise.all([
-                    signaturesAPI.getAll(),
-                    companySettingsAPI.get()
-                ]);
-                setSignatures(signaturesData);
-                setCompanySettings(settingsData);
-                setEmailForm({
-                    smtpHost: settingsData.smtpHost || '',
-                    smtpPort: settingsData.smtpPort || '',
-                    smtpUser: settingsData.smtpUser || '',
-                    smtpPassword: settingsData.smtpPassword || '',
-                    fromEmail: settingsData.fromEmail || '',
-                    fromName: settingsData.fromName || '',
-                    enableSsl: settingsData.enableSsl !== undefined ? settingsData.enableSsl : true,
-                });
-            }
-        } catch (error) {
-            console.error('Error loading data:', error);
-            showAlert('Error loading data', 'error');
-        } finally {
-            setLoading(false);
+    // Sync SMTP form with latest company settings when loaded
+    useEffect(() => {
+        if (companySettings) {
+            setSmtpForm({
+                smtpHost: companySettings.smtpHost || '',
+                smtpPort: companySettings.smtpPort?.toString() || '',
+                smtpUser: companySettings.smtpUser || '',
+                smtpPassword: '', // never prefill passwords
+                fromEmail: companySettings.fromEmail || companySettings.email || '',
+                fromName: companySettings.fromName || companySettings.companyName || '',
+                enableSsl: companySettings.enableSsl ?? true
+            });
         }
-    };
+    }, [companySettings]);
 
     const handleUserSubmit = async (e) => {
         e.preventDefault();
         try {
             if (currentUser) {
-                await usersAPI.update(currentUser.id, {
+                await updateUser(currentUser.id, {
                     email: userForm.email,
                     fullName: userForm.fullName,
-                    roleIds: userForm.roleIds
+                    roleIds: userForm.roleIds,
+                    isActive: userForm.isActive
                 });
             } else {
-                await usersAPI.create(userForm);
+                await createUser(userForm);
             }
             setShowUserModal(false);
             resetUserForm();
-            loadData();
+            // Force reload to ensure fresh data
+            await loadUsers(true);
+            await loadRoles(true);
         } catch (error) {
             showAlert('Error saving user: ' + error.message, 'error');
         }
@@ -142,13 +132,14 @@ const Admin = () => {
         e.preventDefault();
         try {
             if (currentRole) {
-                await rolesAPI.update(currentRole.id, roleForm);
+                await updateRole(currentRole.id, roleForm);
             } else {
-                await rolesAPI.create(roleForm);
+                await createRole(roleForm);
             }
             setShowRoleModal(false);
             resetRoleForm();
-            loadData();
+            // Force reload to ensure fresh data
+            await loadRoles(true);
         } catch (error) {
             showAlert('Error saving role: ' + error.message, 'error');
         }
@@ -156,9 +147,10 @@ const Admin = () => {
 
     const handleDeleteUser = async () => {
         try {
-            await usersAPI.delete(deleteUserModal.user.id);
+            await deleteUser(deleteUserModal.user.id);
             setDeleteUserModal({ show: false, user: null });
-            loadData();
+            // Force reload to ensure fresh data
+            await loadUsers(true);
         } catch (error) {
             showAlert('Error deleting user: ' + error.message, 'error');
         }
@@ -166,9 +158,10 @@ const Admin = () => {
 
     const handleDeleteRole = async () => {
         try {
-            await rolesAPI.delete(deleteRoleModal.role.id);
+            await deleteRole(deleteRoleModal.role.id);
             setDeleteRoleModal({ show: false, role: null });
-            loadData();
+            // Force reload to ensure fresh data
+            await loadRoles(true);
         } catch (error) {
             showAlert('Error deleting role: ' + error.message, 'error');
         }
@@ -181,7 +174,8 @@ const Admin = () => {
             email: user.email,
             password: '',
             fullName: user.fullName || '',
-            roleIds: user.roles.map(r => roles.find(role => role.name === r)?.id).filter(Boolean)
+            roleIds: user.roles.map(r => roles.find(role => role.name === r)?.id).filter(Boolean),
+            isActive: user.isActive !== undefined ? user.isActive : true
         });
         setShowUserModal(true);
     };
@@ -203,7 +197,8 @@ const Admin = () => {
             email: '',
             password: '',
             fullName: '',
-            roleIds: []
+            roleIds: [],
+            isActive: true
         });
     };
 
@@ -216,31 +211,12 @@ const Admin = () => {
         });
     };
 
-    const handleSaveEmailSettings = async (e) => {
-        e.preventDefault();
-        try {
-            await companySettingsAPI.updateEmail({
-                smtpHost: emailForm.smtpHost,
-                smtpPort: emailForm.smtpPort ? parseInt(emailForm.smtpPort, 10) : null,
-                smtpUser: emailForm.smtpUser,
-                smtpPassword: emailForm.smtpPassword,
-                fromEmail: emailForm.fromEmail,
-                fromName: emailForm.fromName,
-                enableSsl: emailForm.enableSsl,
-            });
-            showAlert('Email settings saved', 'success');
-            setShowEmailModal(false);
-            loadData();
-        } catch (error) {
-            showAlert('Error saving email settings: ' + error.message, 'error');
-        }
-    };
-
     const handleSaveSignature = async (name, imageData) => {
         try {
-            await signaturesAPI.create({ name, imageData });
+            await createSignature({ name, imageData });
             setShowSignatureModal(false);
-            loadData();
+            // Force reload to ensure fresh data
+            await loadSignatures(true);
         } catch (error) {
             showAlert('Error saving signature: ' + error.message, 'error');
         }
@@ -248,8 +224,8 @@ const Admin = () => {
 
     const handleSetActiveSignature = async (id) => {
         try {
-            await signaturesAPI.setActive(id);
-            loadData();
+            await setActiveSignature(id);
+            // Context handles reload
         } catch (error) {
             showAlert('Error setting active signature: ' + error.message, 'error');
         }
@@ -257,11 +233,37 @@ const Admin = () => {
 
     const handleDeleteSignature = async () => {
         try {
-            await signaturesAPI.delete(deleteSignatureModal.signature.id);
+            await deleteSignature(deleteSignatureModal.signature.id);
             setDeleteSignatureModal({ show: false, signature: null });
-            loadData();
+            // Force reload to ensure fresh data
+            await loadSignatures(true);
         } catch (error) {
             showAlert('Error deleting signature: ' + error.message, 'error');
+        }
+    };
+
+    const handleSmtpSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const payload = {
+                smtpHost: smtpForm.smtpHost || null,
+                smtpPort: smtpForm.smtpPort ? parseInt(smtpForm.smtpPort, 10) : null,
+                smtpUser: smtpForm.smtpUser || null,
+                fromEmail: smtpForm.fromEmail || null,
+                fromName: smtpForm.fromName || null,
+                enableSsl: smtpForm.enableSsl
+            };
+            if (smtpForm.smtpPassword) {
+                payload.smtpPassword = smtpForm.smtpPassword;
+            }
+
+            await updateEmailSettings(payload);
+            showAlert('Email settings updated successfully', 'success');
+            await loadCompanySettings(true);
+            // Clear password field after save
+            setSmtpForm(prev => ({ ...prev, smtpPassword: '' }));
+        } catch (error) {
+            showAlert('Error updating email settings: ' + error.message, 'error');
         }
     };
 
@@ -283,11 +285,11 @@ const Admin = () => {
             const reader = new FileReader();
             reader.onloadend = async () => {
                 const imageData = reader.result;
-                await companySettingsAPI.updateLogo({
+                await updateLogo({
                     logoImageData: imageData,
                     fileName: file.name
                 });
-                loadData();
+                // Context handles reload
             };
             reader.readAsDataURL(file);
         } catch (error) {
@@ -297,9 +299,9 @@ const Admin = () => {
 
     const handleClearLogo = async () => {
         try {
-            await companySettingsAPI.clearLogo();
+            await clearLogo();
             setClearLogoModal(false);
-            loadData();
+            // Context handles reload
         } catch (error) {
             showAlert('Error removing logo: ' + error.message, 'error');
         }
@@ -348,7 +350,8 @@ const Admin = () => {
 
                 {/* Content */}
                 <div className="card-body p-4">
-                    {loading ? (
+                    {(loadingStates.users || loadingStates.roles || loadingStates.permissions || 
+                      loadingStates.signatures || loadingStates.companySettings) ? (
                         <div className="text-center py-5">
                             <div className="spinner-border text-primary" role="status">
                                 <span className="visually-hidden">Loading...</span>
@@ -683,49 +686,144 @@ const Admin = () => {
                                             </div>
                                         </div>
 
+                                        {/* SMTP / Email Settings */}
+                                        <div className="col-12">
+                                            <div className="card border">
+                                                <div className="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                                                    <h6 className="mb-0 d-flex align-items-center gap-2">
+                                                        <PenTool size={16} />
+                                                        SMTP / Email Settings
+                                                    </h6>
+                                                </div>
+                                                <div className="card-body">
+                                                    <form onSubmit={handleSmtpSubmit} className="row g-3">
+                                                        <div className="col-md-6">
+                                                            <label className="form-label small fw-medium">SMTP Host</label>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control form-control-sm"
+                                                                value={smtpForm.smtpHost}
+                                                                onChange={(e) => setSmtpForm({ ...smtpForm, smtpHost: e.target.value })}
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <div className="col-md-2">
+                                                            <label className="form-label small fw-medium">SMTP Port</label>
+                                                            <input
+                                                                type="number"
+                                                                className="form-control form-control-sm"
+                                                                value={smtpForm.smtpPort}
+                                                                onChange={(e) => setSmtpForm({ ...smtpForm, smtpPort: e.target.value })}
+                                                                min="1"
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <div className="col-md-4">
+                                                            <label className="form-label small fw-medium">SMTP Username</label>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control form-control-sm"
+                                                                value={smtpForm.smtpUser}
+                                                                onChange={(e) => setSmtpForm({ ...smtpForm, smtpUser: e.target.value })}
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <div className="col-md-6">
+                                                            <label className="form-label small fw-medium">SMTP Password</label>
+                                                            <input
+                                                                type="password"
+                                                                className="form-control form-control-sm"
+                                                                value={smtpForm.smtpPassword}
+                                                                placeholder="Leave blank to keep existing"
+                                                                onChange={(e) => setSmtpForm({ ...smtpForm, smtpPassword: e.target.value })}
+                                                            />
+                                                        </div>
+                                                        <div className="col-md-6">
+                                                            <label className="form-label small fw-medium">From Email</label>
+                                                            <input
+                                                                type="email"
+                                                                className="form-control form-control-sm"
+                                                                value={smtpForm.fromEmail}
+                                                                onChange={(e) => setSmtpForm({ ...smtpForm, fromEmail: e.target.value })}
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <div className="col-md-6">
+                                                            <label className="form-label small fw-medium">From Name</label>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control form-control-sm"
+                                                                value={smtpForm.fromName}
+                                                                onChange={(e) => setSmtpForm({ ...smtpForm, fromName: e.target.value })}
+                                                            />
+                                                        </div>
+                                                        <div className="col-md-6 d-flex align-items-end">
+                                                            <div className="form-check form-switch">
+                                                                <input
+                                                                    className="form-check-input"
+                                                                    type="checkbox"
+                                                                    id="smtpEnableSsl"
+                                                                    checked={smtpForm.enableSsl}
+                                                                    onChange={(e) => setSmtpForm({ ...smtpForm, enableSsl: e.target.checked })}
+                                                                />
+                                                                <label className="form-check-label" htmlFor="smtpEnableSsl">
+                                                                    Enable SSL
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                        <div className="col-12">
+                                                            <div className="d-flex gap-2">
+                                                                <button type="submit" className="btn btn-sm btn-primary">
+                                                                    Save Email Settings
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-sm btn-outline-secondary"
+                                                                    onClick={() => setSmtpForm({
+                                                                        smtpHost: companySettings?.smtpHost || '',
+                                                                        smtpPort: companySettings?.smtpPort?.toString() || '',
+                                                                        smtpUser: companySettings?.smtpUser || '',
+                                                                        smtpPassword: '',
+                                                                        fromEmail: companySettings?.fromEmail || companySettings?.email || '',
+                                                                        fromName: companySettings?.fromName || companySettings?.companyName || '',
+                                                                        enableSsl: companySettings?.enableSsl ?? true
+                                                                    })}
+                                                                >
+                                                                    Reset
+                                                                </button>
+                                                            </div>
+                                                            <small className="text-muted d-block mt-2">
+                                                                Password is optional; leave blank to keep the current password.
+                                                            </small>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         {/* Company Information Section */}
                                         {companySettings && (
-                                            <>
-                                                <div className="col-md-6">
-                                                    <div className="card border h-100">
-                                                        <div className="card-header bg-light py-2">
-                                                            <h6 className="mb-0">Company Information</h6>
-                                                        </div>
-                                                        <div className="card-body">
-                                                            <p className="mb-2 small"><strong>Company Name:</strong> {companySettings.companyName}</p>
-                                                            <p className="mb-2 small"><strong>Address:</strong> {companySettings.address || '-'}</p>
-                                                            <p className="mb-2 small"><strong>Phone:</strong> {companySettings.phone || '-'}</p>
-                                                            <p className="mb-2 small"><strong>Email:</strong> {companySettings.email || '-'}</p>
-                                                            <p className="mb-2 small"><strong>Website:</strong> {companySettings.website || '-'}</p>
-                                                            <p className="mb-0 small"><strong>TRN:</strong> {companySettings.trn || '-'}</p>
+                                            <div className="col-12">
+                                                <div className="card border">
+                                                    <div className="card-header bg-light py-2">
+                                                        <h6 className="mb-0">Company Information</h6>
+                                                    </div>
+                                                    <div className="card-body">
+                                                        <div className="row">
+                                                            <div className="col-md-6">
+                                                                <p className="mb-2 small"><strong>Company Name:</strong> {companySettings.companyName}</p>
+                                                                <p className="mb-2 small"><strong>Address:</strong> {companySettings.address || '-'}</p>
+                                                                <p className="mb-2 small"><strong>Phone:</strong> {companySettings.phone || '-'}</p>
+                                                            </div>
+                                                            <div className="col-md-6">
+                                                                <p className="mb-2 small"><strong>Email:</strong> {companySettings.email || '-'}</p>
+                                                                <p className="mb-2 small"><strong>Website:</strong> {companySettings.website || '-'}</p>
+                                                                <p className="mb-2 small"><strong>TRN:</strong> {companySettings.trn || '-'}</p>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-
-                                                {/* Email / SMTP Section */}
-                                                <div className="col-md-6">
-                                                    <div className="card border h-100">
-                                                        <div className="card-header bg-light py-2 d-flex justify-content-between align-items-center">
-                                                            <h6 className="mb-0">Email / SMTP</h6>
-                                                            {canWriteCompanySettings && (
-                                                                <button
-                                                                    className="btn btn-sm btn-primary"
-                                                                    onClick={() => setShowEmailModal(true)}
-                                                                >
-                                                                    Configure
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                        <div className="card-body">
-                                                            <p className="mb-2 small"><strong>SMTP Host:</strong> {companySettings.smtpHost || '-'}</p>
-                                                            <p className="mb-2 small"><strong>Port:</strong> {companySettings.smtpPort || '-'}</p>
-                                                            <p className="mb-2 small"><strong>User:</strong> {companySettings.smtpUser || '-'}</p>
-                                                            <p className="mb-2 small"><strong>From Email:</strong> {companySettings.fromEmail || companySettings.smtpUser || '-'}</p>
-                                                            <p className="mb-0 small"><strong>SSL:</strong> {companySettings.enableSsl ? 'Enabled' : 'Disabled'}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -734,90 +832,6 @@ const Admin = () => {
                     )}
                 </div>
             </div>
-
-            {/* Email Settings Modal */}
-            <Modal
-                show={showEmailModal}
-                onClose={() => setShowEmailModal(false)}
-                title="Email / SMTP Settings"
-            >
-                <form onSubmit={handleSaveEmailSettings}>
-                    <div className="mb-3">
-                        <label className="form-label small fw-medium">SMTP Host</label>
-                        <input
-                            type="text"
-                            className="form-control form-control-sm"
-                            value={emailForm.smtpHost}
-                            onChange={(e) => setEmailForm({ ...emailForm, smtpHost: e.target.value })}
-                            required
-                        />
-                    </div>
-                    <div className="mb-3">
-                        <label className="form-label small fw-medium">SMTP Port</label>
-                        <input
-                            type="number"
-                            className="form-control form-control-sm"
-                            value={emailForm.smtpPort}
-                            onChange={(e) => setEmailForm({ ...emailForm, smtpPort: e.target.value })}
-                            required
-                            min="1"
-                        />
-                    </div>
-                    <div className="mb-3">
-                        <label className="form-label small fw-medium">SMTP User</label>
-                        <input
-                            type="text"
-                            className="form-control form-control-sm"
-                            value={emailForm.smtpUser}
-                            onChange={(e) => setEmailForm({ ...emailForm, smtpUser: e.target.value })}
-                            required
-                        />
-                    </div>
-                    <div className="mb-3">
-                        <label className="form-label small fw-medium">SMTP Password</label>
-                        <input
-                            type="password"
-                            className="form-control form-control-sm"
-                            value={emailForm.smtpPassword}
-                            onChange={(e) => setEmailForm({ ...emailForm, smtpPassword: e.target.value })}
-                            required
-                        />
-                    </div>
-                    <div className="mb-3">
-                        <label className="form-label small fw-medium">From Email</label>
-                        <input
-                            type="email"
-                            className="form-control form-control-sm"
-                            value={emailForm.fromEmail}
-                            onChange={(e) => setEmailForm({ ...emailForm, fromEmail: e.target.value })}
-                            required
-                        />
-                    </div>
-                    <div className="mb-3">
-                        <label className="form-label small fw-medium">From Name</label>
-                        <input
-                            type="text"
-                            className="form-control form-control-sm"
-                            value={emailForm.fromName}
-                            onChange={(e) => setEmailForm({ ...emailForm, fromName: e.target.value })}
-                        />
-                    </div>
-                    <div className="form-check form-switch mb-3">
-                        <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id="enableSsl"
-                            checked={emailForm.enableSsl}
-                            onChange={(e) => setEmailForm({ ...emailForm, enableSsl: e.target.checked })}
-                        />
-                        <label className="form-check-label" htmlFor="enableSsl">Enable SSL</label>
-                    </div>
-                    <div className="d-flex justify-content-end gap-2">
-                        <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowEmailModal(false)}>Cancel</button>
-                        <button type="submit" className="btn btn-sm btn-primary">Save</button>
-                    </div>
-                </form>
-            </Modal>
 
             {/* User Modal */}
             <Modal
@@ -868,6 +882,25 @@ const Admin = () => {
                             onChange={(e) => setUserForm({ ...userForm, fullName: e.target.value })}
                         />
                     </div>
+                    {currentUser && (
+                        <div className="mb-3">
+                            <div className="form-check form-switch">
+                                <input
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    id="userIsActive"
+                                    checked={userForm.isActive}
+                                    onChange={(e) => setUserForm({ ...userForm, isActive: e.target.checked })}
+                                />
+                                <label className="form-check-label" htmlFor="userIsActive">
+                                    Active User
+                                </label>
+                            </div>
+                            <small className="text-muted d-block mt-1">
+                                Inactive users cannot log in to the system
+                            </small>
+                        </div>
+                    )}
                     <div className="mb-3">
                         <label className="form-label small fw-medium">Roles</label>
                         <div className="border rounded p-2" style={{ maxHeight: '150px', overflowY: 'auto' }}>

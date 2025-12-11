@@ -133,7 +133,7 @@ public class InvoiceService : IInvoiceService
             Total = total,
             Paid = paid,
             Status = status,
-            TripType = Enum.TryParse<TripType>(dto.TripType, ignoreCase: true, out var tripType) ? tripType : TripType.Day,
+            TripType = Enum.TryParse<TripType>(dto.TripType, ignoreCase: true, out var tripType) ? tripType : TripType.Morning,
             TripMode = Enum.TryParse<TripMode>(dto.TripMode, ignoreCase: true, out var tripMode) ? tripMode : TripMode.Shared,
             CreatedByUserId = userId,
             CreatedAt = DateTime.UtcNow // Explicitly set creation date/time
@@ -609,7 +609,7 @@ public class InvoiceService : IInvoiceService
     public async Task<List<DriverScheduleDto>> GetDriverScheduleAsync()
     {
         // Get all invoices with drivers assigned
-        // Using invoice.Date (service date) for calendar display
+        // Using invoice.Date as the tour date for calendar display
         var invoices = await _context.Invoices
             .Where(i => i.DriverId != null)
             .Include(i => i.Customer)
@@ -622,7 +622,7 @@ public class InvoiceService : IInvoiceService
         // Filter out any invoices where Driver is null (shouldn't happen, but safety check)
         var validInvoices = invoices
             .Where(i => i.DriverId.HasValue && i.Driver != null)
-            .OrderBy(i => i.Date) // Order by service date (invoice.Date)
+            .OrderBy(i => i.Date) // Order by tour date (invoice.Date)
             .ThenBy(i => i.Driver!.Name)
             .ToList();
 
@@ -631,9 +631,9 @@ public class InvoiceService : IInvoiceService
             return new List<DriverScheduleDto>();
         }
 
-        // Group by driver and service date (invoice.Date) in memory
+        // Group by driver and tour date (invoice.Date) in memory
         var schedule = validInvoices
-            .GroupBy(i => new { DriverId = i.DriverId!.Value, i.Date }) // Group by service date
+            .GroupBy(i => new { DriverId = i.DriverId!.Value, i.Date }) // Group by tour date
             .Select(g => 
             {
                 var firstInvoice = g.First();

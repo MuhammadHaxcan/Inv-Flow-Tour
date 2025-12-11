@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useData } from '../contexts/DataContext';
+import { useInvoice } from '../contexts/InvoiceContext';
 import SearchableSelect from './SearchableSelect';
 
 const ExpenseForm = ({ expenseTypes, vendors = [], onSave, onCancel, invoice, expense }) => {
     // Get expense default values from context
-    const { expenses } = useData();
+    const { expenses } = useInvoice();
     
     // Initialize with existing expense data if provided, otherwise use defaults
     const [formData, setFormData] = useState({

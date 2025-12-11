@@ -27,11 +27,24 @@ public class AuthService : IAuthService
                 .ThenInclude(ur => ur.Role)
                     .ThenInclude(r => r.RolePermissions)
                         .ThenInclude(rp => rp.Permission)
-            .FirstOrDefaultAsync(u => u.Username == loginDto.Username && u.IsActive);
+            .FirstOrDefaultAsync(u => u.Username == loginDto.Username);
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
+        // Check if user exists
+        if (user == null)
         {
-            return null;
+            return null; // Invalid username
+        }
+
+        // Check if user is active
+        if (!user.IsActive)
+        {
+            throw new UnauthorizedAccessException("Your account has been disabled. Please contact your administrator.");
+        }
+
+        // Verify password
+        if (!BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
+        {
+            return null; // Invalid password
         }
 
         user.LastLoginAt = DateTime.UtcNow;

@@ -1,25 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, ChevronDown, ChevronUp, DollarSign, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
-import { useData } from '../contexts/DataContext';
+import { useTransaction } from '../contexts/TransactionContext';
 import SearchableSelect from '../components/SearchableSelect';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const BankStatement = () => {
-    const { transactions, accounts, loadTransactions, loadAccounts, loadingStates } = useData();
+    const { transactions, accounts, loadTransactions, loadAccounts, loadingStates } = useTransaction();
 
     // Load only needed data when component mounts
     useEffect(() => {
         loadTransactions();
         loadAccounts();
-    }, [loadTransactions, loadAccounts]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
 
     // States
     const [filteredTransactions, setFilteredTransactions] = useState([]);
     const [expandedTransaction, setExpandedTransaction] = useState(null);
     const [selectedAccount, setSelectedAccount] = useState('all');
+    const [searchTerm, setSearchTerm] = useState('');
     const [dateRange, setDateRange] = useState({
-        startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0]
+        startDate: '',
+        endDate: ''
     });
 
     // Filter transactions when filters change
@@ -31,14 +33,40 @@ const BankStatement = () => {
             filtered = filtered.filter(t => t.account === selectedAccount);
         }
 
-        // Filter by date range
-        filtered = filtered.filter(t => {
-            const txDate = new Date(t.date);
-            const start = new Date(dateRange.startDate);
-            const end = new Date(dateRange.endDate);
-            end.setHours(23, 59, 59);
-            return txDate >= start && txDate <= end;
-        });
+        // Filter by search term (description, invoice #, account)
+        const term = searchTerm.trim().toLowerCase();
+        if (term) {
+            filtered = filtered.filter(t =>
+                (t.description || '').toLowerCase().includes(term) ||
+                (t.invoiceNumber || '').toLowerCase().includes(term) ||
+                (t.account || '').toLowerCase().includes(term)
+            );
+        }
+
+        // Filter by date range - only filter if dates are provided
+        if (dateRange.startDate || dateRange.endDate) {
+            filtered = filtered.filter(t => {
+                const txDate = new Date(t.date);
+                
+                // Check start date if provided
+                if (dateRange.startDate) {
+                    const start = new Date(dateRange.startDate);
+                    if (txDate < start) return false;
+                }
+                
+                // Check end date if provided
+                if (dateRange.endDate) {
+                    const end = new Date(dateRange.endDate);
+                    end.setHours(23, 59, 59, 999); // Include the entire end date
+                    if (txDate > end) return false;
+                }
+                
+                return true;
+            });
+        }
+
+        // Ensure chronological order before calculating running balances
+        filtered = filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
 
         // Calculate running balances
         let runningBalance = 0;
@@ -48,7 +76,7 @@ const BankStatement = () => {
         });
 
         setFilteredTransactions(filtered);
-    }, [transactions, selectedAccount, dateRange]);
+    }, [transactions, selectedAccount, dateRange, searchTerm]);
 
     const toggleExpand = (id) => {
         setExpandedTransaction(expandedTransaction === id ? null : id);
@@ -73,10 +101,11 @@ const BankStatement = () => {
 
     const handleReset = () => {
         setDateRange({
-            startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-            endDate: new Date().toISOString().split('T')[0]
+            startDate: '',
+            endDate: ''
         });
         setSelectedAccount('all');
+        setSearchTerm('');
     };
 
     const isLoading = loadingStates.transactions || loadingStates.accounts;
@@ -142,6 +171,17 @@ const BankStatement = () => {
                                 value={dateRange.endDate}
                                 onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
                                 className="form-control form-control-sm"
+                            />
+                        </div>
+
+                        <div className="col-md-3">
+                            <label className="form-label small fw-medium mb-1">Search</label>
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="form-control form-control-sm"
+                                placeholder="Search description, invoice #, account"
                             />
                         </div>
 

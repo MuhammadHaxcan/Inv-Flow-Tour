@@ -2,9 +2,14 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import { FileText, Building2, FileCheck2, CheckCircle, CreditCard, Tag, Calendar, Users, LogOut, BarChart3, Receipt, Truck } from 'lucide-react'
 import './App.css'
-import { DataProvider, useData } from './contexts/DataContext'
+import { InvoiceProvider, useInvoice } from './contexts/InvoiceContext'
+import { TransactionProvider, useTransaction } from './contexts/TransactionContext'
+import { ServicesProvider, useServices } from './contexts/ServicesContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { AdminProvider } from './contexts/AdminContext'
 import { usePermissions } from './hooks/usePermissions'
+import ErrorBoundary from './components/ErrorBoundary'
+import LoadingOverlay from './components/LoadingOverlay'
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 // Lazy load pages for code splitting
@@ -16,7 +21,7 @@ const ClosedInvoices = lazy(() => import('./pages/ClosedInvoices'));
 const OutstandingExpenses = lazy(() => import('./pages/OutstandingExpenses'));
 const BankStatement = lazy(() => import('./pages/BankStatement'));
 const Services = lazy(() => import('./pages/Services'));
-const CalendarView = lazy(() => import('./pages/CalendarView'));
+const CalendarView = lazy(() => import('./pages/CalendarView'));  
 const DriverSchedule = lazy(() => import('./pages/DriverSchedule'));
 const Admin = lazy(() => import('./pages/Admin'));
 const Reports = lazy(() => import('./pages/Reports'));
@@ -32,6 +37,35 @@ const PageLoader = () => (
         </div>
     </div>
 );
+
+// Home redirect component that handles authentication loading properly
+const HomeRedirect = () => {
+    const { isAuthenticated, loading } = useAuth();
+
+    // If still loading authentication state, show a brief loading message
+    // but don't keep the user stuck - allow navigation to proceed
+    if (loading) {
+        return (
+            <div className="min-vh-100 d-flex align-items-center justify-content-center">
+                <div className="text-center">
+                    <div className="spinner-border text-primary mb-3" role="status">
+                        <span className="visually-hidden">Checking authentication...</span>
+                    </div>
+                    <p className="text-muted">Checking authentication...</p>
+                    <small className="text-muted">If this takes too long, try refreshing the page</small>
+                </div>
+            </div>
+        );
+    }
+
+    // Redirect based on authentication state
+    // Use replace to avoid building up history
+    if (!isAuthenticated) {
+        return <Navigate to="/login" replace />;
+    }
+
+    return <Navigate to="/open-invoices" replace />;
+};
 
 function ProtectedRoute({ children, requiredPermission, requiredPermissions }) {
     const { isAuthenticated, hasPermission, hasAnyPermission, loading } = useAuth();
@@ -71,51 +105,52 @@ function ProtectedRoute({ children, requiredPermission, requiredPermissions }) {
 }
 
 function Navbar() {
-    const { user, logout, isAuthenticated } = useAuth();
-    const { companySettings, loadCompanySettings } = useData();
-    const companyName = companySettings?.companyName || 'SKT-Tourisn';
-    const logoSrc = companySettings?.logoImageData;
-
-    useEffect(() => {
-        loadCompanySettings();
-    }, [loadCompanySettings]);
+    const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
+    const { companySettings, loadCompanySettings } = useInvoice();
     const {
         // Invoice permissions
         canReadInvoices,
         canWriteInvoices,
         canReadClosedInvoices,
-        
+
         // Service permissions
         canReadServices,
-        
+
         // Account permissions
         canReadAccounts,
-        
+
         // Transaction permissions
         canReadTransactions,
-        
+
         // Report permissions
         canReadReports,
-        
+
         // Admin permissions
         canReadUsers,
         canReadRoles,
         canReadPermissions,
-        
+
         // Composite permissions
         canAccessAdmin,
         canManageInvoices,
         canManageServices,
         canManageAccounts
     } = usePermissions();
+    const companyName = companySettings?.companyName || 'SKT-Tourisn';
+    const logoSrc = companySettings?.logoImageData;
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        loadCompanySettings();
+    }, [isAuthenticated, loadCompanySettings]);
+
+    // Hide navbar (and logout) when user is not authenticated or still loading
+    if (!isAuthenticated || authLoading) {
+        return null;
+    }
 
     // Check if user has any invoice-related permissions
     const showInvoicesDropdown = canReadInvoices || canWriteInvoices || canReadClosedInvoices;
-
-    // Hide navbar (and logout) when user is not authenticated, e.g., on login page
-    if (!isAuthenticated) {
-        return null;
-    }
 
     return (
         <nav className="bg-white border-bottom shadow-sm w-100">
@@ -335,87 +370,143 @@ function Navbar() {
 }
 
 function AppContent() {
+    const GlobalLoadingOverlay = () => {
+        // Aggregate loading states from all contexts
+        const invoiceContext = useInvoice();
+        const transactionContext = useTransaction();
+        const servicesContext = useServices();
+
+        // Collect active loading flags with context prefixes so we can see what's stuck
+        const activeFlags = [
+            // Only show critical global loading states, not page-specific ones
+            // Exclude: openInvoices, closedInvoices, customers, drivers, services, accounts, expenses, vendors, companySettings, nextInvoiceNumber
+            ...Object.entries(invoiceContext.loadingStates || {})
+                .filter(([k, v]) => !!v && !['openInvoices', 'closedInvoices', 'customers', 'drivers', 'services', 'accounts', 'expenses', 'vendors', 'companySettings', 'nextInvoiceNumber'].includes(k))
+                .map(([k]) => `invoice.${k}`),
+            ...Object.entries(transactionContext.loadingStates || {}).filter(([, v]) => !!v).map(([k]) => `transaction.${k}`),
+            ...Object.entries(servicesContext.loadingStates || {}).filter(([, v]) => !!v).map(([k]) => `services.${k}`),
+        ];
+
+        const isLoading = activeFlags.length > 0;
+        const message = activeFlags.length
+            ? `Loading: ${activeFlags.slice(0, 4).join(', ')}${activeFlags.length > 4 ? '…' : ''}`
+            : 'Loading data...';
+
+        return <LoadingOverlay active={isLoading} message={message} />;
+    };
+
     return (
-        <DataProvider>
-            <div className="min-vh-100 bg-light d-flex flex-column">
-                <Navbar />
-                <div className="flex-grow-1">
-                    <Suspense fallback={<PageLoader />}>
-                        <Routes>
-                            <Route path="/login" element={<Login />} />
-                            <Route path="/" element={
-                                <ProtectedRoute requiredPermissions={['invoices.read', 'invoices.write']}>
-                                    <Navigate to="/open-invoices" replace />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/generateinvoice" element={
-                                <ProtectedRoute requiredPermission="invoices.write">
-                                    <GenerateInvoice />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/open-invoices" element={
-                                <ProtectedRoute requiredPermission="invoices.read">
-                                    <OpenInvoices />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/closed-invoices" element={
-                                <ProtectedRoute requiredPermission="closedinvoices.read">
-                                    <ClosedInvoices />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/outstanding-expenses" element={
-                                <ProtectedRoute requiredPermission="invoices.read">
-                                    <OutstandingExpenses />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/calendar" element={
-                                <ProtectedRoute requiredPermission="invoices.read">
-                                    <CalendarView />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/driver-schedule" element={
-                                <ProtectedRoute requiredPermission="invoices.read">
-                                    <DriverSchedule />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/bank-statement" element={
-                                <ProtectedRoute requiredPermission="transactions.read">
-                                    <BankStatement />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/services" element={
-                                <ProtectedRoute requiredPermission="services.read">
-                                    <Services />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/accounts" element={
-                                <ProtectedRoute requiredPermission="accounts.read">
-                                    <ChartOfAccounts />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/admin" element={
-                                <ProtectedRoute requiredPermissions={['users.read', 'roles.read', 'permissions.read']}>
-                                    <Admin />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/reports" element={
-                                <ProtectedRoute requiredPermission="reports.read">
-                                    <Reports />
-                                </ProtectedRoute>
-                            } />
-                        </Routes>
-                    </Suspense>
-                </div>
-            </div>
-        </DataProvider>
+        <AdminProvider>
+            <InvoiceProvider>
+                <TransactionProvider>
+                    <ServicesProvider>
+                        <div className="min-vh-100 bg-light d-flex flex-column">
+                        <Navbar />
+                        <GlobalLoadingOverlay />
+                        <div className="flex-grow-1">
+                            <Suspense fallback={<PageLoader />}>
+                                <Routes>
+                                    <Route path="/login" element={
+                                        <ErrorBoundary>
+                                            <Login />
+                                        </ErrorBoundary>
+                                    } />
+                                    <Route path="/" element={<HomeRedirect />} />
+                                    <Route path="/generateinvoice" element={
+                                        <ProtectedRoute requiredPermission="invoices.write">
+                                            <ErrorBoundary>
+                                                <GenerateInvoice />
+                                            </ErrorBoundary>
+                                        </ProtectedRoute>
+                                    } />
+                                    <Route path="/open-invoices" element={
+                                        <ProtectedRoute requiredPermission="invoices.read">
+                                            <ErrorBoundary>
+                                                <OpenInvoices />
+                                            </ErrorBoundary>
+                                        </ProtectedRoute>
+                                    } />
+                                    <Route path="/closed-invoices" element={
+                                        <ProtectedRoute requiredPermission="closedinvoices.read">
+                                            <ErrorBoundary>
+                                                <ClosedInvoices />
+                                            </ErrorBoundary>
+                                        </ProtectedRoute>
+                                    } />
+                                    <Route path="/outstanding-expenses" element={
+                                        <ProtectedRoute requiredPermission="invoices.read">
+                                            <ErrorBoundary>
+                                                <OutstandingExpenses />
+                                            </ErrorBoundary>
+                                        </ProtectedRoute>
+                                    } />
+                                    <Route path="/calendar" element={
+                                        <ProtectedRoute requiredPermission="invoices.read">
+                                            <ErrorBoundary>
+                                                <CalendarView />
+                                            </ErrorBoundary>
+                                        </ProtectedRoute>
+                                    } />
+                                    <Route path="/driver-schedule" element={
+                                        <ProtectedRoute requiredPermission="invoices.read">
+                                            <ErrorBoundary>
+                                                <DriverSchedule />
+                                            </ErrorBoundary>
+                                        </ProtectedRoute>
+                                    } />
+                                    <Route path="/bank-statement" element={
+                                        <ProtectedRoute requiredPermission="transactions.read">
+                                            <ErrorBoundary>
+                                                <BankStatement />
+                                            </ErrorBoundary>
+                                        </ProtectedRoute>
+                                    } />
+                                    <Route path="/services" element={
+                                        <ProtectedRoute requiredPermission="services.read">
+                                            <ErrorBoundary>
+                                                <Services />
+                                            </ErrorBoundary>
+                                        </ProtectedRoute>
+                                    } />
+                                    <Route path="/accounts" element={
+                                        <ProtectedRoute requiredPermission="accounts.read">
+                                            <ErrorBoundary>
+                                                <ChartOfAccounts />
+                                            </ErrorBoundary>
+                                    </ProtectedRoute>
+                                    } />
+                                    <Route path="/admin" element={
+                                        <ProtectedRoute requiredPermissions={['users.read', 'roles.read', 'permissions.read']}>
+                                            <ErrorBoundary>
+                                                <Admin />
+                                            </ErrorBoundary>
+                                        </ProtectedRoute>
+                                    } />
+                                    <Route path="/reports" element={
+                                        <ProtectedRoute requiredPermission="reports.read">
+                                            <ErrorBoundary>
+                                                <Reports />
+                                            </ErrorBoundary>
+                                        </ProtectedRoute>
+                                    } />
+                                </Routes>
+                            </Suspense>
+                        </div>
+                        </div>
+                    </ServicesProvider>
+                </TransactionProvider>
+            </InvoiceProvider>
+        </AdminProvider>
     );
 }
 
 function App() {
     return (
-        <AuthProvider>
-            <AppContent />
-        </AuthProvider>
+        <ErrorBoundary>
+            <AuthProvider>
+                <AppContent />
+            </AuthProvider>
+        </ErrorBoundary>
     );
 }
 

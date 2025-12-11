@@ -45,8 +45,6 @@ const DriverSchedule = () => {
     setLoadingSchedule(true);
     try {
       const data = await invoicesAPI.getDriverSchedule();
-      console.log('Driver schedule data received:', data);
-      console.log('Driver schedule count:', data?.length || 0);
       setDriverSchedule(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error loading driver schedule:', error);
@@ -90,8 +88,8 @@ const DriverSchedule = () => {
       return { allDay: true, start: dateStr, end: undefined };
     }
 
-    if (tripType === 'Night') {
-      // Night trip: 6:00 PM - 12:00 AM (18:00 - 00:00 next day)
+    if (tripType === 'Evening') {
+      // Evening trip: 6:00 PM - 12:00 AM (18:00 - 00:00 next day)
       const date = new Date(dateStr);
       date.setDate(date.getDate() + 1);
       const nextDayStr = date.toISOString().split('T')[0];
@@ -101,7 +99,7 @@ const DriverSchedule = () => {
         end: `${nextDayStr}T00:00:00`
       };
     } else {
-      // Day trip: 12:00 PM - 6:00 PM (12:00 - 18:00)
+      // Morning trip: 12:00 PM - 6:00 PM (12:00 - 18:00)
       return {
         allDay: false,
         start: `${dateStr}T12:00:00`,
@@ -112,15 +110,12 @@ const DriverSchedule = () => {
 
   // Process driver schedule and convert them to calendar events
   // Using schedule.date (service date from invoice.Date) for calendar display
-  // Split by trip type (day/night) to show separate events
+  // Split by trip type (morning/evening) to show separate events
   useEffect(() => {
     if (!driverSchedule || driverSchedule.length === 0) {
-      console.log('No driver schedule data to process');
       setEvents([]);
       return;
     }
-
-    console.log('Processing driver schedule events, count:', driverSchedule.length);
     
     const driverEvents = [];
     
@@ -134,22 +129,22 @@ const DriverSchedule = () => {
       const invoices = schedule.invoices || [];
       
       // Group invoices by trip type
-      const dayInvoices = invoices.filter(inv => inv.tripType === 'Day');
-      const nightInvoices = invoices.filter(inv => inv.tripType === 'Night');
-      const unknownInvoices = invoices.filter(inv => !inv.tripType || (inv.tripType !== 'Day' && inv.tripType !== 'Night'));
+      const morningInvoices = invoices.filter(inv => inv.tripType === 'Morning');
+      const eveningInvoices = invoices.filter(inv => inv.tripType === 'Evening');
+      const unknownInvoices = invoices.filter(inv => !inv.tripType || (inv.tripType !== 'Morning' && inv.tripType !== 'Evening'));
       
-      // Create event for day trips
-      if (dayInvoices.length > 0) {
-        const times = getEventTimes('Day', dateStr, currentView);
+      // Create event for morning trips
+      if (morningInvoices.length > 0) {
+        const times = getEventTimes('Morning', dateStr, currentView);
         const event = {
-          id: `driver-${schedule.driverId}-${dateStr}-day`,
-          title: `☀️ ${schedule.driverName || 'Unknown'} (${dayInvoices.length} ${dayInvoices.length === 1 ? 'invoice' : 'invoices'})`,
+          id: `driver-${schedule.driverId}-${dateStr}-morning`,
+          title: `☀️ ${schedule.driverName || 'Unknown'} (${morningInvoices.length} ${morningInvoices.length === 1 ? 'invoice' : 'invoices'})`,
           start: times.start,
           allDay: times.allDay,
           extendedProps: {
-            schedule: { ...schedule, invoices: dayInvoices },
+            schedule: { ...schedule, invoices: morningInvoices },
             type: 'driver',
-            tripType: 'Day'
+            tripType: 'Morning'
           },
           backgroundColor: '#17a2b8', // Blue for driver schedule
           borderColor: '#138496',
@@ -160,21 +155,21 @@ const DriverSchedule = () => {
         }
         driverEvents.push(event);
       }
-      
-      // Create event for night trips
-      if (nightInvoices.length > 0) {
-        const times = getEventTimes('Night', dateStr, currentView);
+
+      // Create event for evening trips
+      if (eveningInvoices.length > 0) {
+        const times = getEventTimes('Evening', dateStr, currentView);
         const event = {
-          id: `driver-${schedule.driverId}-${dateStr}-night`,
-          title: `🌙 ${schedule.driverName || 'Unknown'} (${nightInvoices.length} ${nightInvoices.length === 1 ? 'invoice' : 'invoices'})`,
+          id: `driver-${schedule.driverId}-${dateStr}-evening`,
+          title: `🌙 ${schedule.driverName || 'Unknown'} (${eveningInvoices.length} ${eveningInvoices.length === 1 ? 'invoice' : 'invoices'})`,
           start: times.start,
           allDay: times.allDay,
           extendedProps: {
-            schedule: { ...schedule, invoices: nightInvoices },
+            schedule: { ...schedule, invoices: eveningInvoices },
             type: 'driver',
-            tripType: 'Night'
+            tripType: 'Evening'
           },
-          backgroundColor: '#6c757d', // Darker blue/gray for night trips
+          backgroundColor: '#6c757d', // Darker blue/gray for evening trips
           borderColor: '#5a6268',
           textColor: '#fff'
         };
@@ -204,7 +199,6 @@ const DriverSchedule = () => {
       }
     });
 
-    console.log('Created events:', driverEvents.length);
     setEvents(driverEvents);
   }, [driverSchedule, currentView]);
 
@@ -355,11 +349,11 @@ const DriverSchedule = () => {
             <div className="d-flex align-items-center gap-3 flex-wrap">
               <div className="d-flex align-items-center gap-1">
                 <Sun size={14} className="text-info" />
-                <span className="small">Day Trip (12 PM - 6 PM)</span>
+                <span className="small">Morning Trip (12 PM - 6 PM)</span>
               </div>
               <div className="d-flex align-items-center gap-1">
                 <Moon size={14} className="text-secondary" />
-                <span className="small">Night Trip (6 PM - 12 AM)</span>
+                <span className="small">Evening Trip (6 PM - 12 AM)</span>
               </div>
             </div>
           </div>
@@ -439,16 +433,16 @@ const DriverSchedule = () => {
                               <div className="d-flex align-items-center gap-2 mb-1">
                                 <h6 className="mb-0 fw-bold">{invoice.invoiceNumber}</h6>
                                 {invoice.tripType && (
-                                  <span className={`badge d-flex align-items-center gap-1 text-white`} style={{ backgroundColor: invoice.tripType === 'Night' ? '#6c757d' : '#17a2b8' }}>
-                                    {invoice.tripType === 'Night' ? (
+                                  <span className={`badge d-flex align-items-center gap-1 text-white`} style={{ backgroundColor: invoice.tripType === 'Evening' ? '#6c757d' : '#17a2b8' }}>
+                                    {invoice.tripType === 'Evening' ? (
                                       <>
                                         <Moon size={12} />
-                                        Night
+                                        Evening
                                       </>
                                     ) : (
                                       <>
                                         <Sun size={12} />
-                                        Day
+                                        Morning
                                       </>
                                     )}
                                   </span>
@@ -531,16 +525,16 @@ const DriverSchedule = () => {
                             <div className="d-flex align-items-center gap-2 mb-1">
                               <h6 className="mb-0 fw-bold">{invoice.invoiceNumber}</h6>
                               {invoice.tripType && (
-                                <span className={`badge d-flex align-items-center gap-1 text-white`} style={{ backgroundColor: invoice.tripType === 'Night' ? '#6c757d' : '#17a2b8' }}>
-                                  {invoice.tripType === 'Night' ? (
+                                <span className={`badge d-flex align-items-center gap-1 text-white`} style={{ backgroundColor: invoice.tripType === 'Evening' ? '#6c757d' : '#17a2b8' }}>
+                                  {invoice.tripType === 'Evening' ? (
                                     <>
                                       <Moon size={12} />
-                                      Night
+                                      Evening
                                     </>
                                   ) : (
                                     <>
                                       <Sun size={12} />
-                                      Day
+                                      Morning
                                     </>
                                   )}
                                 </span>

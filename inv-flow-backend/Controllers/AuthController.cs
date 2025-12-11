@@ -32,13 +32,19 @@ public class AuthController : ControllerBase
             return BadRequest(validationResult.Errors);
         }
 
+        try
+        {
         var result = await _authService.LoginAsync(loginDto);
         if (result == null)
         {
             return Unauthorized("Invalid username or password");
         }
-
         return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
     }
 
     [HttpPost("register")]

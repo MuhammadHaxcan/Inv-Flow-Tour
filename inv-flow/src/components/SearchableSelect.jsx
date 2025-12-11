@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Check } from 'lucide-react';
 
@@ -26,6 +26,8 @@ const SearchableSelect = ({
 
     // Close dropdown when clicking outside
     useEffect(() => {
+        if (!isOpen) return;
+
         const handleClickOutside = (event) => {
             if (containerRef.current && !containerRef.current.contains(event.target)) {
                 // Also check if click is on the portal dropdown
@@ -41,12 +43,13 @@ const SearchableSelect = ({
             }
         };
 
-        if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
+        // Use capture phase to catch events earlier
+        document.addEventListener('mousedown', handleClickOutside, true);
+        document.addEventListener('touchstart', handleClickOutside, true);
 
         return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('mousedown', handleClickOutside, true);
+            document.removeEventListener('touchstart', handleClickOutside, true);
         };
     }, [isOpen]);
 
@@ -103,6 +106,11 @@ const SearchableSelect = ({
             return () => {
                 window.removeEventListener('scroll', handleScroll, true);
                 window.removeEventListener('resize', handleResize);
+                // Clear any pending timeouts
+                if (blurTimeoutRef.current) {
+                    clearTimeout(blurTimeoutRef.current);
+                    blurTimeoutRef.current = null;
+                }
             };
         }
     }, [isOpen, selectedLabel]);
@@ -117,11 +125,13 @@ const SearchableSelect = ({
         }
     }, [highlightedIndex]);
 
-    // Filter options based on search term
-    const filteredOptions = options.filter(option => {
-        const label = getOptionLabel(option).toLowerCase();
-        return label.includes(searchTerm.toLowerCase());
-    });
+    // Memoized filtered options for performance
+    const filteredOptions = useMemo(() =>
+        options.filter(option => {
+            const label = getOptionLabel(option).toLowerCase();
+            return label.includes(searchTerm.toLowerCase());
+        }), [options, searchTerm, getOptionLabel]
+    );
 
     // Handle option selection
     const handleSelect = (option) => {
@@ -266,6 +276,10 @@ const SearchableSelect = ({
                         role="combobox"
                         aria-expanded={isOpen}
                         aria-haspopup="listbox"
+                        aria-autocomplete="list"
+                        aria-controls={isOpen ? "searchable-select-listbox" : undefined}
+                        aria-label={placeholder || "Select an option"}
+                        aria-describedby={value ? `selected-option-${getOptionValue(selectedOption)}` : undefined}
                     />
                     <div 
                         style={{ 
@@ -285,6 +299,15 @@ const SearchableSelect = ({
                                 className="text-muted"
                                 onClick={handleClear}
                                 style={{ cursor: 'pointer' }}
+                                role="button"
+                                aria-label="Clear selection"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        handleClear(e);
+                                    }
+                                }}
                             />
                         )}
                     </div>
@@ -294,6 +317,8 @@ const SearchableSelect = ({
             {isOpen && createPortal(
                 <div
                     ref={dropdownRef}
+                    id="searchable-select-listbox"
+                    role="listbox"
                     className="bg-white border rounded shadow-lg"
                     style={{
                         position: 'fixed',
@@ -306,7 +331,7 @@ const SearchableSelect = ({
                     }}
                 >
                     {filteredOptions.length === 0 ? (
-                        <div className="p-3 text-center text-muted small">
+                        <div className="p-3 text-center text-muted small" role="status" aria-live="polite">
                             No options found
                         </div>
                     ) : (
@@ -319,6 +344,9 @@ const SearchableSelect = ({
                             return (
                                 <div
                                     key={optionValue}
+                                    role="option"
+                                    aria-selected={isSelected}
+                                    id={`option-${optionValue}`}
                                     className={`px-3 py-2 d-flex align-items-center justify-content-between ${
                                         isHighlighted ? 'bg-primary text-white' : 
                                         isSelected ? 'bg-light fw-medium' : ''
@@ -334,7 +362,7 @@ const SearchableSelect = ({
                                 >
                                     <span>{optionLabel}</span>
                                     {isSelected && (
-                                        <Check size={14} className={isHighlighted ? 'text-white' : 'text-primary'} />
+                                        <Check size={14} className={isHighlighted ? 'text-white' : 'text-primary'} aria-hidden="true" />
                                     )}
                                 </div>
                             );

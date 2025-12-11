@@ -43,7 +43,7 @@ public class Invoice
     [Column(TypeName = "decimal(18,2)")]
     public decimal? Vat { get; set; }
 
-    public TripType TripType { get; set; } = TripType.Day;
+    public TripType TripType { get; set; } = TripType.Morning;
 
     public TripMode TripMode { get; set; } = TripMode.Shared;
 

@@ -3,7 +3,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { useData } from '../contexts/DataContext';
+import { useInvoice } from '../contexts/InvoiceContext';
 import Modal from '../components/Modal';
 import { FileText, DollarSign, User, Users, Calendar, Truck, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -25,7 +25,7 @@ const customStyles = `
 `;
 
 const CalendarView = () => {
-  const { openInvoices, closedInvoices, drivers, loadOpenInvoices, loadClosedInvoices, loadDrivers, loadingStates } = useData();
+  const { openInvoices, closedInvoices, drivers, loadOpenInvoices, loadClosedInvoices, loadDrivers, loadingStates } = useInvoice();
   const [events, setEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -34,7 +34,8 @@ const CalendarView = () => {
     loadOpenInvoices();
     loadClosedInvoices();
     loadDrivers();
-  }, [loadOpenInvoices, loadClosedInvoices, loadDrivers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const [dateInvoices, setDateInvoices] = useState({ open: [], closed: [] });
   const [showModal, setShowModal] = useState(false);
@@ -114,7 +115,7 @@ const CalendarView = () => {
   // Using invoice.date (service date) for calendar display
   useEffect(() => {
     const createEventTitle = (invoice) => {
-      const tripIcon = invoice.tripType === 'Night' ? '🌙' : invoice.tripType === 'Day' ? '☀️' : '';
+      const tripIcon = invoice.tripType === 'Evening' ? '🌙' : invoice.tripType === 'Morning' ? '☀️' : '';
       const tripText = tripIcon ? ` ${tripIcon} ` : '';
       return `${invoice.customer}${tripText}(${invoice.services.map(s => s.service).join(', ')})`;
     };
@@ -131,8 +132,8 @@ const CalendarView = () => {
           invoice: invoice,
           type: 'invoice'
         },
-        backgroundColor: invoice.tripType === 'Night' ? '#e65100' : '#ff9800', // Dark orange for night, Orange for day/open
-        borderColor: invoice.tripType === 'Night' ? '#bf360c' : '#f57c00',
+        backgroundColor: invoice.tripType === 'Evening' ? '#e65100' : '#ff9800', // Dark orange for evening, Orange for morning/open
+        borderColor: invoice.tripType === 'Evening' ? '#bf360c' : '#f57c00',
         textColor: '#fff'
       };
       if (times.end) {
@@ -250,6 +251,25 @@ const CalendarView = () => {
     }
   };
 
+  // Show loading state only if critical data is loading and we don't have data yet
+  const isLoading = (loadingStates.openInvoices && openInvoices.length === 0) || 
+                   (loadingStates.closedInvoices && closedInvoices.length === 0);
+
+  if (isLoading) {
+    return (
+      <div className="content-wrapper">
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+          <div className="text-center">
+            <div className="spinner-border text-primary mb-3" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p className="text-muted">Loading calendar data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="content-wrapper">
       {/* Inject custom styles */}
@@ -321,11 +341,11 @@ const CalendarView = () => {
             <div className="d-flex align-items-center gap-3 flex-wrap">
               <div className="d-flex align-items-center gap-1">
                 <Sun size={14} className="text-warning" />
-                <span className="small">Day Trip (12 PM - 6 PM)</span>
+                <span className="small">Morning Trip (12 PM - 6 PM)</span>
               </div>
               <div className="d-flex align-items-center gap-1">
                 <Moon size={14} className="text-dark" />
-                <span className="small">Night Trip (6 PM - 12 AM)</span>
+                <span className="small">Evening Trip (6 PM - 12 AM)</span>
               </div>
             </div>
           </div>
@@ -376,21 +396,21 @@ const CalendarView = () => {
               </h5>
               
               {dateInvoices.open.map(invoice => (
-                <div className="card mb-3" key={`open-${invoice.id}`} style={{ borderColor: invoice.tripType === 'Night' ? '#e65100' : '#ff9800', borderWidth: '2px' }}>
+                <div className="card mb-3" key={`open-${invoice.id}`} style={{ borderColor: invoice.tripType === 'Evening' ? '#e65100' : '#ff9800', borderWidth: '2px' }}>
                   <div className="card-header bg-light d-flex justify-content-between align-items-center">
                     <div className="d-flex align-items-center gap-2">
                       <h6 className="mb-0 fw-bold">{invoice.number}</h6>
                       {invoice.tripType && (
-                        <span className="badge d-flex align-items-center gap-1 text-white" style={{ backgroundColor: invoice.tripType === 'Night' ? '#e65100' : '#ff9800' }}>
-                          {invoice.tripType === 'Night' ? (
+                        <span className="badge d-flex align-items-center gap-1 text-white" style={{ backgroundColor: invoice.tripType === 'Evening' ? '#e65100' : '#ff9800' }}>
+                          {invoice.tripType === 'Evening' ? (
                             <>
                               <Moon size={14} />
-                              Night Trip
+                              Evening Trip
                             </>
                           ) : (
                             <>
                               <Sun size={14} />
-                              Day Trip
+                              Morning Trip
                             </>
                           )}
                         </span>
@@ -481,16 +501,16 @@ const CalendarView = () => {
                     <div className="d-flex align-items-center gap-2">
                       <h6 className="mb-0 fw-bold">{invoice.number}</h6>
                       {invoice.tripType && (
-                        <span className={`badge d-flex align-items-center gap-1 ${invoice.tripType === 'Night' ? 'bg-dark' : 'bg-warning text-dark'}`}>
-                          {invoice.tripType === 'Night' ? (
+                        <span className={`badge d-flex align-items-center gap-1 ${invoice.tripType === 'Evening' ? 'bg-dark' : 'bg-warning text-dark'}`}>
+                          {invoice.tripType === 'Evening' ? (
                             <>
                               <Moon size={14} />
-                              Night Trip
+                              Evening Trip
                             </>
                           ) : (
                             <>
                               <Sun size={14} />
-                              Day Trip
+                              Morning Trip
                             </>
                           )}
                         </span>

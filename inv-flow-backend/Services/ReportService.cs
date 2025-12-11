@@ -24,7 +24,7 @@ public class ReportService : IReportService
             .Where(isr => isr.ServiceName != null && isr.ServiceId > 0)
             .AsQueryable();
 
-        // Apply invoice-level filters
+        // Apply date filters - if StartDate or EndDate are null, no date filtering is applied (returns all data)
         if (filter.StartDate.HasValue)
             query = query.Where(isr => isr.Invoice.Date >= filter.StartDate.Value);
         if (filter.EndDate.HasValue)
@@ -35,6 +35,10 @@ public class ReportService : IReportService
             query = query.Where(isr => isr.Invoice.DriverId == filter.DriverId.Value);
         if (filter.ServiceId.HasValue)
             query = query.Where(isr => isr.ServiceId == filter.ServiceId.Value);
+
+        // Apply agent filter if specified
+        if (filter.AgentId.HasValue)
+            query = query.Where(isr => isr.Invoice.CreatedByUserId == filter.AgentId.Value);
 
         // Execute query and group in memory (grouping is more efficient in memory for aggregations)
         var serviceItems = await query
@@ -70,7 +74,7 @@ public class ReportService : IReportService
             .Include(i => i.InvoiceServices)
             .AsQueryable();
 
-        // Apply date filters
+        // Apply date filters - if StartDate or EndDate are null, no date filtering is applied (returns all data)
         if (filter.StartDate.HasValue)
             query = query.Where(i => i.Date >= filter.StartDate.Value);
         if (filter.EndDate.HasValue)
@@ -125,7 +129,7 @@ public class ReportService : IReportService
             .Where(i => i.DriverId != null && i.Driver != null)
             .AsQueryable();
 
-        // Apply date filters
+        // Apply date filters - if StartDate or EndDate are null, no date filtering is applied (returns all data)
         if (filter.StartDate.HasValue)
             query = query.Where(i => i.Date >= filter.StartDate.Value);
         if (filter.EndDate.HasValue)
@@ -138,6 +142,10 @@ public class ReportService : IReportService
         // Apply service filter if specified
         if (filter.ServiceId.HasValue)
             query = query.Where(i => i.InvoiceServices.Any(isr => isr.ServiceId == filter.ServiceId.Value));
+
+        // Apply agent filter if specified
+        if (filter.AgentId.HasValue)
+            query = query.Where(i => i.CreatedByUserId == filter.AgentId.Value);
 
         var invoices = await query
             .AsNoTracking()
@@ -171,7 +179,7 @@ public class ReportService : IReportService
             .Include(i => i.InvoiceServices)
             .AsQueryable();
 
-        // Apply date filters
+        // Apply date filters - if StartDate or EndDate are null, no date filtering is applied (returns all data)
         if (filter.StartDate.HasValue)
             query = query.Where(i => i.Date >= filter.StartDate.Value);
         if (filter.EndDate.HasValue)
@@ -184,6 +192,10 @@ public class ReportService : IReportService
         // Apply service filter if specified
         if (filter.ServiceId.HasValue)
             query = query.Where(i => i.InvoiceServices.Any(isr => isr.ServiceId == filter.ServiceId.Value));
+
+        // Apply agent filter if specified
+        if (filter.AgentId.HasValue)
+            query = query.Where(i => i.CreatedByUserId == filter.AgentId.Value);
 
         var invoices = await query
             .AsNoTracking()
@@ -241,6 +253,7 @@ public class ReportService : IReportService
             .AsQueryable();
 
         // Apply date filters - filter by invoice creation date (CreatedAt)
+        // If StartDate or EndDate are null, no date filtering is applied (returns all data)
         if (filter.StartDate.HasValue)
             query = query.Where(i => DateOnly.FromDateTime(i.CreatedAt.Date) >= filter.StartDate.Value);
         if (filter.EndDate.HasValue)
@@ -253,6 +266,10 @@ public class ReportService : IReportService
         // Apply service filter if specified
         if (filter.ServiceId.HasValue)
             query = query.Where(i => i.InvoiceServices.Any(isr => isr.ServiceId == filter.ServiceId.Value));
+
+        // Apply agent filter if specified
+        if (filter.AgentId.HasValue)
+            query = query.Where(i => i.CreatedByUserId == filter.AgentId.Value);
 
         var invoices = await query
             .AsNoTracking()

@@ -5,8 +5,9 @@ import { PERMISSIONS, ACTION_PERMISSIONS, PAGE_PERMISSIONS } from '../constants/
  * Custom hook for permission checking throughout the app
  * Provides convenient methods to check various permission combinations
  */
-export function usePermissions() {
-    const { permissions, hasPermission, hasAnyPermission } = useAuth();
+export const usePermissions = () => {
+    const auth = useAuth();
+    const { permissions = [], hasPermission = () => false, hasAnyPermission = () => false } = auth || {};
 
     /**
      * Check if user can access a specific page
@@ -228,6 +229,4 @@ export function usePermissions() {
         canDeleteCategory,
     };
 }
-
-export default usePermissions;
 
