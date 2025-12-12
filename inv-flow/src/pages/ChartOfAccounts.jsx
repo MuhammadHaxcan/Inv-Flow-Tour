@@ -15,6 +15,7 @@ const ChartOfAccounts = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [showCustomerModal, setShowCustomerModal] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     // Delete confirmation modal state
     const [deleteModal, setDeleteModal] = useState({ show: false, item: null, category: '' });
@@ -205,6 +206,21 @@ const ChartOfAccounts = () => {
         data = accounts;
         columns = ['Name', 'Account Number', 'Details'];
     }
+
+    // Apply search filter
+    const filteredData = data.filter(item => {
+        if (!searchTerm.trim()) return true;
+        const term = searchTerm.toLowerCase();
+        return (
+            (item.name || '').toLowerCase().includes(term) ||
+            (item.phone || '').toLowerCase().includes(term) ||
+            (item.email || '').toLowerCase().includes(term) ||
+            (item.origin || '').toLowerCase().includes(term) ||
+            (item.address || '').toLowerCase().includes(term) ||
+            (item.accountNumber || '').toLowerCase().includes(term) ||
+            (item.details || '').toLowerCase().includes(term)
+        );
+    });
 
     const isLoading = loadingStates?.[loadingKeyMap[activeCategory]];
 
@@ -509,6 +525,21 @@ const ChartOfAccounts = () => {
                         </ul>
                     </div>
 
+                    {/* Search */}
+                    <div className="border-bottom bg-white py-3 px-4">
+                        <div className="row g-3 align-items-center">
+                            <div className="col-md-auto ms-auto">
+                                <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    placeholder={`Search ${getCategoryLabel(activeCategory).toLowerCase()}s...`}
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Table */}
                     <div className="card-body p-0">
                         <div className="table-responsive">
@@ -524,7 +555,7 @@ const ChartOfAccounts = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {data.length === 0 ? (
+                                    {filteredData.length === 0 ? (
                                         <tr>
                                             <td colSpan={(canWrite || canDelete) ? columns.length + 1 : columns.length} className="text-center py-5 text-muted">
                                                 <p className="mb-1">No {getCategoryLabel(activeCategory).toLowerCase()} records found.</p>
@@ -534,7 +565,7 @@ const ChartOfAccounts = () => {
                                             </td>
                                         </tr>
                                     ) : (
-                                        data.map((item) => (
+                                        filteredData.map((item) => (
                                             <tr key={item.id}>
                                                 {activeCategory === 'customer' && (
                                                     <>

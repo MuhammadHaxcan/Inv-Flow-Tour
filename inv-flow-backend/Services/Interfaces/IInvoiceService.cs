@@ -20,5 +20,6 @@ public interface IInvoiceService
     Task<List<OutstandingExpenseDto>> GetOutstandingExpensesAsync();
     Task<bool> MarkExpensePaidAsync(int expenseId, MarkExpensePaidDto dto);
     Task<List<DriverScheduleDto>> GetDriverScheduleAsync();
+    Task<bool> DeleteAsync(int id);
 }
 

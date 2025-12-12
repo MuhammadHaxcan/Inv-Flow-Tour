@@ -32,6 +32,7 @@ const DriverModal = ({ show, onClose, onSave, drivers, currentDriver = '', curre
                     onChange={(e) => setAssignedDriver(e.target.value)}
                     options={drivers.map(driver => ({ value: driver.name, label: driver.name }))}
                     placeholder="Choose a driver"
+                    inModal={true}
                 />
             </div>
             <div className="mb-3">

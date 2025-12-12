@@ -275,5 +275,18 @@ public class InvoicesController : ControllerBase
         var schedule = await _invoiceService.GetDriverScheduleAsync();
         return Ok(schedule);
     }
+
+    [HttpDelete("{id}")]
+    [RequirePermission("invoices.delete")]
+    public async Task<ActionResult> Delete(int id)
+    {
+        var result = await _invoiceService.DeleteAsync(id);
+        if (!result)
+        {
+            return NotFound(new { success = false, message = "Invoice not found" });
+        }
+
+        return Ok(new { success = true, message = "Invoice deleted successfully" });
+    }
 }
 

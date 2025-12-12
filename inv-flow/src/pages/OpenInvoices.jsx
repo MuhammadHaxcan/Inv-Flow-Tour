@@ -11,7 +11,6 @@ import AlertModal from '../components/AlertModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import { useInvoice } from '../contexts/InvoiceContext';
 import { usePermissions } from '../hooks/usePermissions';
-import { CACHE_KEYS } from '../utils/cacheInvalidation';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import defaultLogoImg from '../assets/SiyyadKhanLogo.png';
 import { printInvoice, calculateInvoiceVAT } from '../utils/printInvoice';
@@ -34,6 +33,7 @@ const OpenInvoices = () => {
         removeExpense,
         removeInvoiceService,
         sendInvoiceEmail,
+        deleteInvoice,
         loadOpenInvoices,
         loadDrivers,
         loadServices,
@@ -48,9 +48,10 @@ const OpenInvoices = () => {
     // Permissions
     // Note: Removing services/expenses from invoices requires 'invoices.write', not 'invoices.delete'
     // 'invoices.delete' would be for deleting entire invoices (if such feature exists)
-    const { 
-        canWriteInvoices, 
-        canReadInvoices
+    const {
+        canWriteInvoices,
+        canReadInvoices,
+        canDeleteInvoices
     } = usePermissions();
 
     // Load only needed data when component mounts
@@ -76,6 +77,8 @@ const OpenInvoices = () => {
     const [expenseToDelete, setExpenseToDelete] = useState({ invoiceId: null, expenseId: null, type: '' });
     const [showDeleteServiceModal, setShowDeleteServiceModal] = useState(false);
     const [serviceToDelete, setServiceToDelete] = useState({ invoiceId: null, serviceId: null, service: '' });
+    const [showDeleteInvoiceModal, setShowDeleteInvoiceModal] = useState(false);
+    const [invoiceToDelete, setInvoiceToDelete] = useState(null);
 
     const [currentInvoice, setCurrentInvoice] = useState(null);
     const [driverToAssign, setDriverToAssign] = useState('');
@@ -292,6 +295,25 @@ const OpenInvoices = () => {
         } catch (error) {
             console.error('Error deleting service:', error);
             showAlert('Error deleting service: ' + (error.message || 'Unknown error'), 'error');
+        }
+    };
+
+    const requestDeleteInvoice = (invoice) => {
+        setInvoiceToDelete(invoice);
+        setShowDeleteInvoiceModal(true);
+    };
+
+    const confirmDeleteInvoice = async () => {
+        if (!invoiceToDelete) return;
+
+        try {
+            await deleteInvoice(invoiceToDelete.id);
+            showAlert(`Invoice ${invoiceToDelete.number} deleted successfully`, 'success');
+            setShowDeleteInvoiceModal(false);
+            setInvoiceToDelete(null);
+        } catch (error) {
+            console.error('Error deleting invoice:', error);
+            showAlert('Error deleting invoice: ' + (error.message || 'Unknown error'), 'error');
         }
     };
 
@@ -530,10 +552,23 @@ const OpenInvoices = () => {
                                                                 <div className="card-header bg-light py-3">
                                                                     <div className="d-flex justify-content-between align-items-center">
                                                                         <h5 className="card-title mb-0 fw-bold">Invoice Details</h5>
-                                                                        <div className="text-muted">
-                                                                            Total: {formatCurrency(invoice.total)} |
-                                                                            Paid: {formatCurrency(invoice.paid)} |
-                                                                            Balance: {formatCurrency(invoice.total - invoice.paid)}
+                                                                        <div className="d-flex align-items-center gap-3">
+                                                                            <div className="text-muted">
+                                                                                Total: {formatCurrency(invoice.total)} |
+                                                                                Paid: {formatCurrency(invoice.paid)} |
+                                                                                Balance: {formatCurrency(invoice.total - invoice.paid)}
+                                                                            </div>
+                                                                            {canDeleteInvoices && (
+                                                                                <button
+                                                                                    onClick={e => { e.stopPropagation(); requestDeleteInvoice(invoice); }}
+                                                                                    className="btn btn-sm btn-outline-danger d-flex align-items-center gap-1"
+                                                                                    title="Delete Invoice"
+                                                                                    aria-label={`Delete invoice ${invoice.number}`}
+                                                                                >
+                                                                                    <Trash2 size={14} aria-hidden="true" />
+                                                                                    Delete Invoice
+                                                                                </button>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -829,7 +864,7 @@ const OpenInvoices = () => {
                 onClose={() => setShowDriverModal(false)}
                 onSave={async (driver, notes, date) => {
                     try {
-                        // Assign driver (this will clear cache and reload invoices)
+                        // Assign driver and reload invoices
                         await assignDriver(currentInvoice.id, driver, notes, date);
                         
                         // Wait a brief moment to ensure state has updated
@@ -897,6 +932,18 @@ const OpenInvoices = () => {
                 title="Delete Service"
                 message="Are you sure you want to delete this service?"
                 confirmButtonText="Delete"
+                confirmButtonVariant="danger"
+            />
+
+            {/* Delete Invoice Confirmation Modal */}
+            <DeleteConfirmationModal
+                show={showDeleteInvoiceModal}
+                onClose={() => { setShowDeleteInvoiceModal(false); setInvoiceToDelete(null); }}
+                onConfirm={confirmDeleteInvoice}
+                itemName={invoiceToDelete?.number || ''}
+                title="Delete Invoice"
+                message={`Are you sure you want to delete invoice ${invoiceToDelete?.number}? This will permanently delete the invoice along with all its services, expenses, payments, and transaction records. This action cannot be undone.`}
+                confirmButtonText="Delete Invoice"
                 confirmButtonVariant="danger"
             />
 

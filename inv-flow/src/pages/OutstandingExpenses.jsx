@@ -5,7 +5,7 @@ import SearchableSelect from '../components/SearchableSelect';
 import AlertModal from '../components/AlertModal';
 import { useInvoice } from '../contexts/InvoiceContext';
 import { usePermissions } from '../hooks/usePermissions';
-import { invoicesAPI, apiUtils } from '../services/api';
+import { invoicesAPI } from '../services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const OutstandingExpenses = () => {
@@ -120,9 +120,6 @@ const OutstandingExpenses = () => {
         }
 
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/invoices');
-            
             await invoicesAPI.markExpensePaid(selectedExpense.id, {
                 accountId: parseInt(paymentData.accountId),
                 date: paymentData.date,
@@ -386,6 +383,7 @@ const OutstandingExpenses = () => {
                                 }))}
                                 placeholder="Select Payment Account"
                                 size="sm"
+                                inModal={true}
                             />
                         </div>
 

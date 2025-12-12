@@ -286,7 +286,7 @@ FakesAssemblies/
 node_modules/
 
 # Entity Framework migrations
-
+**/Migrations/
 
 # Visual Studio 6 build log
 *.plg

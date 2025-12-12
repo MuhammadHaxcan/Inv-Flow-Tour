@@ -109,6 +109,7 @@ const ExpenseForm = ({ expenseTypes, vendors = [], onSave, onCancel, invoice, ex
                     options={expenseTypes.map((type, index) => ({ value: type, label: type }))}
                     placeholder="Select Expense Type"
                     required
+                    inModal={true}
                 />
             </div>
             
@@ -187,6 +188,7 @@ const ExpenseForm = ({ expenseTypes, vendors = [], onSave, onCancel, invoice, ex
                         value: vendor.name,
                         label: vendor.name
                     }))}
+                    inModal={true}
                     placeholder="Select Vendor (e.g., Camp, Restaurant)"
                 />
             </div>

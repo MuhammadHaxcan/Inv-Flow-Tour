@@ -1,6 +1,6 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { FileText, Building2, FileCheck2, CheckCircle, CreditCard, Tag, Calendar, Users, LogOut, BarChart3, Receipt, Truck } from 'lucide-react'
+import { FileText, Building2, FileCheck2, CheckCircle, CreditCard, Tag, Calendar, Users, LogOut, BarChart3, Receipt, Truck, Menu, X } from 'lucide-react'
 import './App.css'
 import { InvoiceProvider, useInvoice } from './contexts/InvoiceContext'
 import { TransactionProvider, useTransaction } from './contexts/TransactionContext'
@@ -104,6 +104,7 @@ function ProtectedRoute({ children, requiredPermission, requiredPermissions }) {
 }
 
 function Navbar() {
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
     const { companySettings, loadCompanySettings } = useInvoice();
     const {
@@ -151,6 +152,16 @@ function Navbar() {
     // Check if user has any invoice-related permissions
     const showInvoicesDropdown = canReadInvoices || canWriteInvoices || canReadClosedInvoices;
 
+    // Toggle mobile menu
+    const toggleMobileMenu = () => {
+        setIsMobileMenuOpen(!isMobileMenuOpen);
+    };
+
+    // Close mobile menu when clicking a link
+    const closeMobileMenu = () => {
+        setIsMobileMenuOpen(false);
+    };
+
     return (
         <nav className="bg-white border-bottom shadow-sm w-100">
             <div className="px-4">
@@ -166,7 +177,18 @@ function Navbar() {
                         ) : (
                             <h1 className="h3 fw-bold mb-0 text-primary me-5">{companyName}</h1>
                         )}
-                        <div className="d-flex">
+
+                        {/* Hamburger menu button - visible on mobile */}
+                        <button
+                            className="btn btn-outline-secondary d-lg-none me-3"
+                            onClick={toggleMobileMenu}
+                            aria-label="Toggle menu"
+                        >
+                            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                        </button>
+
+                        {/* Desktop navigation - hidden on mobile */}
+                        <div className="d-none d-lg-flex">
                             {showInvoicesDropdown && (
                                 <div className="dropdown">
                                     <button
@@ -349,21 +371,211 @@ function Navbar() {
                         </div>
                     </div>
                     <div className="d-flex align-items-center gap-3">
-                        {user && (
-                            <span className="text-secondary">
-                                {user.fullName || user.username}
-                            </span>
-                        )}
-                        <button
-                            className="btn btn-outline-secondary d-flex align-items-center gap-2"
-                            onClick={logout}
-                        >
-                            <LogOut size={18} />
-                            Logout
-                        </button>
+                        {/* Desktop user info and logout - hidden on mobile */}
+                        <div className="d-none d-lg-flex align-items-center gap-3">
+                            {user && (
+                                <span className="text-secondary">
+                                    {user.fullName || user.username}
+                                </span>
+                            )}
+                            <button
+                                className="btn btn-outline-secondary d-flex align-items-center gap-2"
+                                onClick={logout}
+                            >
+                                <LogOut size={18} />
+                                Logout
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {/* Mobile menu overlay */}
+            {isMobileMenuOpen && (
+                <div className="d-lg-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 z-index-1050" onClick={closeMobileMenu}>
+                <div className="bg-white h-100 w-75 shadow-lg" style={{ maxWidth: '300px' }} onClick={(e) => e.stopPropagation()}>
+                    <div className="p-3 border-bottom d-flex align-items-center justify-content-between">
+                        <span className="fw-bold text-primary">Menu</span>
+                        <button
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={closeMobileMenu}
+                            aria-label="Close menu"
+                        >
+                            <X size={18} />
+                        </button>
+                    </div>
+                    <div className="p-3">
+                        <div className="d-flex flex-column gap-2">
+                            {showInvoicesDropdown && (
+                                <div className="mb-3">
+                                    <div className="fw-medium text-secondary mb-2 d-flex align-items-center gap-2">
+                                        <FileText size={18} />
+                                        Invoices
+                                    </div>
+                                    <div className="ms-3 d-flex flex-column gap-1">
+                                        {canWriteInvoices && (
+                                            <NavLink
+                                                to="/generateinvoice"
+                                                className={({ isActive }) =>
+                                                    `text-decoration-none px-3 py-2 rounded ${isActive ? 'bg-primary text-white' : 'text-secondary'}`
+                                                }
+                                                onClick={closeMobileMenu}
+                                            >
+                                                Generate Invoice
+                                            </NavLink>
+                                        )}
+                                        {canReadInvoices && (
+                                            <NavLink
+                                                to="/open-invoices"
+                                                className={({ isActive }) =>
+                                                    `text-decoration-none px-3 py-2 rounded ${isActive ? 'bg-primary text-white' : 'text-secondary'}`
+                                                }
+                                                onClick={closeMobileMenu}
+                                            >
+                                                Open Invoices
+                                            </NavLink>
+                                        )}
+                                        {canReadClosedInvoices && (
+                                            <NavLink
+                                                to="/closed-invoices"
+                                                className={({ isActive }) =>
+                                                    `text-decoration-none px-3 py-2 rounded ${isActive ? 'bg-primary text-white' : 'text-secondary'}`
+                                                }
+                                                onClick={closeMobileMenu}
+                                            >
+                                                Closed Invoices
+                                            </NavLink>
+                                        )}
+                                        {canReadInvoices && (
+                                            <NavLink
+                                                to="/outstanding-expenses"
+                                                className={({ isActive }) =>
+                                                    `text-decoration-none px-3 py-2 rounded ${isActive ? 'bg-primary text-white' : 'text-secondary'}`
+                                                }
+                                                onClick={closeMobileMenu}
+                                            >
+                                                Outstanding Expenses
+                                            </NavLink>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {canReadInvoices && (
+                                <div className="mb-3">
+                                    <div className="fw-medium text-secondary mb-2 d-flex align-items-center gap-2">
+                                        <Calendar size={18} />
+                                        Calendar
+                                    </div>
+                                    <div className="ms-3 d-flex flex-column gap-1">
+                                        <NavLink
+                                            to="/calendar"
+                                            className={({ isActive }) =>
+                                                `text-decoration-none px-3 py-2 rounded ${isActive ? 'bg-primary text-white' : 'text-secondary'}`
+                                            }
+                                            onClick={closeMobileMenu}
+                                        >
+                                            Invoice Calendar
+                                        </NavLink>
+                                        <NavLink
+                                            to="/driver-schedule"
+                                            className={({ isActive }) =>
+                                                `text-decoration-none px-3 py-2 rounded ${isActive ? 'bg-primary text-white' : 'text-secondary'}`
+                                            }
+                                            onClick={closeMobileMenu}
+                                        >
+                                            Driver Schedule
+                                        </NavLink>
+                                    </div>
+                                </div>
+                            )}
+
+                            {canReadTransactions && (
+                                <NavLink
+                                    to="/bank-statement"
+                                    className={({ isActive }) =>
+                                        `text-decoration-none px-3 py-2 rounded d-flex align-items-center gap-2 mb-2 ${isActive ? 'bg-primary text-white' : 'text-secondary'}`
+                                    }
+                                    onClick={closeMobileMenu}
+                                >
+                                    <CreditCard size={18} />
+                                    Bank Statement
+                                </NavLink>
+                            )}
+
+                            {canReadServices && (
+                                <NavLink
+                                    to="/services"
+                                    className={({ isActive }) =>
+                                        `text-decoration-none px-3 py-2 rounded d-flex align-items-center gap-2 mb-2 ${isActive ? 'bg-primary text-white' : 'text-secondary'}`
+                                    }
+                                    onClick={closeMobileMenu}
+                                >
+                                    <Tag size={18} />
+                                    Services
+                                </NavLink>
+                            )}
+
+                            {canReadAccounts && (
+                                <NavLink
+                                    to="/accounts"
+                                    className={({ isActive }) =>
+                                        `text-decoration-none px-3 py-2 rounded d-flex align-items-center gap-2 mb-2 ${isActive ? 'bg-primary text-white' : 'text-secondary'}`
+                                    }
+                                    onClick={closeMobileMenu}
+                                >
+                                    <Building2 size={18} />
+                                    Chart of Accounts
+                                </NavLink>
+                            )}
+
+                            {canReadReports && (
+                                <NavLink
+                                    to="/reports"
+                                    className={({ isActive }) =>
+                                        `text-decoration-none px-3 py-2 rounded d-flex align-items-center gap-2 mb-2 ${isActive ? 'bg-primary text-white' : 'text-secondary'}`
+                                    }
+                                    onClick={closeMobileMenu}
+                                >
+                                    <BarChart3 size={18} />
+                                    Reports
+                                </NavLink>
+                            )}
+
+                            {canAccessAdmin && (
+                                <NavLink
+                                    to="/admin"
+                                    className={({ isActive }) =>
+                                        `text-decoration-none px-3 py-2 rounded d-flex align-items-center gap-2 mb-2 ${isActive ? 'bg-primary text-white' : 'text-secondary'}`
+                                    }
+                                    onClick={closeMobileMenu}
+                                >
+                                    <Users size={18} />
+                                    Admin
+                                </NavLink>
+                            )}
+
+                            <hr className="my-3" />
+                            <div className="d-flex align-items-center justify-content-between">
+                                <span className="text-secondary">
+                                    {user?.fullName || user?.username}
+                                </span>
+                                <button
+                                    className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
+                                    onClick={() => {
+                                        closeMobileMenu();
+                                        logout();
+                                    }}
+                                >
+                                    <LogOut size={16} />
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
         </nav>
     );
 }

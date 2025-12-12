@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { authAPI, apiUtils } from '../services/api';
+import { authAPI } from '../services/api';
 
 const AuthContext = createContext({
     user: null,
@@ -37,7 +37,6 @@ export function AuthProvider({ children }) {
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
                     localStorage.removeItem('permissions');
-                    apiUtils.clearCache();
                     setUser(null);
                     setPermissions([]);
                 }
@@ -56,7 +55,6 @@ export function AuthProvider({ children }) {
             localStorage.setItem('permissions', JSON.stringify(response.permissions));
             setUser(response.user);
             setPermissions(response.permissions);
-            apiUtils.clearCache(); // ensure cached data is user-scoped
             return { success: true };
         } catch (error) {
             // Check if it's a connection or timeout error
@@ -76,7 +74,6 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('permissions');
-        apiUtils.clearCache(); // prevent cache leakage across sessions
         setUser(null);
         setPermissions([]);
     };

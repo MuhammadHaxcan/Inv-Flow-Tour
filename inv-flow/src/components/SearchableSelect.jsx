@@ -12,7 +12,8 @@ const SearchableSelect = ({
     getOptionLabel = (option) => option.label || option.name || option,
     getOptionValue = (option) => option.value || option.name || option,
     disabled = false,
-    size = 'md' // 'sm' or 'md'
+    size = 'md', // 'sm' or 'md'
+    inModal = false // Whether this component is used inside a modal
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -23,15 +24,62 @@ const SearchableSelect = ({
     const dropdownRef = useRef(null);
     const blurTimeoutRef = useRef(null);
     const justSelectedRef = useRef(false); // Track if we just made a selection
+    const selectingRef = useRef(false); // Track if we're in the process of selecting an option
 
     // Close dropdown when clicking outside
     useEffect(() => {
         if (!isOpen) return;
 
         const handleClickOutside = (event) => {
-            if (containerRef.current && !containerRef.current.contains(event.target)) {
-                // Also check if click is on the portal dropdown
-                if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            // Don't close if we're in the process of selecting an option
+            if (selectingRef.current) return;
+
+            // Check if click is outside both the container and the portal dropdown
+            const isOutsideContainer = containerRef.current && !containerRef.current.contains(event.target);
+            const isOutsideDropdown = dropdownRef.current && !dropdownRef.current.contains(event.target);
+
+            if (isOutsideContainer && isOutsideDropdown) {
+                // Additional check for modal context: don't close if clicking on modal backdrop
+                // when we're in a modal (unless explicitly clicking outside the modal)
+                if (inModal) {
+                    // In modal context, only close if clicking on an element that's clearly outside the modal
+                    // Check if the click target is a modal backdrop or outside any modal
+                    const modalBackdrops = document.querySelectorAll('.modal');
+                    const isClickOnModalBackdrop = Array.from(modalBackdrops).some(modal =>
+                        modal.contains(event.target) && modal !== event.target.closest('.modal-dialog')
+                    );
+
+                    if (isClickOnModalBackdrop) {
+                        // Allow modal backdrop clicks to close the dropdown in modal context
+                        selectingRef.current = false; // Reset selecting flag
+                        setIsOpen(false);
+                        setSearchTerm('');
+                        setHighlightedIndex(-1);
+                        // Blur the input
+                        if (inputRef.current) {
+                            inputRef.current.blur();
+                        }
+                        return;
+                    }
+
+                    // If not clicking on modal backdrop, check if we're clicking outside any modal entirely
+                    const isOutsideAnyModal = Array.from(modalBackdrops).every(modal =>
+                        !modal.contains(event.target)
+                    );
+
+                    if (isOutsideAnyModal) {
+                        selectingRef.current = false; // Reset selecting flag
+                        setIsOpen(false);
+                        setSearchTerm('');
+                        setHighlightedIndex(-1);
+                        // Blur the input
+                        if (inputRef.current) {
+                            inputRef.current.blur();
+                        }
+                    }
+                } else {
+                    // Normal behavior for non-modal contexts
+                    selectingRef.current = false; // Reset selecting flag
                     setIsOpen(false);
                     setSearchTerm('');
                     setHighlightedIndex(-1);
@@ -135,28 +183,32 @@ const SearchableSelect = ({
 
     // Handle option selection
     const handleSelect = (option) => {
+        // Set selecting flag to prevent click outside handler interference
+        selectingRef.current = true;
+
         // Clear any pending blur timeout
         if (blurTimeoutRef.current) {
             clearTimeout(blurTimeoutRef.current);
             blurTimeoutRef.current = null;
         }
-        
+
         const optionValue = getOptionValue(option);
         onChange({ target: { value: optionValue } });
         setIsOpen(false);
         setSearchTerm('');
         setHighlightedIndex(-1);
-        
+
         // Mark that we just selected - prevents dropdown from reopening on focus
         justSelectedRef.current = true;
-        
+
         // Keep focus on the input but don't reopen dropdown
         if (inputRef.current) {
             inputRef.current.focus();
         }
-        
-        // Reset the flag after a short delay
+
+        // Reset flags after a short delay
         setTimeout(() => {
+            selectingRef.current = false;
             justSelectedRef.current = false;
         }, 100);
     };
@@ -174,6 +226,7 @@ const SearchableSelect = ({
                 containerRef.current &&
                 !containerRef.current.contains(relatedTarget)
             ) {
+                selectingRef.current = false; // Reset selecting flag
                 setIsOpen(false);
                 setSearchTerm('');
                 setHighlightedIndex(-1);
@@ -219,6 +272,7 @@ const SearchableSelect = ({
                 break;
             case 'Escape':
                 e.preventDefault();
+                selectingRef.current = false; // Reset selecting flag
                 setIsOpen(false);
                 setSearchTerm('');
                 setHighlightedIndex(-1);
@@ -325,7 +379,7 @@ const SearchableSelect = ({
                         top: `${dropdownPosition.top}px`,
                         left: `${dropdownPosition.left}px`,
                         width: `${dropdownPosition.width}px`,
-                        zIndex: 99999,
+                        zIndex: 999999, // Very high z-index to ensure it appears above all content
                         maxHeight: '280px',
                         overflowY: 'auto'
                     }}

@@ -71,106 +71,6 @@ const getToken = () => {
     return localStorage.getItem('token');
 };
 
-// Cache configuration
-const CACHE_CONFIG = {
-    DEFAULT_TTL: 5 * 60 * 1000, // 5 minutes
-    MAX_CACHE_SIZE: 200, // Increased from 100 to 200
-};
-
-// LRU Cache implementation
-class LRUCache {
-    constructor(maxSize) {
-        this.maxSize = maxSize;
-        this.cache = new Map();
-    }
-
-    get(key) {
-        if (!this.cache.has(key)) {
-            return null;
-        }
-        // Move to end (most recently used)
-        const value = this.cache.get(key);
-        this.cache.delete(key);
-        this.cache.set(key, value);
-        return value;
-    }
-
-    set(key, value) {
-        if (this.cache.has(key)) {
-            // Update existing - move to end
-            this.cache.delete(key);
-        } else if (this.cache.size >= this.maxSize) {
-            // Remove least recently used (first item)
-            const firstKey = this.cache.keys().next().value;
-            this.cache.delete(firstKey);
-        }
-        this.cache.set(key, value);
-    }
-
-    delete(key) {
-        this.cache.delete(key);
-    }
-
-    clear() {
-        this.cache.clear();
-    }
-
-    has(key) {
-        return this.cache.has(key);
-    }
-
-    get size() {
-        return this.cache.size;
-    }
-
-    keys() {
-        return this.cache.keys();
-    }
-
-    // Clear entries matching pattern
-    clearPattern(pattern) {
-        for (const key of this.cache.keys()) {
-            if (key.includes(pattern)) {
-                this.cache.delete(key);
-            }
-        }
-    }
-}
-
-// In-memory cache with LRU eviction
-const responseCache = new LRUCache(CACHE_CONFIG.MAX_CACHE_SIZE);
-
-// Cache utilities
-const getCacheKey = (endpoint, options) => {
-    const method = options.method || 'GET';
-    const body = options.body ? JSON.stringify(options.body) : '';
-    return `${method}:${endpoint}:${body}`;
-};
-
-const getCachedResponse = (key) => {
-    const cached = responseCache.get(key);
-    if (!cached) return null;
-
-    if (Date.now() > cached.expiry) {
-        responseCache.delete(key);
-        return null;
-    }
-
-    return cached.data;
-};
-
-const setCachedResponse = (key, data, ttl = CACHE_CONFIG.DEFAULT_TTL) => {
-    // Clean up old entries if cache is too large
-    if (responseCache.size >= CACHE_CONFIG.MAX_CACHE_SIZE) {
-        const oldestKey = responseCache.keys().next().value;
-        responseCache.delete(oldestKey);
-    }
-
-    responseCache.set(key, {
-        data,
-        expiry: Date.now() + ttl
-    });
-};
 
 // Enhanced retry configuration
 const RETRY_CONFIG = {
@@ -208,8 +108,8 @@ const isRetryableError = (error, statusCode) => {
     return false;
 };
 
-// Enhanced API call function with caching, retry logic, and timeout
-const apiCall = async (endpoint, options = {}, retries = 0, useCache = true) => {
+// Enhanced API call function with retry logic and timeout
+const apiCall = async (endpoint, options = {}, retries = 0) => {
     const token = getToken();
     const headers = {
         'Content-Type': 'application/json',
@@ -223,17 +123,6 @@ const apiCall = async (endpoint, options = {}, retries = 0, useCache = true) => 
 
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    // Check cache for GET requests
-    const method = options.method || 'GET';
-    const cacheKey = getCacheKey(endpoint, options);
-
-    if (method === 'GET' && useCache) {
-        const cachedResponse = getCachedResponse(cacheKey);
-        if (cachedResponse) {
-            return cachedResponse;
-        }
     }
 
     try {
@@ -254,7 +143,6 @@ const apiCall = async (endpoint, options = {}, retries = 0, useCache = true) => 
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             localStorage.removeItem('permissions');
-            responseCache.clear(); // avoid serving stale cached responses without auth
 
             // Skip redirect if already on the login page to avoid refresh loops
             const onLoginPage = typeof window !== 'undefined' && window.location?.pathname?.startsWith('/login');
@@ -295,37 +183,19 @@ const apiCall = async (endpoint, options = {}, retries = 0, useCache = true) => 
 
         // Handle 204 No Content responses (common for DELETE operations)
         if (response.status === 204 || response.headers.get('content-length') === '0') {
-            const result = { success: true };
-            // Cache successful responses for GET requests
-            if (method === 'GET' && useCache) {
-                setCachedResponse(cacheKey, result);
-            }
-            return result;
+            return { success: true };
         }
 
         // Try to parse JSON, return success object if empty
         const text = await response.text();
         if (!text) {
-            const result = { success: true };
-            if (method === 'GET' && useCache) {
-                setCachedResponse(cacheKey, result);
-            }
-            return result;
+            return { success: true };
         }
 
         try {
-            const result = JSON.parse(text);
-            // Cache successful GET responses
-            if (method === 'GET' && response.ok && useCache) {
-                setCachedResponse(cacheKey, result);
-            }
-            return result;
+            return JSON.parse(text);
         } catch {
-            const result = { success: true, data: text };
-            if (method === 'GET' && useCache) {
-                setCachedResponse(cacheKey, result);
-            }
-            return result;
+            return { success: true, data: text };
         }
     } catch (error) {
         // Handle timeout errors
@@ -338,7 +208,7 @@ const apiCall = async (endpoint, options = {}, retries = 0, useCache = true) => 
                 const delay = calculateRetryDelay(retries);
                 console.log(`Retrying request in ${delay}ms (attempt ${retries + 1}/${RETRY_CONFIG.maxRetries})`);
                 await new Promise(resolve => setTimeout(resolve, delay));
-                return apiCall(endpoint, options, retries + 1, useCache);
+                return apiCall(endpoint, options, retries + 1);
             }
 
             throw new Error(errorMsg);
@@ -364,7 +234,7 @@ const apiCall = async (endpoint, options = {}, retries = 0, useCache = true) => 
             const delay = calculateRetryDelay(retries);
             console.log(`Retrying request in ${delay}ms (attempt ${retries + 1}/${RETRY_CONFIG.maxRetries})`);
             await new Promise(resolve => setTimeout(resolve, delay));
-            return apiCall(endpoint, options, retries + 1, useCache);
+                return apiCall(endpoint, options, retries + 1);
         }
 
         // For other errors, check if they're retryable
@@ -372,7 +242,7 @@ const apiCall = async (endpoint, options = {}, retries = 0, useCache = true) => 
             const delay = calculateRetryDelay(retries);
             console.log(`Retrying request in ${delay}ms (attempt ${retries + 1}/${RETRY_CONFIG.maxRetries})`);
             await new Promise(resolve => setTimeout(resolve, delay));
-            return apiCall(endpoint, options, retries + 1, useCache);
+                return apiCall(endpoint, options, retries + 1);
         }
 
         throw error;
@@ -402,18 +272,18 @@ export const authAPI = {
 export const customersAPI = {
     getAll: () => apiCall('/customers'),
     getById: (id) => apiCall(`/customers/${id}`),
-    create: (data) => apiUtils.noCache('/customers', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id, data) => apiUtils.noCache(`/customers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id) => apiUtils.noCache(`/customers/${id}`, { method: 'DELETE' }),
+    create: (data) => apiCall('/customers', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => apiCall(`/customers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => apiCall(`/customers/${id}`, { method: 'DELETE' }),
 };
 
 // Drivers API
 export const driversAPI = {
     getAll: () => apiCall('/drivers'),
     getById: (id) => apiCall(`/drivers/${id}`),
-    create: (data) => apiUtils.noCache('/drivers', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id, data) => apiUtils.noCache(`/drivers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id) => apiUtils.noCache(`/drivers/${id}`, { method: 'DELETE' }),
+    create: (data) => apiCall('/drivers', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => apiCall(`/drivers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => apiCall(`/drivers/${id}`, { method: 'DELETE' }),
 };
 
 // Services API
@@ -458,19 +328,20 @@ export const invoicesAPI = {
     getClosed: () => apiCall('/invoices/closed'),
     getById: (id) => apiCall(`/invoices/${id}`),
     getNextNumber: () => apiCall('/invoices/next-number'),
-    create: (data) => apiUtils.noCache('/invoices', { method: 'POST', body: JSON.stringify(data) }),
-    addPayment: (id, data) => apiUtils.noCache(`/invoices/${id}/payments`, { method: 'POST', body: JSON.stringify(data) }),
-    addExpense: (id, data) => apiUtils.noCache(`/invoices/${id}/expenses`, { method: 'POST', body: JSON.stringify(data) }),
-    addService: (id, data) => apiUtils.noCache(`/invoices/${id}/services`, { method: 'POST', body: JSON.stringify(data) }),
-    updateService: (id, data) => apiUtils.noCache(`/invoices/${id}/services`, { method: 'PUT', body: JSON.stringify(data) }),
-    removeService: (id, serviceId) => apiUtils.noCache(`/invoices/${id}/services/${serviceId}`, { method: 'DELETE' }),
-    assignDriver: (id, data) => apiUtils.noCache(`/invoices/${id}/driver`, { method: 'PUT', body: JSON.stringify(data) }),
-    updateExpense: (id, expenseId, data) => apiUtils.noCache(`/invoices/${id}/expenses/${expenseId}`, { method: 'PUT', body: JSON.stringify(data) }),
-    removeExpense: (id, expenseId) => apiUtils.noCache(`/invoices/${id}/expenses/${expenseId}`, { method: 'DELETE' }),
+    create: (data) => apiCall('/invoices', { method: 'POST', body: JSON.stringify(data) }),
+    addPayment: (id, data) => apiCall(`/invoices/${id}/payments`, { method: 'POST', body: JSON.stringify(data) }),
+    addExpense: (id, data) => apiCall(`/invoices/${id}/expenses`, { method: 'POST', body: JSON.stringify(data) }),
+    addService: (id, data) => apiCall(`/invoices/${id}/services`, { method: 'POST', body: JSON.stringify(data) }),
+    updateService: (id, data) => apiCall(`/invoices/${id}/services`, { method: 'PUT', body: JSON.stringify(data) }),
+    removeService: (id, serviceId) => apiCall(`/invoices/${id}/services/${serviceId}`, { method: 'DELETE' }),
+    assignDriver: (id, data) => apiCall(`/invoices/${id}/driver`, { method: 'PUT', body: JSON.stringify(data) }),
+    updateExpense: (id, expenseId, data) => apiCall(`/invoices/${id}/expenses/${expenseId}`, { method: 'PUT', body: JSON.stringify(data) }),
+    removeExpense: (id, expenseId) => apiCall(`/invoices/${id}/expenses/${expenseId}`, { method: 'DELETE' }),
     getOutstandingExpenses: () => apiCall('/invoices/expenses/outstanding'),
-    markExpensePaid: (expenseId, data) => apiUtils.noCache(`/invoices/expenses/${expenseId}/mark-paid`, { method: 'POST', body: JSON.stringify(data) }),
-    sendEmail: (id) => apiUtils.noCache(`/invoices/${id}/send-email`, { method: 'POST' }),
+    markExpensePaid: (expenseId, data) => apiCall(`/invoices/expenses/${expenseId}/mark-paid`, { method: 'POST', body: JSON.stringify(data) }),
+    sendEmail: (id) => apiCall(`/invoices/${id}/send-email`, { method: 'POST' }),
     getDriverSchedule: () => apiCall('/invoices/driver-schedule'),
+    delete: (id) => apiCall(`/invoices/${id}`, { method: 'DELETE' }),
 };
 
 // Transactions API
@@ -550,29 +421,4 @@ export const companySettingsAPI = {
     setActiveSignature: (signatureId) => apiCall(`/companysettings/signature/${signatureId}`, { method: 'POST' }),
     getEmail: () => apiCall('/companysettings/email'),
     updateEmail: (data) => apiCall('/companysettings/email', { method: 'PUT', body: JSON.stringify(data) }),
-};
-
-// Enhanced API utilities
-export const apiUtils = {
-    // Clear all cached responses
-    clearCache: () => {
-        responseCache.clear();
-    },
-
-    // Clear cache for specific endpoint pattern
-    clearCacheFor: (endpointPattern) => {
-        responseCache.clearPattern(endpointPattern);
-    },
-
-    // Get cache statistics
-    getCacheStats: () => ({
-        size: responseCache.size,
-        maxSize: CACHE_CONFIG.MAX_CACHE_SIZE
-    }),
-
-    // Make API call without caching (for mutations)
-    noCache: (endpoint, options = {}) => apiCall(endpoint, options, 0, false),
-
-    // Make API call with custom TTL (not implemented yet)
-    withTTL: (endpoint, options = {}, ttl) => apiCall(endpoint, options, 0, true)
 };

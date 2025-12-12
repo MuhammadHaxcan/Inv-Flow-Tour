@@ -28,15 +28,14 @@ export function TransactionProvider({ children }) {
         accounts: false
     });
 
-    // Cache to track what's been loaded
+    // State to track what's been loaded
     const [loaded, setLoaded] = useState({
         transactions: false,
         accounts: false
     });
 
-    // Load transactions only when needed
+    // Load transactions - always load fresh data
     const loadTransactions = useCallback(async (force = false) => {
-        if (loaded.transactions && !force) return;
         setLoadingStates(prev => ({ ...prev, transactions: true }));
         try {
             const data = await transactionsAPI.getAll();
@@ -48,11 +47,10 @@ export function TransactionProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, transactions: false }));
         }
-    }, [loaded.transactions]);
+    }, []);
 
-    // Load accounts only when needed
+    // Load accounts - always load fresh data
     const loadAccounts = useCallback(async (force = false) => {
-        if (loaded.accounts && !force) return;
         setLoadingStates(prev => ({ ...prev, accounts: true }));
         try {
             const data = await accountsAPI.getAll();
@@ -64,7 +62,7 @@ export function TransactionProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, accounts: false }));
         }
-    }, [loaded.accounts]);
+    }, []);
 
     return (
         <TransactionContext.Provider value={{

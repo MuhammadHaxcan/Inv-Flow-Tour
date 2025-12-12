@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useCallback } from 'react';
 import {
-    usersAPI, rolesAPI, permissionsAPI, signaturesAPI, companySettingsAPI, apiUtils
+    usersAPI, rolesAPI, permissionsAPI, signaturesAPI, companySettingsAPI
 } from '../services/api';
 
 const AdminContext = createContext({
@@ -65,7 +65,7 @@ export function AdminProvider({ children }) {
         companySettings: false
     });
 
-    // Cache to track what's been loaded
+    // State to track what's been loaded
     const [loaded, setLoaded] = useState({
         users: false,
         roles: false,
@@ -74,13 +74,10 @@ export function AdminProvider({ children }) {
         companySettings: false
     });
 
-    // Load users only when needed
+    // Load users - always load fresh data
     const loadUsers = useCallback(async (force = false) => {
-        if (loaded.users && !force) return;
         setLoadingStates(prev => ({ ...prev, users: true }));
         try {
-            // Clear API cache before fetching
-            apiUtils.clearCacheFor('/users');
             const data = await usersAPI.getAll();
             setUsers(data);
             setLoaded(prev => ({ ...prev, users: true }));
@@ -90,15 +87,12 @@ export function AdminProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, users: false }));
         }
-    }, [loaded.users]);
+    }, []);
 
-    // Load roles only when needed
+    // Load roles - always load fresh data
     const loadRoles = useCallback(async (force = false) => {
-        if (loaded.roles && !force) return;
         setLoadingStates(prev => ({ ...prev, roles: true }));
         try {
-            // Clear API cache before fetching
-            apiUtils.clearCacheFor('/roles');
             const data = await rolesAPI.getAll();
             setRoles(data);
             setLoaded(prev => ({ ...prev, roles: true }));
@@ -108,11 +102,10 @@ export function AdminProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, roles: false }));
         }
-    }, [loaded.roles]);
+    }, []);
 
-    // Load permissions only when needed
+    // Load permissions - always load fresh data
     const loadPermissions = useCallback(async (force = false) => {
-        if (loaded.permissions && !force) return;
         setLoadingStates(prev => ({ ...prev, permissions: true }));
         try {
             const data = await permissionsAPI.getAll();
@@ -124,15 +117,12 @@ export function AdminProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, permissions: false }));
         }
-    }, [loaded.permissions]);
+    }, []);
 
-    // Load signatures only when needed
+    // Load signatures - always load fresh data
     const loadSignatures = useCallback(async (force = false) => {
-        if (loaded.signatures && !force) return;
         setLoadingStates(prev => ({ ...prev, signatures: true }));
         try {
-            // Clear API cache before fetching
-            apiUtils.clearCacheFor('/signatures');
             const data = await signaturesAPI.getAll();
             setSignatures(data);
             setLoaded(prev => ({ ...prev, signatures: true }));
@@ -142,15 +132,12 @@ export function AdminProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, signatures: false }));
         }
-    }, [loaded.signatures]);
+    }, []);
 
-    // Load company settings only when needed
+    // Load company settings - always load fresh data
     const loadCompanySettings = useCallback(async (force = false) => {
-        if (loaded.companySettings && !force) return;
         setLoadingStates(prev => ({ ...prev, companySettings: true }));
         try {
-            // Clear API cache before fetching
-            apiUtils.clearCacheFor('/companysettings');
             const data = await companySettingsAPI.get();
             setCompanySettings(data);
             setLoaded(prev => ({ ...prev, companySettings: true }));
@@ -160,13 +147,11 @@ export function AdminProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, companySettings: false }));
         }
-    }, [loaded.companySettings]);
+    }, []);
 
     // User CRUD functions
     const createUser = useCallback(async (userData) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/users');
             
             const newUser = await usersAPI.create(userData);
             
@@ -183,8 +168,6 @@ export function AdminProvider({ children }) {
 
     const updateUser = useCallback(async (userId, userData) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/users');
             
             const updatedUser = await usersAPI.update(userId, userData);
             
@@ -199,8 +182,6 @@ export function AdminProvider({ children }) {
 
     const deleteUser = useCallback(async (userId) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/users');
             
             await usersAPI.delete(userId);
             
@@ -214,8 +195,6 @@ export function AdminProvider({ children }) {
     // Role CRUD functions
     const createRole = useCallback(async (roleData) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/roles');
             
             const newRole = await rolesAPI.create(roleData);
             
@@ -232,8 +211,6 @@ export function AdminProvider({ children }) {
 
     const updateRole = useCallback(async (roleId, roleData) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/roles');
             
             const updatedRole = await rolesAPI.update(roleId, roleData);
             
@@ -248,8 +225,6 @@ export function AdminProvider({ children }) {
 
     const deleteRole = useCallback(async (roleId) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/roles');
             
             await rolesAPI.delete(roleId);
             
@@ -263,8 +238,6 @@ export function AdminProvider({ children }) {
     // Signature functions
     const createSignature = useCallback(async (signatureData) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/signatures');
             
             const newSignature = await signaturesAPI.create(signatureData);
             
@@ -284,9 +257,6 @@ export function AdminProvider({ children }) {
 
     const setActiveSignature = useCallback(async (signatureId) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/signatures');
-            apiUtils.clearCacheFor('/companysettings');
             
             await signaturesAPI.setActive(signatureId);
             
@@ -306,8 +276,6 @@ export function AdminProvider({ children }) {
 
     const deleteSignature = useCallback(async (signatureId) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/signatures');
             
             await signaturesAPI.delete(signatureId);
             
@@ -321,8 +289,6 @@ export function AdminProvider({ children }) {
     // Company settings functions
     const updateEmailSettings = useCallback(async (emailData) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/companysettings');
             
             const updatedSettings = await companySettingsAPI.updateEmail(emailData);
             
@@ -340,8 +306,6 @@ export function AdminProvider({ children }) {
 
     const updateLogo = useCallback(async (logoData) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/companysettings');
             
             const updatedSettings = await companySettingsAPI.updateLogo(logoData);
             
@@ -359,8 +323,6 @@ export function AdminProvider({ children }) {
 
     const clearLogo = useCallback(async () => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/companysettings');
             
             const updatedSettings = await companySettingsAPI.clearLogo();
             

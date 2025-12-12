@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, ChevronDown, ChevronUp, DollarSign, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
+import { Calendar, ChevronDown, ChevronUp, DollarSign, TrendingUp, TrendingDown, RefreshCw, Filter } from 'lucide-react';
 import { useTransaction } from '../contexts/TransactionContext';
 import SearchableSelect from '../components/SearchableSelect';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -186,13 +186,32 @@ const BankStatement = () => {
                         </div>
 
                         <div className="col-md-auto ms-auto">
-                            <button
-                                onClick={handleReset}
-                                className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
-                            >
-                                <RefreshCw size={14} />
-                                Reset
-                            </button>
+                            <div className="d-flex gap-2">
+                                <button
+                                    onClick={() => {
+                                        // Re-run the filtering logic by triggering the useEffect
+                                        loadTransactions();
+                                        loadAccounts();
+                                    }}
+                                    className="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? (
+                                        <RefreshCw size={14} className="animate-spin" />
+                                    ) : (
+                                        <Filter size={14} />
+                                    )}
+                                    {isLoading ? 'Loading...' : 'Apply Filters'}
+                                </button>
+                                <button
+                                    onClick={handleReset}
+                                    className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                                    disabled={isLoading}
+                                >
+                                    <RefreshCw size={14} />
+                                    Reset
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

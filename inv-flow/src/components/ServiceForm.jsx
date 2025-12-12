@@ -55,6 +55,7 @@ const ServiceForm = ({ servicesList, onSave, onCancel, invoice, service, existin
                     options={availableServices.map(s => ({ value: s.name, label: s.name }))}
                     placeholder="Select Service"
                     required
+                    inModal={true}
                 />
                 {availableServices.length === 0 && !service && (
                     <small className="text-warning d-block mt-1">

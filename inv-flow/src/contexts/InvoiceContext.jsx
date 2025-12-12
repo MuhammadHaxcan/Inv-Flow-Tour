@@ -1,9 +1,9 @@
-import React, { createContext, useState, useContext, useCallback } from 'react';
+import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
 import {
     customersAPI, driversAPI, servicesAPI, accountsAPI, expenseTypesAPI,
-    vendorsAPI, invoicesAPI, companySettingsAPI, apiUtils
+    vendorsAPI, invoicesAPI, companySettingsAPI
 } from '../services/api';
-import { invalidateCache, CACHE_KEYS, createOptimisticUpdate } from '../utils/cacheInvalidation';
+
 
 const InvoiceContext = createContext({
     // Invoice data
@@ -71,7 +71,8 @@ const InvoiceContext = createContext({
     updateExpense: () => {},
     removeExpense: () => {},
     removeInvoiceService: () => {},
-    sendInvoiceEmail: () => {}
+    sendInvoiceEmail: () => {},
+    deleteInvoice: () => {}
 });
 
 export function InvoiceProvider({ children }) {
@@ -101,7 +102,7 @@ export function InvoiceProvider({ children }) {
         companySettings: false
     });
 
-    // Cache to track what's been loaded
+    // State to track what's been loaded
     const [loaded, setLoaded] = useState({
         customers: false,
         drivers: false,
@@ -115,30 +116,9 @@ export function InvoiceProvider({ children }) {
         companySettings: false
     });
 
-    // Cache invalidation tracking
-    const [invalidatedKeys, setInvalidatedKeys] = useState(new Set());
 
-    // Invalidation methods
-    const invalidateKeys = useCallback((keys) => {
-        setInvalidatedKeys(prev => new Set([...prev, ...keys]));
-    }, []);
-
-    const clearInvalidation = useCallback((key) => {
-        setInvalidatedKeys(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(key);
-            return newSet;
-        });
-    }, []);
-
-    // Check if data needs refresh
-    const needsRefresh = useCallback((key) => {
-        return invalidatedKeys.has(key);
-    }, [invalidatedKeys]);
-
-    // Load customers only when needed
+    // Load customers - always load fresh data
     const loadCustomers = useCallback(async (force = false) => {
-        if (loaded.customers && !force) return;
         setLoadingStates(prev => ({ ...prev, customers: true }));
         try {
             const data = await customersAPI.getAll();
@@ -150,11 +130,10 @@ export function InvoiceProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, customers: false }));
         }
-    }, [loaded.customers]);
+    }, []);
 
-    // Load drivers only when needed
+    // Load drivers - always load fresh data
     const loadDrivers = useCallback(async (force = false) => {
-        if (loaded.drivers && !force) return;
         setLoadingStates(prev => ({ ...prev, drivers: true }));
         try {
             const data = await driversAPI.getAll();
@@ -166,11 +145,10 @@ export function InvoiceProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, drivers: false }));
         }
-    }, [loaded.drivers]);
+    }, []);
 
-    // Load services only when needed
+    // Load services - always load fresh data
     const loadServices = useCallback(async (force = false) => {
-        if (loaded.services && !force) return;
         setLoadingStates(prev => ({ ...prev, services: true }));
         try {
             const data = await servicesAPI.getAll();
@@ -182,11 +160,10 @@ export function InvoiceProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, services: false }));
         }
-    }, [loaded.services]);
+    }, []);
 
-    // Load accounts only when needed
+    // Load accounts - always load fresh data
     const loadAccounts = useCallback(async (force = false) => {
-        if (loaded.accounts && !force) return;
         setLoadingStates(prev => ({ ...prev, accounts: true }));
         try {
             const data = await accountsAPI.getAll();
@@ -198,11 +175,10 @@ export function InvoiceProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, accounts: false }));
         }
-    }, [loaded.accounts]);
+    }, []);
 
-    // Load expense types only when needed
+    // Load expense types - always load fresh data
     const loadExpenses = useCallback(async (force = false) => {
-        if (loaded.expenses && !force) return;
         setLoadingStates(prev => ({ ...prev, expenses: true }));
         try {
             const data = await expenseTypesAPI.getAll();
@@ -214,11 +190,10 @@ export function InvoiceProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, expenses: false }));
         }
-    }, [loaded.expenses]);
+    }, []);
 
-    // Load vendors only when needed
+    // Load vendors - always load fresh data
     const loadVendors = useCallback(async (force = false) => {
-        if (loaded.vendors && !force) return;
         setLoadingStates(prev => ({ ...prev, vendors: true }));
         try {
             const data = await vendorsAPI.getAll();
@@ -230,41 +205,25 @@ export function InvoiceProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, vendors: false }));
         }
-    }, [loaded.vendors]);
+    }, []);
 
-    // Load open invoices only when needed
+    // Load open invoices - always load fresh data
     const loadOpenInvoices = useCallback(async (force = false) => {
-        // Skip loading only if already loaded and not forced and not invalidated
-        if (loaded.openInvoices && !force && !needsRefresh(CACHE_KEYS.OPEN_INVOICES)) {
-            console.log('loadOpenInvoices: Skipping load (already loaded)');
-            return;
-        }
-
-        console.log('loadOpenInvoices: Starting load, force:', force);
         setLoadingStates(prev => ({ ...prev, openInvoices: true }));
         try {
             const data = await invoicesAPI.getOpen();
-            console.log('loadOpenInvoices: Loaded successfully, count:', Array.isArray(data) ? data.length : 'invalid');
             setOpenInvoices(Array.isArray(data) ? data : []);
             setLoaded(prev => ({ ...prev, openInvoices: true }));
-            // Clear invalidation only on successful load
-            clearInvalidation(CACHE_KEYS.OPEN_INVOICES);
         } catch (error) {
-            console.error('loadOpenInvoices: Error loading open invoices:', error);
-            console.error('Error details:', error.response || error.message);
+            console.error('Error loading open invoices:', error);
             setOpenInvoices([]);
-            // Don't mark as loaded on error to allow retries
-            setLoaded(prev => ({ ...prev, openInvoices: false }));
         } finally {
-            // Always reset loading state
-            console.log('loadOpenInvoices: Resetting loading state');
             setLoadingStates(prev => ({ ...prev, openInvoices: false }));
         }
-    }, [loaded.openInvoices, needsRefresh, clearInvalidation]);
+    }, []);
 
-    // Load closed invoices only when needed
+    // Load closed invoices - always load fresh data
     const loadClosedInvoices = useCallback(async (force = false) => {
-        if (loaded.closedInvoices && !force) return;
         setLoadingStates(prev => ({ ...prev, closedInvoices: true }));
         try {
             const data = await invoicesAPI.getClosed();
@@ -277,11 +236,10 @@ export function InvoiceProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, closedInvoices: false }));
         }
-    }, [loaded.closedInvoices]);
+    }, []);
 
-    // Load next invoice number only when needed
+    // Load next invoice number - always load fresh data
     const loadNextInvoiceNumber = useCallback(async (force = false) => {
-        if (loaded.nextInvoiceNumber && !force) return;
         setLoadingStates(prev => ({ ...prev, nextInvoiceNumber: true }));
         try {
             const data = await invoicesAPI.getNextNumber();
@@ -293,11 +251,10 @@ export function InvoiceProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, nextInvoiceNumber: false }));
         }
-    }, [loaded.nextInvoiceNumber]);
+    }, []);
 
-    // Load company settings only when needed
+    // Load company settings - always load fresh data
     const loadCompanySettings = useCallback(async (force = false) => {
-        if (loaded.companySettings && !force) return;
         setLoadingStates(prev => ({ ...prev, companySettings: true }));
         try {
             const data = await companySettingsAPI.get();
@@ -309,26 +266,18 @@ export function InvoiceProvider({ children }) {
         } finally {
             setLoadingStates(prev => ({ ...prev, companySettings: false }));
         }
-    }, [loaded.companySettings]);
+    }, []);
 
     // CRUD functions for customers
     const addCustomer = useCallback(async (customer) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/customers');
-            
             const newCustomer = await customersAPI.create(customer);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.CUSTOMERS]);
-            
-            // Optimistically add to local state
             setCustomers(prev => [...prev, newCustomer]);
             return newCustomer;
         } catch (error) {
             throw error;
         }
-    }, [invalidateKeys]);
+    }, []);
 
     const updateCustomer = async (updatedCustomer) => {
         // Optimistic update
@@ -336,15 +285,8 @@ export function InvoiceProvider({ children }) {
         setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
 
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/customers');
-            
             const customer = await customersAPI.update(updatedCustomer.id, updatedCustomer);
             setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? customer : c));
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.CUSTOMERS]);
-            
             return customer;
         } catch (error) {
             // Revert optimistic update on error
@@ -355,14 +297,8 @@ export function InvoiceProvider({ children }) {
 
     const deleteCustomer = async (id) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/customers');
-            
             await customersAPI.delete(id);
             setCustomers(customers.filter(c => c.id !== id));
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.CUSTOMERS]);
         } catch (error) {
             throw error;
         }
@@ -371,14 +307,7 @@ export function InvoiceProvider({ children }) {
     // CRUD functions for drivers
     const addDriver = async (driver) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/drivers');
-            
             const newDriver = await driversAPI.create(driver);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.DRIVERS]);
-            
             setDrivers([...drivers, newDriver]);
             return newDriver;
         } catch (error) {
@@ -388,14 +317,7 @@ export function InvoiceProvider({ children }) {
 
     const updateDriver = async (updatedDriver) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/drivers');
-            
             const driver = await driversAPI.update(updatedDriver.id, updatedDriver);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.DRIVERS]);
-            
             setDrivers(drivers.map(d => d.id === updatedDriver.id ? driver : d));
             return driver;
         } catch (error) {
@@ -405,14 +327,7 @@ export function InvoiceProvider({ children }) {
 
     const deleteDriver = async (id) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/drivers');
-            
             await driversAPI.delete(id);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.DRIVERS]);
-            
             setDrivers(drivers.filter(d => d.id !== id));
         } catch (error) {
             throw error;
@@ -422,14 +337,7 @@ export function InvoiceProvider({ children }) {
     // CRUD functions for services
     const addService = async (service) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/services');
-            
             const newService = await servicesAPI.create(service);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.SERVICES]);
-            
             setServices([...services, newService]);
             return newService;
         } catch (error) {
@@ -439,14 +347,7 @@ export function InvoiceProvider({ children }) {
 
     const updateService = async (updatedService) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/services');
-            
             const service = await servicesAPI.update(updatedService.id, updatedService);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.SERVICES]);
-            
             setServices(services.map(s => s.id === updatedService.id ? service : s));
             return service;
         } catch (error) {
@@ -456,14 +357,7 @@ export function InvoiceProvider({ children }) {
 
     const deleteService = async (id) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/services');
-            
             await servicesAPI.delete(id);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.SERVICES]);
-            
             setServices(services.filter(s => s.id !== id));
         } catch (error) {
             throw error;
@@ -473,14 +367,7 @@ export function InvoiceProvider({ children }) {
     // CRUD functions for accounts
     const addAccount = async (account) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/accounts');
-            
             const newAccount = await accountsAPI.create(account);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.ACCOUNTS]);
-            
             setAccounts([...accounts, newAccount]);
             return newAccount;
         } catch (error) {
@@ -490,14 +377,7 @@ export function InvoiceProvider({ children }) {
 
     const updateAccount = async (updatedAccount) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/accounts');
-            
             const account = await accountsAPI.update(updatedAccount.id, updatedAccount);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.ACCOUNTS]);
-            
             setAccounts(accounts.map(a => a.id === updatedAccount.id ? account : a));
             return account;
         } catch (error) {
@@ -507,14 +387,7 @@ export function InvoiceProvider({ children }) {
 
     const deleteAccount = async (id) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/accounts');
-            
             await accountsAPI.delete(id);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.ACCOUNTS]);
-            
             setAccounts(accounts.filter(a => a.id !== id));
         } catch (error) {
             throw error;
@@ -524,14 +397,7 @@ export function InvoiceProvider({ children }) {
     // CRUD functions for expense types
     const addExpenseType = async (expense) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/expense-types');
-            
             const newExpense = await expenseTypesAPI.create(expense);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.EXPENSE_TYPES]);
-            
             setExpenses([...expenses, newExpense]);
             return newExpense;
         } catch (error) {
@@ -541,13 +407,7 @@ export function InvoiceProvider({ children }) {
 
     const updateExpenseType = async (updatedExpense) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/expense-types');
-            
             const expense = await expenseTypesAPI.update(updatedExpense.id, updatedExpense);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.EXPENSE_TYPES]);
             
             setExpenses(expenses.map(e => e.id === updatedExpense.id ? expense : e));
             return expense;
@@ -558,14 +418,7 @@ export function InvoiceProvider({ children }) {
 
     const deleteExpenseType = async (id) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/expense-types');
-            
             await expenseTypesAPI.delete(id);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.EXPENSE_TYPES]);
-            
             setExpenses(expenses.filter(e => e.id !== id));
         } catch (error) {
             throw error;
@@ -575,13 +428,7 @@ export function InvoiceProvider({ children }) {
     // CRUD functions for vendors
     const addVendor = async (vendor) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/vendors');
-            
             const newVendor = await vendorsAPI.create(vendor);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.VENDORS]);
             
             setVendors([...vendors, newVendor]);
             return newVendor;
@@ -592,14 +439,7 @@ export function InvoiceProvider({ children }) {
 
     const updateVendor = async (updatedVendor) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/vendors');
-            
             const vendor = await vendorsAPI.update(updatedVendor.id, updatedVendor);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.VENDORS]);
-            
             setVendors(vendors.map(v => v.id === updatedVendor.id ? vendor : v));
             return vendor;
         } catch (error) {
@@ -609,14 +449,7 @@ export function InvoiceProvider({ children }) {
 
     const deleteVendor = async (id) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/vendors');
-            
             await vendorsAPI.delete(id);
-            
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.VENDORS]);
-            
             setVendors(vendors.filter(v => v.id !== id));
         } catch (error) {
             throw error;
@@ -640,13 +473,7 @@ export function InvoiceProvider({ children }) {
                 payments: invoiceData.payments || []
             };
 
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/invoices');
-            
             const newInvoice = await invoicesAPI.create(createInvoiceDto);
-
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.OPEN_INVOICES, CACHE_KEYS.NEXT_INVOICE_NUMBER]);
 
             // Selectively reload only affected data
             await Promise.all([
@@ -662,9 +489,6 @@ export function InvoiceProvider({ children }) {
 
     const addPayment = async (invoiceId, paymentData) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/invoices');
-            
             const updatedInvoice = await invoicesAPI.addPayment(invoiceId, {
                 accountId: paymentData.accountId || accounts.find(a => a.name === paymentData.method)?.id,
                 amount: paymentData.amount,
@@ -673,8 +497,6 @@ export function InvoiceProvider({ children }) {
                 notes: paymentData.notes
             });
 
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.OPEN_INVOICES, CACHE_KEYS.CLOSED_INVOICES]);
 
             // Selectively reload - payment might move invoice from open to closed
             await Promise.all([
@@ -690,9 +512,6 @@ export function InvoiceProvider({ children }) {
 
     const addExpense = async (invoiceId, expenseData) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/invoices');
-            
             const updatedInvoice = await invoicesAPI.addExpense(invoiceId, {
                 expenseTypeId: expenseData.expenseTypeId || expenses.find(e => e.name === expenseData.type)?.id,
                 amount: expenseData.amount,
@@ -702,8 +521,6 @@ export function InvoiceProvider({ children }) {
                 pax: expenseData.pax || null
             });
 
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.OPEN_INVOICES]);
 
             await Promise.all([
                 loadOpenInvoices(true)
@@ -717,9 +534,6 @@ export function InvoiceProvider({ children }) {
 
     const addInvoiceService = async (invoiceId, serviceData) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/invoices');
-            
             // Resolve serviceId from service name if not provided
             let serviceId = serviceData.serviceId;
             if (!serviceId && serviceData.service) {
@@ -747,8 +561,6 @@ export function InvoiceProvider({ children }) {
                 });
             }
 
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.OPEN_INVOICES, CACHE_KEYS.CLOSED_INVOICES]);
 
             await Promise.all([
                 loadOpenInvoices(true),
@@ -763,13 +575,7 @@ export function InvoiceProvider({ children }) {
 
     const removeInvoiceService = async (invoiceId, serviceId) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/invoices');
-            
             const updatedInvoice = await invoicesAPI.removeService(invoiceId, serviceId);
-
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.OPEN_INVOICES, CACHE_KEYS.CLOSED_INVOICES]);
 
             await Promise.all([
                 loadOpenInvoices(true),
@@ -795,14 +601,7 @@ export function InvoiceProvider({ children }) {
                 assignData.date = date;
             }
 
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/invoices');
-            
             const updatedInvoice = await invoicesAPI.assignDriver(invoiceId, assignData);
-
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.OPEN_INVOICES, CACHE_KEYS.CLOSED_INVOICES]);
-
             // Force reload invoices
             await Promise.all([
                 loadOpenInvoices(true),
@@ -817,9 +616,6 @@ export function InvoiceProvider({ children }) {
 
     const updateExpense = async (invoiceId, expenseId, updatedExpense) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/invoices');
-            
             const updatedInvoice = await invoicesAPI.updateExpense(invoiceId, expenseId, {
                 expenseTypeId: updatedExpense.expenseTypeId || expenses.find(e => e.name === updatedExpense.type)?.id,
                 amount: updatedExpense.amount,
@@ -828,9 +624,6 @@ export function InvoiceProvider({ children }) {
                 vendorId: updatedExpense.vendorId || (updatedExpense.vendorName ? vendors.find(v => v.name === updatedExpense.vendorName)?.id : null),
                 pax: updatedExpense.pax || null
             });
-
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.OPEN_INVOICES]);
 
             await Promise.all([
                 loadOpenInvoices(true)
@@ -844,13 +637,7 @@ export function InvoiceProvider({ children }) {
 
     const removeExpense = async (invoiceId, expenseId) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/invoices');
-            
             const updatedInvoice = await invoicesAPI.removeExpense(invoiceId, expenseId);
-
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.OPEN_INVOICES]);
 
             await Promise.all([
                 loadOpenInvoices(true)
@@ -864,15 +651,27 @@ export function InvoiceProvider({ children }) {
 
     const sendInvoiceEmail = async (invoiceId) => {
         try {
-            // Clear API cache before making the request
-            apiUtils.clearCacheFor('/invoices');
-            
             const result = await invoicesAPI.sendEmail(invoiceId);
 
-            // Invalidate context cache
-            invalidateKeys([CACHE_KEYS.OPEN_INVOICES, CACHE_KEYS.CLOSED_INVOICES]);
 
             // Reload invoices to get updated emailSentAt timestamp
+            await Promise.all([
+                loadOpenInvoices(true),
+                loadClosedInvoices(true)
+            ]);
+
+            return result;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const deleteInvoice = async (invoiceId) => {
+        try {
+            const result = await invoicesAPI.delete(invoiceId);
+
+
+            // Reload invoices to reflect the deletion
             await Promise.all([
                 loadOpenInvoices(true),
                 loadClosedInvoices(true)
@@ -913,9 +712,6 @@ export function InvoiceProvider({ children }) {
             loadNextInvoiceNumber,
             loadCompanySettings,
 
-            // Cache invalidation
-            invalidateKeys,
-            needsRefresh,
 
             // CRUD functions
             addCustomer,
@@ -945,6 +741,7 @@ export function InvoiceProvider({ children }) {
             removeExpense,
             removeInvoiceService,
             sendInvoiceEmail,
+            deleteInvoice,
         }}>
             {children}
         </InvoiceContext.Provider>

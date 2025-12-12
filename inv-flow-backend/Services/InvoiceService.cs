@@ -680,5 +680,32 @@ public class InvoiceService : IInvoiceService
         if (paid > 0) return InvoiceStatus.Partial;
         return InvoiceStatus.Unpaid;
     }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var invoice = await _context.Invoices
+            .Include(i => i.InvoiceServices)
+            .Include(i => i.InvoiceExpenses)
+            .Include(i => i.Payments)
+            .Include(i => i.Transactions)
+            .FirstOrDefaultAsync(i => i.Id == id);
+
+        if (invoice == null)
+        {
+            return false;
+        }
+
+        // Remove related entities first to maintain referential integrity
+        _context.InvoiceServices.RemoveRange(invoice.InvoiceServices);
+        _context.InvoiceExpenses.RemoveRange(invoice.InvoiceExpenses);
+        _context.Payments.RemoveRange(invoice.Payments);
+        _context.Transactions.RemoveRange(invoice.Transactions);
+
+        // Remove the invoice itself
+        _context.Invoices.Remove(invoice);
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
 }
 
