@@ -27,7 +27,7 @@ public class VendorsController : ControllerBase
     }
 
     [HttpGet]
-    [RequirePermission("expenses.read")]
+    [RequirePermission("vendors.read")]
     public async Task<ActionResult<List<VendorDto>>> GetAll()
     {
         var vendors = await _vendorService.GetAllAsync();
@@ -35,7 +35,7 @@ public class VendorsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [RequirePermission("expenses.read")]
+    [RequirePermission("vendors.read")]
     public async Task<ActionResult<VendorDto>> GetById(int id)
     {
         var vendor = await _vendorService.GetByIdAsync(id);
@@ -47,7 +47,7 @@ public class VendorsController : ControllerBase
     }
 
     [HttpPost]
-    [RequirePermission("expenses.write")]
+    [RequirePermission("vendors.write")]
     public async Task<ActionResult<VendorDto>> Create([FromBody] CreateVendorDto dto)
     {
         var validationResult = await _createValidator.ValidateAsync(dto);
@@ -61,7 +61,7 @@ public class VendorsController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [RequirePermission("expenses.write")]
+    [RequirePermission("vendors.write")]
     public async Task<ActionResult<VendorDto>> Update(int id, [FromBody] UpdateVendorDto dto)
     {
         var validationResult = await _updateValidator.ValidateAsync(dto);
@@ -79,7 +79,7 @@ public class VendorsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [RequirePermission("expenses.delete")]
+    [RequirePermission("vendors.delete")]
     public async Task<IActionResult> Delete(int id)
     {
         var result = await _vendorService.DeleteAsync(id);

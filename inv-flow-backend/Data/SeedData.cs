@@ -26,7 +26,7 @@ public static class SeedData
             ("accounts.read", "Read accounts", "accounts", "read"),
             ("accounts.write", "Create/Update accounts", "accounts", "write"),
             ("accounts.delete", "Delete accounts", "accounts", "delete"),
-            // Expense type permissions (used for expense types management)
+            // Expense type permissions
             ("expenses.read", "Read expense types", "expenses", "read"),
             ("expenses.write", "Create/Update expense types", "expenses", "write"),
             ("expenses.delete", "Delete expense types", "expenses", "delete"),
