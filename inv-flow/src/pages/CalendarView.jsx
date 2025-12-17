@@ -53,18 +53,16 @@ const CalendarView = () => {
     return expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
   };
 
-  // Calculate VAT as 5% of the invoice total
+  // Calculate VAT from bank payments only (5% VAT)
   const calculateVAT = (invoice) => {
-    const serviceVAT = invoice.services.reduce((sum, service) => {
-      const rate = parseFloat(service.rate) || 0;
-      return sum + (rate * 0.05 / 1.05);
-    }, 0);
+    if (!invoice.payments || !Array.isArray(invoice.payments)) {
+      return 0;
+    }
 
-    const paymentVAT = invoice.payments.reduce((sum, payment) => {
+    // VAT is only calculated from bank account payments
+    return invoice.payments.reduce((sum, payment) => {
       return sum + (payment.vat || 0);
     }, 0);
-
-    return serviceVAT + paymentVAT;
   };
 
   // Get driver contact information

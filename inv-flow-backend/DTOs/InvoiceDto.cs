@@ -56,6 +56,7 @@ public class PaymentDto
     public int Id { get; set; }
     public int AccountId { get; set; }
     public string Method { get; set; } = string.Empty;
+    public string AccountType { get; set; } = string.Empty;
     public decimal Amount { get; set; }
     public DateOnly Date { get; set; } // Tour date
     public string? Reference { get; set; }

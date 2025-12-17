@@ -216,7 +216,7 @@ using (var scope = app.Services.CreateScope())
         if (pendingMigrations.Any())
         {
             logger.LogInformation("Applying {Count} pending migration(s)...", pendingMigrations.Count);
-            context.Database.Migrate();
+    //        context.Database.Migrate();
             logger.LogInformation("Migrations applied successfully");
         }
         else

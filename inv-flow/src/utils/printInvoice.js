@@ -13,21 +13,17 @@ const facebookSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#1877
 const GOLD_COLOR = '#c9a227';
 
 /**
- * Calculate total VAT for an invoice (5% VAT extracted from VAT-inclusive prices)
+ * Calculate total VAT for an invoice (5% VAT from bank payments only)
  */
 export const calculateInvoiceVAT = (invoice) => {
-    // Extract 5% VAT from each service
-    const serviceVAT = invoice.services.reduce((sum, service) => {
-        const rate = parseFloat(service.rate) || 0;
-        return sum + (rate * 0.05 / 1.05); // Extract VAT from VAT-included price
-    }, 0);
+    // VAT is only calculated from bank account payments
+    if (!invoice.payments || !Array.isArray(invoice.payments)) {
+        return 0;
+    }
 
-    // Add payment VAT if present
-    const paymentVAT = invoice.payments.reduce((sum, payment) => {
+    return invoice.payments.reduce((sum, payment) => {
         return sum + (payment.vat || 0);
     }, 0);
-
-    return serviceVAT + paymentVAT;
 };
 
 /**
@@ -94,21 +90,21 @@ const getServiceRowsHTML = (invoice) => {
 const getInvoiceTotalsHTML = (invoice) => {
     if (!invoice.services || !invoice.services.length) return '';
 
-    const total = invoice.services.reduce((sum, s) => sum + parseFloat(s.rate || 0), 0);
+    const serviceTotal = invoice.services.reduce((sum, s) => sum + parseFloat(s.rate || 0), 0);
     const vat = calculateInvoiceVAT(invoice);
-    const subtotal = total - vat;
+    const total = serviceTotal + vat;
 
     return `
         <tr class="table-light">
-            <td class="text-end fw-medium">Service Total:</td>
-            <td class="text-end fw-medium">AED ${subtotal.toFixed(2)}</td>
+            <td class="text-end fw-medium">Service Total (excl. VAT):</td>
+            <td class="text-end fw-medium">AED ${serviceTotal.toFixed(2)}</td>
         </tr>
         <tr class="table-light">
-            <td class="text-end fw-medium">VAT (5%):</td>
+            <td class="text-end fw-medium">VAT (5% from payments):</td>
             <td class="text-end fw-medium">AED ${vat.toFixed(2)}</td>
         </tr>
         <tr class="gold-bg">
-            <td class="text-end fw-bold">Total:</td>
+            <td class="text-end fw-bold">Total (incl. VAT):</td>
             <td class="text-end fw-bold">AED ${total.toFixed(2)}</td>
         </tr>
     `;

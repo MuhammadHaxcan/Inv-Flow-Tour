@@ -74,7 +74,7 @@ const PaymentForm = ({ accounts, onSave, onCancel, invoice }) => {
                     onChange={(e) => setMethod(e.target.value)}
                     options={accounts.map((account, i) => ({
                         value: account.name,
-                        label: `${account.name} ${account.type === 'cash' ? '(No VAT)' : '(5% VAT)'}` 
+                        label: `${account.name} ${account.accountType === 'cash' ? '(No VAT)' : '(5% VAT)'}` 
                     }))}
                     placeholder="Select account"
                     inModal={true}

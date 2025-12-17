@@ -117,9 +117,9 @@ public class InvoiceService : IInvoiceService
     public async Task<InvoiceDto> CreateAsync(CreateInvoiceDto dto, int? userId = null)
     {
         var invoiceNumber = await GetNextInvoiceNumberAsync();
-        var total = dto.Services.Sum(s => s.Rate);
-        var paid = dto.Payments.Sum(p => p.Amount);
-        var status = CalculateInvoiceStatus(paid, total);
+        var baseTotal = dto.Services.Sum(s => s.Rate);
+        var paid = 0m;
+        var total = baseTotal;
 
         var invoice = new Invoice
         {
@@ -132,7 +132,7 @@ public class InvoiceService : IInvoiceService
             Children = dto.Children,
             Total = total,
             Paid = paid,
-            Status = status,
+            Status = InvoiceStatus.Unpaid, // Will be recalculated after payments
             TripType = Enum.TryParse<TripType>(dto.TripType, ignoreCase: true, out var tripType) ? tripType : TripType.Morning,
             TripMode = Enum.TryParse<TripMode>(dto.TripMode, ignoreCase: true, out var tripMode) ? tripMode : TripMode.Shared,
             CreatedByUserId = userId,
@@ -209,6 +209,7 @@ public class InvoiceService : IInvoiceService
             if (account != null)
             {
                 var vat = account.AccountType == "bank" ? paymentDto.Amount * 0.05m : 0;
+                var paymentAmountWithVat = paymentDto.Amount + vat;
                 var payment = new Payment
                 {
                     InvoiceId = invoice.Id,
@@ -221,7 +222,13 @@ public class InvoiceService : IInvoiceService
                 };
                 _context.Payments.Add(payment);
 
-                // Create transaction
+                // Update paid amount to include VAT
+                paid += paymentAmountWithVat;
+
+                // Update total to include VAT from this payment
+                total += vat;
+
+                // Create transaction - include VAT in the credited amount
                 _context.Transactions.Add(new Transaction
                 {
                     Date = paymentDto.Date,
@@ -229,12 +236,15 @@ public class InvoiceService : IInvoiceService
                     InvoiceId = invoice.Id,
                     InvoiceNumber = invoiceNumber,
                     AccountId = paymentDto.AccountId,
-                    Credit = paymentDto.Amount,
+                    Credit = paymentAmountWithVat, // Include VAT in transaction amount
                     Reference = paymentDto.Reference,
                     Notes = paymentDto.Notes ?? "Invoice payment"
                 });
             }
         }
+
+        // Calculate final status after all payments and VAT are processed
+        invoice.Status = CalculateInvoiceStatus(paid, total);
 
         await _context.SaveChangesAsync();
         return await GetByIdAsync(invoice.Id) ?? throw new Exception("Failed to create invoice");
@@ -252,25 +262,34 @@ public class InvoiceService : IInvoiceService
         var account = await _context.Accounts.FindAsync(dto.AccountId);
         if (account == null) return null;
 
+        // CORE VAT CALCULATION LOGIC
         var vat = account.AccountType == "bank" ? dto.Amount * 0.05m : 0;
+        var paymentAmountWithVat = dto.Amount + vat;
+
         var payment = new Payment
         {
             InvoiceId = invoiceId,
             AccountId = dto.AccountId,
-            Amount = dto.Amount,
+            Amount = dto.Amount,          // Base amount
             Date = dto.Date,
             Reference = dto.Reference,
-            Vat = vat,
+            Vat = vat,                    // Calculated VAT
             Notes = dto.Notes
         };
 
         _context.Payments.Add(payment);
-        invoice.Paid += dto.Amount;
+
+        // Update paid amount (include VAT for bank payments)
+        invoice.Paid += paymentAmountWithVat;
+
+        // Update invoice total to include VAT from this payment
+        invoice.Total += vat;
+
         var previousStatus = invoice.Status;
         invoice.Status = CalculateInvoiceStatus(invoice.Paid, invoice.Total);
         invoice.UpdatedAt = DateTime.UtcNow;
 
-        // Create transaction for payment (credit)
+        // Create transaction for payment (credit) - include VAT in the credited amount
         _context.Transactions.Add(new Transaction
         {
             Date = dto.Date,
@@ -278,7 +297,7 @@ public class InvoiceService : IInvoiceService
             InvoiceId = invoiceId,
             InvoiceNumber = invoice.Number,
             AccountId = dto.AccountId,
-            Credit = dto.Amount,
+            Credit = paymentAmountWithVat, // Include VAT in transaction amount
             Reference = dto.Reference,
             Notes = dto.Notes ?? "Invoice payment"
         });

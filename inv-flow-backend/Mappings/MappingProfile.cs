@@ -67,7 +67,8 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.PaidDate, opt => opt.MapFrom(src => src.PaidDate));
 
         CreateMap<Payment, PaymentDto>()
-            .ForMember(dest => dest.Method, opt => opt.MapFrom(src => src.Account != null ? src.Account.Name : string.Empty));
+            .ForMember(dest => dest.Method, opt => opt.MapFrom(src => src.Account != null ? src.Account.Name : string.Empty))
+            .ForMember(dest => dest.AccountType, opt => opt.MapFrom(src => src.Account != null ? src.Account.AccountType : string.Empty));
 
         // Transaction mappings
         CreateMap<Transaction, TransactionDto>()

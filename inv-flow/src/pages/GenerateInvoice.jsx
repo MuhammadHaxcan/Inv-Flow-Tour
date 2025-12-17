@@ -113,7 +113,7 @@ const GenerateInvoice = () => {
     };
 
     const calculateVAT = () => {
-        // Apply 5% VAT on the ex-VAT rates
+        // Preview: 5% VAT will be applied only for bank account payments
         return invoiceServices.reduce((sum, s) => {
             const rate = parseFloat(s.rate) || 0;
             return sum + (rate * 0.05);
@@ -187,12 +187,11 @@ const GenerateInvoice = () => {
         // Transform services to API format
         const servicesData = validServices.map(s => {
             const service = services.find(svc => svc.name === s.service);
-            const rateEx = parseFloat(s.rate) || 0;
-            const rateIncl = rateEx * 1.05;
+            const rateEx = parseFloat(s.rate) || 0; // Rate is entered as VAT-exclusive
             return {
                 serviceId: service?.id || 0,
-                // Send rate including VAT to backend for consistency
-                rate: parseFloat(rateIncl.toFixed(2))
+                // Send rate excluding VAT - VAT is added only for bank payments
+                rate: parseFloat(rateEx.toFixed(2))
             };
         }).filter(s => s.serviceId > 0);
 
@@ -538,7 +537,7 @@ const GenerateInvoice = () => {
                                                         />
                                                         {service.rate && (
                                                             <small className="text-muted">
-                                                                (Incl. VAT: AED {(parseFloat(service.rate) * 1.05).toFixed(2)})
+                                                                (VAT: 5% added for bank payments only)
                                                             </small>
                                                         )}
                                                     </td>
@@ -572,12 +571,12 @@ const GenerateInvoice = () => {
                                                     <span className="fw-medium">{formatCurrency(calculateSubtotal())}</span>
                                                 </div>
                                                 <div className="d-flex justify-content-between mb-2">
-                                                    <span className="text-muted">VAT (5%):</span>
+                                                    <span className="text-muted">VAT (5% for bank payments):</span>
                                                     <span className="fw-medium">{formatCurrency(calculateVAT())}</span>
                                                 </div>
                                                 <div className="d-flex justify-content-between pt-2 border-top mb-3">
-                                                    <span className="fw-bold">Invoice Total (incl. VAT):</span>
-                                                    <span className="fw-bold">{formatCurrency(calculateInvoiceTotal())}</span>
+                                                    <span className="fw-bold">Base Total (VAT added during payment):</span>
+                                                    <span className="fw-bold">{formatCurrency(calculateSubtotal())}</span>
                                                 </div>
                                             </div>
 

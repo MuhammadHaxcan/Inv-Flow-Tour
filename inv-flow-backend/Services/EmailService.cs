@@ -240,14 +240,13 @@ public class EmailService : IEmailService
             ? $@"<img src='{companySettings.ActiveSignature.ImageData}' alt='Authorized Signature' style='height: 65px; width: auto; margin-bottom: 5px;' />"
             : "";
 
-        // Build services rows
+        // Build services rows - service rates are VAT-exclusive
         var servicesHtml = new StringBuilder();
         decimal servicesTotal = 0;
         foreach (var service in invoice.InvoiceServices)
         {
-            var rateWithVat = service.Rate;
-            var serviceCharge = rateWithVat / 1.05m;
-            servicesTotal += rateWithVat;
+            var serviceCharge = service.Rate; // Service rates are VAT-exclusive
+            servicesTotal += serviceCharge;
             servicesHtml.Append($@"
                 <tr>
                     <td style='padding: 8px; border-bottom: 1px solid #ddd;'>{service.ServiceName}</td>
@@ -255,8 +254,9 @@ public class EmailService : IEmailService
                 </tr>");
         }
 
-        var vat = servicesTotal * 0.05m / 1.05m;
-        var subtotal = servicesTotal - vat;
+        // VAT is calculated from bank payments only
+        var vat = invoice.Payments.Sum(p => p.Vat);
+        var subtotal = servicesTotal + vat;
         var statusText = invoice.Status.ToString();
         var balanceDue = invoice.Total - invoice.Paid;
 
@@ -339,16 +339,16 @@ public class EmailService : IEmailService
                 </tbody>
                 <tfoot>
                     <tr style='background-color: #f9f9f9;'>
-                        <td style='padding: 8px; text-align: right; font-weight: bold;'>Service Total:</td>
-                        <td style='padding: 8px; text-align: right; font-weight: bold;'>AED {subtotal:F2}</td>
+                        <td style='padding: 8px; text-align: right; font-weight: bold;'>Service Total (excl. VAT):</td>
+                        <td style='padding: 8px; text-align: right; font-weight: bold;'>AED {servicesTotal:F2}</td>
                     </tr>
                     <tr style='background-color: #f9f9f9;'>
-                        <td style='padding: 8px; text-align: right; font-weight: bold;'>VAT (5%):</td>
+                        <td style='padding: 8px; text-align: right; font-weight: bold;'>VAT (5% from payments):</td>
                         <td style='padding: 8px; text-align: right; font-weight: bold;'>AED {vat:F2}</td>
                     </tr>
                     <tr class='gold-bg'>
-                        <td style='padding: 8px; text-align: right; font-weight: bold;'>Total:</td>
-                        <td style='padding: 8px; text-align: right; font-weight: bold;'>AED {servicesTotal:F2}</td>
+                        <td style='padding: 8px; text-align: right; font-weight: bold;'>Total (incl. VAT):</td>
+                        <td style='padding: 8px; text-align: right; font-weight: bold;'>AED {subtotal:F2}</td>
                     </tr>
                 </tfoot>
             </table>

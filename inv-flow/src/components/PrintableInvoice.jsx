@@ -44,24 +44,20 @@ const PrintableInvoice = ({ invoice }) => {
         if (driverObj) driverContact = driverObj.phone;
     }
 
-    // Calculate discounted service charges and VAT for each service
+    // Service rates are VAT-exclusive, VAT is only from bank payments
     const serviceRows = invoice.services.map((service, index) => {
-        const original = parseFloat(service.rate) || 0;
-        const vat = original * 0.05;
-        const discounted = original - vat;
+        const rate = parseFloat(service.rate) || 0;
         return {
             ...service,
-            original,
-            vat,
-            discounted
+            rate
         };
     });
 
-    // Service total (sum of discounted charges)
-    const serviceTotal = serviceRows.reduce((sum, s) => sum + s.discounted, 0);
-    // VAT total (sum of all VATs)
-    const vatTotal = serviceRows.reduce((sum, s) => sum + s.vat, 0);
-    // Subtotal (service total + VAT total)
+    // Service total (sum of all service rates - VAT exclusive)
+    const serviceTotal = serviceRows.reduce((sum, s) => sum + s.rate, 0);
+    // VAT total (only from bank payments)
+    const vatTotal = invoice.payments?.reduce((sum, payment) => sum + (payment.vat || 0), 0) || 0;
+    // Total (service total + VAT from payments)
     const subtotal = serviceTotal + vatTotal;
 
     // Calculate expenses total
@@ -174,21 +170,21 @@ const PrintableInvoice = ({ invoice }) => {
                             {serviceRows.map((service, index) => (
                                 <tr key={service.id || index}>
                                     <td>{service.service}</td>
-                                    <td className="text-end">{formatCurrency(service.discounted)}</td>
+                                    <td className="text-end">{formatCurrency(service.rate)}</td>
                                 </tr>
                             ))}
                         </tbody>
                         <tfoot className="table-light">
                             <tr>
-                                <td className="text-end fw-medium">Service Total:</td>
+                                <td className="text-end fw-medium">Service Total (excl. VAT):</td>
                                 <td className="text-end fw-medium">{formatCurrency(serviceTotal)}</td>
                             </tr>
                             <tr>
-                                <td className="text-end fw-medium">VAT (5%):</td>
+                                <td className="text-end fw-medium">VAT (5% from payments):</td>
                                 <td className="text-end fw-medium">{formatCurrency(vatTotal)}</td>
                             </tr>
                             <tr style={{ backgroundColor: goldColor, color: 'white' }}>
-                                <td className="text-end fw-bold">Total:</td>
+                                <td className="text-end fw-bold">Total (incl. VAT):</td>
                                 <td className="text-end fw-bold">{formatCurrency(subtotal)}</td>
                             </tr>
                         </tfoot>
