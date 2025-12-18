@@ -128,7 +128,7 @@ const apiCall = async (endpoint, options = {}, retries = 0) => {
     try {
         // Create AbortController for timeout
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
@@ -342,6 +342,7 @@ export const invoicesAPI = {
     sendEmail: (id) => apiCall(`/invoices/${id}/send-email`, { method: 'POST' }),
     getDriverSchedule: () => apiCall('/invoices/driver-schedule'),
     delete: (id) => apiCall(`/invoices/${id}`, { method: 'DELETE' }),
+    closeInvoice: (id) => apiCall(`/invoices/${id}/close`, { method: 'POST' }),
 };
 
 // Transactions API

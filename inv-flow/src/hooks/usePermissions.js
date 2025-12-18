@@ -35,6 +35,7 @@ export const usePermissions = () => {
     const canReadInvoices = hasPermission(PERMISSIONS.INVOICES_READ);
     const canWriteInvoices = hasPermission(PERMISSIONS.INVOICES_WRITE);
     const canDeleteInvoices = hasPermission(PERMISSIONS.INVOICES_DELETE);
+    const canCloseInvoices = hasPermission(PERMISSIONS.INVOICES_CLOSE);
     
     // Closed invoice permissions
     const canReadClosedInvoices = hasPermission(PERMISSIONS.CLOSEDINVOICES_READ);
@@ -155,6 +156,7 @@ export const usePermissions = () => {
         canReadInvoices,
         canWriteInvoices,
         canDeleteInvoices,
+        canCloseInvoices,
         
         // Closed invoice permissions
         canReadClosedInvoices,

@@ -38,6 +38,7 @@ public static class SeedData
             ("invoices.read", "Read invoices", "invoices", "read"),
             ("invoices.write", "Create/Update invoices", "invoices", "write"),
             ("invoices.delete", "Delete invoices", "invoices", "delete"),
+            ("invoices.close", "Close invoices", "invoices", "close"),
             // Closed invoice permissions
             ("closedinvoices.read", "Read closed invoices", "closedinvoices", "read"),
             // Transaction permissions

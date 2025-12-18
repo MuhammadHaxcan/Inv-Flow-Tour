@@ -9,6 +9,7 @@ public class InvoiceDto
     public int CustomerId { get; set; }
     public string Customer { get; set; } = string.Empty;
     public string? CustomerEmail { get; set; }
+    public string? CustomerPhone { get; set; }
     public int? DriverId { get; set; }
     public string? Driver { get; set; }
     public string? DriverNotes { get; set; }
@@ -22,6 +23,7 @@ public class InvoiceDto
     public string TripType { get; set; } = "Morning";
     public string TripMode { get; set; } = "Shared";
     public string? CreatedBy { get; set; }
+    public bool IsClosed { get; set; } = false;
     public List<InvoiceServiceDto> Services { get; set; } = new();
     public List<InvoiceExpenseDto> Expenses { get; set; } = new();
     public List<PaymentDto> Payments { get; set; } = new();

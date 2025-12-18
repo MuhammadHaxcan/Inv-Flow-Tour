@@ -60,6 +60,11 @@ public class Invoice
     /// </summary>
     public int? CreatedByUserId { get; set; }
 
+    /// <summary>
+    /// Indicates if the invoice has been manually closed
+    /// </summary>
+    public bool IsClosed { get; set; } = false;
+
     // Navigation properties
     public Customer Customer { get; set; } = null!;
     public Driver? Driver { get; set; }

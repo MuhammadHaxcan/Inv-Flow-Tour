@@ -488,8 +488,7 @@ const GenerateInvoice = () => {
                                         type="button"
                                         onClick={addService}
                                         className="btn btn-sm btn-outline-dark d-flex align-items-center gap-1"
-                                        disabled={invoiceServices.filter(s => s.service).length >= services.length}
-                                        title={invoiceServices.filter(s => s.service).length >= services.length ? "All services have been added" : "Add Service"}
+                                        title="Add Service"
                                     >
                                         <Plus size={16} />
                                         Add Service
@@ -507,12 +506,8 @@ const GenerateInvoice = () => {
                                         </thead>
                                         <tbody>
                                             {invoiceServices.map((service, index) => {
-                                                // Get services already selected in other rows (excluding current row)
-                                                const usedServices = invoiceServices
-                                                    .filter((s, i) => i !== index && s.service)
-                                                    .map(s => s.service);
-                                                // Filter available services for this row
-                                                const availableServices = services.filter(s => !usedServices.includes(s.name));
+                                                // Allow same service to be selected multiple times - show all services
+                                                const availableServices = services;
                                                 
                                                 return (
                                                 <tr key={index}>

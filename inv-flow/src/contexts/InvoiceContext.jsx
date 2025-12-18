@@ -72,7 +72,8 @@ const InvoiceContext = createContext({
     removeExpense: () => {},
     removeInvoiceService: () => {},
     sendInvoiceEmail: () => {},
-    deleteInvoice: () => {}
+    deleteInvoice: () => {},
+    closeInvoice: () => {}
 });
 
 export function InvoiceProvider({ children }) {
@@ -683,6 +684,22 @@ export function InvoiceProvider({ children }) {
         }
     };
 
+    const closeInvoice = async (invoiceId) => {
+        try {
+            const result = await invoicesAPI.closeInvoice(invoiceId);
+
+            // Reload invoices to reflect the closure (moves from open to closed)
+            await Promise.all([
+                loadOpenInvoices(true),
+                loadClosedInvoices(true)
+            ]);
+
+            return result;
+        } catch (error) {
+            throw error;
+        }
+    };
+
     return (
         <InvoiceContext.Provider value={{
             // Data
@@ -742,6 +759,7 @@ export function InvoiceProvider({ children }) {
             removeInvoiceService,
             sendInvoiceEmail,
             deleteInvoice,
+            closeInvoice,
         }}>
             {children}
         </InvoiceContext.Provider>

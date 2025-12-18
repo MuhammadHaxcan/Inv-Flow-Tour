@@ -79,7 +79,6 @@ public class EmailService : IEmailService
         // Get company settings for branding
         var companySettings = await _companySettingsService.GetSettingsAsync();
 
-        // Get email configuration strictly from stored company settings
         if (companySettings == null)
         {
             throw new InvalidOperationException("Company settings not found; cannot resolve SMTP configuration.");
@@ -319,6 +318,7 @@ public class EmailService : IEmailService
                 <td style='text-align: right; vertical-align: top;'>
                     <p style='color: {goldColor}; font-weight: bold; margin: 0 0 5px 0;'>DRIVER:</p>
                     <p style='margin: 0;'>{invoice.Driver?.Name ?? "Not assigned"}</p>
+                    {(!string.IsNullOrEmpty(invoice.Driver?.Phone) ? $"<p style='color: #666; font-size: 10pt; margin: 3px 0;'>Phone: <strong>{invoice.Driver.Phone}</strong></p>" : "")}
                     {(!string.IsNullOrEmpty(invoice.DriverNotes) ? $"<p style='color: #666; font-size: 9pt; margin: 3px 0; font-style: italic;'>Notes: {invoice.DriverNotes}</p>" : "")}
                 </td>
             </tr>

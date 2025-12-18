@@ -12,14 +12,12 @@ public class CompanySettingsService : ICompanySettingsService
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<CompanySettingsService> _logger;
-    private readonly IConfiguration _configuration;
 
-    public CompanySettingsService(ApplicationDbContext context, IMapper mapper, ILogger<CompanySettingsService> logger, IConfiguration configuration)
+    public CompanySettingsService(ApplicationDbContext context, IMapper mapper, ILogger<CompanySettingsService> logger)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
-        _configuration = configuration;
     }
 
     private async Task<CompanySettings> GetOrCreateSettingsAsync()
@@ -39,13 +37,13 @@ public class CompanySettingsService : ICompanySettingsService
                 Email = "info@skt.ae",
                 Website = "www.skt.ae",
                 TRN = "104082040700003",
-                SmtpHost = _configuration["Email:SmtpHost"],
-                SmtpPort = int.TryParse(_configuration["Email:SmtpPort"], out var port) ? port : 587,
-                SmtpUser = _configuration["Email:SmtpUser"],
-                SmtpPassword = _configuration["Email:SmtpPassword"],
-                FromEmail = _configuration["Email:FromEmail"] ?? _configuration["Email:SmtpUser"],
-                FromName = _configuration["Email:FromName"] ?? "Invoice System",
-                EnableSsl = bool.TryParse(_configuration["Email:EnableSsl"], out var ssl) ? ssl : true
+                SmtpHost = null,
+                SmtpPort = null,
+                SmtpUser = null,
+                SmtpPassword = null,
+                FromEmail = null,
+                FromName = null,
+                EnableSsl = true
             };
             _context.CompanySettings.Add(settings);
             await _context.SaveChangesAsync();

@@ -6,6 +6,7 @@ import * as yup from 'yup';
 import { useAuth } from '../contexts/AuthContext';
 import { AlertCircle } from 'lucide-react';
 import { sanitizeCredentials } from '../utils/sanitize';
+import logo from '../assets/SiyyadKhanLogo.png';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const schema = yup.object({
@@ -45,12 +46,26 @@ const Login = () => {
         }
     };
 
+    const goldColor = '#c9a227';
+
     return (
-        <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
-            <div className="card shadow" style={{ width: '400px' }}>
+        <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ background: 'linear-gradient(135deg, #f5f7fa 0%, #e8ecef 100%)' }}>
+            <div className="card shadow-lg border-0" style={{ width: '420px', borderRadius: '12px', overflow: 'hidden' }}>
+                {/* Header with logo */}
+                <div className="text-center py-4 px-4" style={{ backgroundColor: goldColor }}>
+                    <img 
+                        src={logo} 
+                        alt="Siyyad Khan Tourism" 
+                        style={{ height: '50px', width: 'auto' }}
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                </div>
+
                 <div className="card-body p-5">
-                    <h2 className="card-title text-center mb-4">Inv-Flow</h2>
-                    <h4 className="text-center mb-4 text-secondary">Sign In</h4>
+                    <div className="text-center mb-4">
+                        <h4 className="mb-0 fw-semibold">Sign In</h4>
+                        <p className="text-muted small mt-2 mb-0">Enter your credentials to continue</p>
+                    </div>
                     
                     {(submitError || errors.root?.server) && (
                         <div
@@ -80,17 +95,18 @@ const Login = () => {
                     )}
 
                     <form onSubmit={handleSubmit(onSubmit)} noValidate>
-                        <div className="mb-3">
-                            <label htmlFor="username" className="form-label">Username</label>
+                        <div className="mb-4">
+                            <label htmlFor="username" className="form-label fw-medium">Username</label>
                             <input
                                 type="text"
-                                className={`form-control ${errors.username ? 'is-invalid' : ''}`}
+                                className={`form-control form-control-lg ${errors.username ? 'is-invalid' : ''}`}
                                 id="username"
                                 autoComplete="username"
                                 aria-invalid={!!errors.username}
                                 aria-describedby={errors.username ? 'username-error' : undefined}
                                 {...register('username')}
                                 autoFocus
+                                placeholder="Enter your username"
                             />
                             {errors.username && (
                                 <div id="username-error" className="invalid-feedback">
@@ -99,16 +115,17 @@ const Login = () => {
                             )}
                         </div>
 
-                        <div className="mb-3">
-                            <label htmlFor="password" className="form-label">Password</label>
+                        <div className="mb-4">
+                            <label htmlFor="password" className="form-label fw-medium">Password</label>
                             <input
                                 type="password"
-                                className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                                className={`form-control form-control-lg ${errors.password ? 'is-invalid' : ''}`}
                                 id="password"
                                 autoComplete="current-password"
                                 aria-invalid={!!errors.password}
                                 aria-describedby={errors.password ? 'password-error' : undefined}
                                 {...register('password')}
+                                placeholder="Enter your password"
                             />
                             {errors.password && (
                                 <div id="password-error" className="invalid-feedback">
@@ -119,16 +136,40 @@ const Login = () => {
 
                         <button
                             type="submit"
-                            className="btn btn-primary w-100"
+                            className="btn w-100 fw-semibold"
                             disabled={isSubmitting}
                             aria-busy={isSubmitting}
+                            style={{ 
+                                backgroundColor: goldColor, 
+                                borderColor: goldColor, 
+                                color: 'white',
+                                padding: '10px',
+                                fontSize: '16px'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = '#b8941f';
+                                e.target.style.borderColor = '#b8941f';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = goldColor;
+                                e.target.style.borderColor = goldColor;
+                            }}
                         >
-                            {isSubmitting ? 'Signing in...' : 'Sign In'}
+                            {isSubmitting ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    Signing in...
+                                </>
+                            ) : (
+                                'Sign In'
+                            )}
                         </button>
                     </form>
 
-                    <div className="mt-3 text-center text-muted small" aria-live="polite">
-                        <p>Default credentials: admin / admin123</p>
+                    <div className="mt-4 pt-3 border-top text-center">
+                        <p className="text-muted small mb-0">
+                            <strong>Need help?</strong> Contact your system administrator
+                        </p>
                     </div>
                 </div>
             </div>

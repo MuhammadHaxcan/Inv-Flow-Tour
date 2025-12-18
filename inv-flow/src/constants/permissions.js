@@ -6,6 +6,7 @@ export const PERMISSIONS = {
     INVOICES_READ: 'invoices.read',
     INVOICES_WRITE: 'invoices.write',
     INVOICES_DELETE: 'invoices.delete',
+    INVOICES_CLOSE: 'invoices.close',
     
     // Closed invoice permissions
     CLOSEDINVOICES_READ: 'closedinvoices.read',
@@ -97,6 +98,7 @@ export const ACTION_PERMISSIONS = {
     assignDriver: [PERMISSIONS.INVOICES_WRITE],
     sendEmail: [PERMISSIONS.INVOICES_WRITE],
     printInvoice: [PERMISSIONS.INVOICES_READ],
+    closeInvoice: [PERMISSIONS.INVOICES_CLOSE],
     
     // Service actions
     createService: [PERMISSIONS.SERVICES_WRITE],

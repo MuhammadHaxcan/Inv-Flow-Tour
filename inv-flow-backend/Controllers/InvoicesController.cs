@@ -288,5 +288,18 @@ public class InvoicesController : ControllerBase
 
         return Ok(new { success = true, message = "Invoice deleted successfully" });
     }
+
+    [HttpPost("{id}/close")]
+    [RequirePermission("invoices.close")]
+    public async Task<ActionResult<InvoiceDto>> CloseInvoice(int id)
+    {
+        var invoice = await _invoiceService.CloseInvoiceAsync(id);
+        if (invoice == null)
+        {
+            return NotFound(new { success = false, message = "Invoice not found" });
+        }
+
+        return Ok(invoice);
+    }
 }
 

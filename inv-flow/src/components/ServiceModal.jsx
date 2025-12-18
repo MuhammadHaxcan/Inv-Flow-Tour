@@ -11,7 +11,7 @@ const ServiceModal = ({ isOpen, onClose, onSave, service = null }) => {
         chargeWithoutVAT: ''
     });
     
-    const [inputMode, setInputMode] = useState('withVAT'); // 'withVAT' or 'withoutVAT'
+    const [inputMode, setInputMode] = useState('withoutVAT'); // 'withVAT' or 'withoutVAT' - default to withoutVAT
     const [error, setError] = useState('');
 
     // Format amount to AED
@@ -77,11 +77,6 @@ const ServiceModal = ({ isOpen, onClose, onSave, service = null }) => {
         }
     };
 
-    // Toggle input mode
-    const toggleInputMode = () => {
-        setInputMode(inputMode === 'withVAT' ? 'withoutVAT' : 'withVAT');
-    };
-
     // Handle form submission
     const handleSubmit = () => {
         const chargeWithVAT = parseFloat(formData.chargeWithVAT);
@@ -92,9 +87,17 @@ const ServiceModal = ({ isOpen, onClose, onSave, service = null }) => {
             return;
         }
         
-        if (!chargeWithVAT || isNaN(chargeWithVAT) || chargeWithVAT <= 0) {
-            setError('Please enter a valid charge amount');
-            return;
+        // Validate based on input mode
+        if (inputMode === 'withoutVAT') {
+            if (!chargeWithoutVAT || isNaN(chargeWithoutVAT) || chargeWithoutVAT <= 0) {
+                setError('Please enter a valid charge amount');
+                return;
+            }
+        } else {
+            if (!chargeWithVAT || isNaN(chargeWithVAT) || chargeWithVAT <= 0) {
+                setError('Please enter a valid charge amount');
+                return;
+            }
         }
 
         const serviceData = {
@@ -148,19 +151,35 @@ const ServiceModal = ({ isOpen, onClose, onSave, service = null }) => {
                     ></textarea>
                 </div>
                 
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                    <label className="form-label mb-0 fw-medium">Service Charge</label>
-                    <div className="form-check form-switch">
-                        <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id="inputModeSwitch"
-                            checked={inputMode === 'withoutVAT'}
-                            onChange={toggleInputMode}
-                        />
-                        <label className="form-check-label" htmlFor="inputModeSwitch">
-                            {inputMode === 'withVAT' ? 'Enter with VAT' : 'Enter without VAT'}
-                        </label>
+                <div className="mb-3">
+                    <label className="form-label fw-medium mb-2">Service Charge Input Mode</label>
+                    <div className="d-flex gap-4">
+                        <div className="form-check">
+                            <input
+                                className="form-check-input"
+                                type="radio"
+                                name="inputMode"
+                                id="inputModeWithoutVAT"
+                                checked={inputMode === 'withoutVAT'}
+                                onChange={() => setInputMode('withoutVAT')}
+                            />
+                            <label className="form-check-label" htmlFor="inputModeWithoutVAT">
+                                Without VAT
+                            </label>
+                        </div>
+                        <div className="form-check">
+                            <input
+                                className="form-check-input"
+                                type="radio"
+                                name="inputMode"
+                                id="inputModeWithVAT"
+                                checked={inputMode === 'withVAT'}
+                                onChange={() => setInputMode('withVAT')}
+                            />
+                            <label className="form-check-label" htmlFor="inputModeWithVAT">
+                                With VAT
+                            </label>
+                        </div>
                     </div>
                 </div>
                 

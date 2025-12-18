@@ -67,6 +67,7 @@ const getTripInfoHTML = (invoice) => {
 
 /**
  * Generate service rows HTML
+ * Note: Service rates are stored VAT-exclusive in the database
  */
 const getServiceRowsHTML = (invoice) => {
     if (!invoice.services || !invoice.services.length) {
@@ -74,8 +75,8 @@ const getServiceRowsHTML = (invoice) => {
     }
 
     return invoice.services.map(service => {
-        const rateWithVat = parseFloat(service.rate) || 0;
-        const serviceCharge = rateWithVat / 1.05; // Extract base amount
+        // Service rates are stored VAT-exclusive in the database
+        const serviceCharge = parseFloat(service.rate) || 0;
 
         return `<tr>
             <td>${service.service}</td>

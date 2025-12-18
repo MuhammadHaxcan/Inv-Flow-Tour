@@ -21,9 +21,10 @@ public class InvoiceService : IInvoiceService
 
     public async Task<List<InvoiceDto>> GetOpenInvoicesAsync()
     {
-        // Get invoices that are in progress - unpaid or partially paid
+        // Get invoices that are in progress - not closed and (unpaid or partially paid)
+        // Note: We exclude closed invoices regardless of payment status
         var invoices = await _context.Invoices
-            .Where(i => i.Status != InvoiceStatus.Paid)
+            .Where(i => !i.IsClosed && (i.Status == InvoiceStatus.Unpaid || i.Status == InvoiceStatus.Partial || i.Status == InvoiceStatus.Paid))
             .Include(i => i.Customer)
             .Include(i => i.Driver)
             .Include(i => i.CreatedByUser)
@@ -46,9 +47,9 @@ public class InvoiceService : IInvoiceService
 
     public async Task<List<InvoiceDto>> GetClosedInvoicesAsync()
     {
-        // Get all fully paid and completed invoices
+        // Get all invoices that are manually closed (regardless of payment status)
         var invoices = await _context.Invoices
-            .Where(i => i.Status == InvoiceStatus.Paid)
+            .Where(i => i.IsClosed && i.Status == InvoiceStatus.Paid)
             .Include(i => i.Customer)
             .Include(i => i.Driver)
             .Include(i => i.CreatedByUser)
@@ -284,6 +285,9 @@ public class InvoiceService : IInvoiceService
 
         // Update invoice total to include VAT from this payment
         invoice.Total += vat;
+
+        // Reset EmailSentAt when a payment is made (invoice may need to be resent)
+        invoice.EmailSentAt = null;
 
         var previousStatus = invoice.Status;
         invoice.Status = CalculateInvoiceStatus(invoice.Paid, invoice.Total);
@@ -725,6 +729,18 @@ public class InvoiceService : IInvoiceService
 
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<InvoiceDto?> CloseInvoiceAsync(int invoiceId)
+    {
+        var invoice = await _context.Invoices.FindAsync(invoiceId);
+        if (invoice == null) return null;
+
+        invoice.IsClosed = true;
+        invoice.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        return await GetByIdAsync(invoiceId);
     }
 }
 

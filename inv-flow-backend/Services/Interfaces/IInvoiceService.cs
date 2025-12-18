@@ -21,5 +21,6 @@ public interface IInvoiceService
     Task<bool> MarkExpensePaidAsync(int expenseId, MarkExpensePaidDto dto);
     Task<List<DriverScheduleDto>> GetDriverScheduleAsync();
     Task<bool> DeleteAsync(int id);
+    Task<InvoiceDto?> CloseInvoiceAsync(int invoiceId);
 }
 

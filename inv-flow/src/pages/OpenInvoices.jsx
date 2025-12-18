@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronUp, Plus, DollarSign, Truck, Receipt, Edit2, Printer, Trash2, Mail, Check } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, DollarSign, Truck, Receipt, Edit2, Printer, Trash2, Mail, Check, XCircle } from 'lucide-react';
 import Modal from '../components/Modal';
 import PaymentForm from '../components/PaymentForm';
 import ExpenseForm from '../components/ExpenseForm';
@@ -34,6 +34,7 @@ const OpenInvoices = () => {
         removeInvoiceService,
         sendInvoiceEmail,
         deleteInvoice,
+        closeInvoice,
         loadOpenInvoices,
         loadDrivers,
         loadServices,
@@ -51,7 +52,8 @@ const OpenInvoices = () => {
     const {
         canWriteInvoices,
         canReadInvoices,
-        canDeleteInvoices
+        canDeleteInvoices,
+        canCloseInvoices
     } = usePermissions();
 
     // Load only needed data when component mounts
@@ -79,6 +81,8 @@ const OpenInvoices = () => {
     const [serviceToDelete, setServiceToDelete] = useState({ invoiceId: null, serviceId: null, service: '' });
     const [showDeleteInvoiceModal, setShowDeleteInvoiceModal] = useState(false);
     const [invoiceToDelete, setInvoiceToDelete] = useState(null);
+    const [showCloseInvoiceModal, setShowCloseInvoiceModal] = useState(false);
+    const [invoiceToClose, setInvoiceToClose] = useState(null);
 
     const [currentInvoice, setCurrentInvoice] = useState(null);
     const [driverToAssign, setDriverToAssign] = useState('');
@@ -314,6 +318,25 @@ const OpenInvoices = () => {
         } catch (error) {
             console.error('Error deleting invoice:', error);
             showAlert('Error deleting invoice: ' + (error.message || 'Unknown error'), 'error');
+        }
+    };
+
+    const requestCloseInvoice = (invoice) => {
+        setInvoiceToClose(invoice);
+        setShowCloseInvoiceModal(true);
+    };
+
+    const confirmCloseInvoice = async () => {
+        if (!invoiceToClose) return;
+
+        try {
+            await closeInvoice(invoiceToClose.id);
+            showAlert(`Invoice ${invoiceToClose.number} closed successfully`, 'success');
+            setShowCloseInvoiceModal(false);
+            setInvoiceToClose(null);
+        } catch (error) {
+            console.error('Error closing invoice:', error);
+            showAlert('Error closing invoice: ' + (error.message || 'Unknown error'), 'error');
         }
     };
 
@@ -558,6 +581,17 @@ const OpenInvoices = () => {
                                                                                 Paid: {formatCurrency(invoice.paid)} |
                                                                                 Balance: {formatCurrency(invoice.total - invoice.paid)}
                                                                             </div>
+                                                                            {canCloseInvoices && invoice.status === 'paid' && (
+                                                                                <button
+                                                                                    onClick={e => { e.stopPropagation(); requestCloseInvoice(invoice); }}
+                                                                                    className="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
+                                                                                    title="Close Invoice"
+                                                                                    aria-label={`Close invoice ${invoice.number}`}
+                                                                                >
+                                                                                    <XCircle size={14} aria-hidden="true" />
+                                                                                    Close Invoice
+                                                                                </button>
+                                                                            )}
                                                                             {canDeleteInvoices && (
                                                                                 <button
                                                                                     onClick={e => { e.stopPropagation(); requestDeleteInvoice(invoice); }}
@@ -933,6 +967,17 @@ const OpenInvoices = () => {
                 message="Are you sure you want to delete this service?"
                 confirmButtonText="Delete"
                 confirmButtonVariant="danger"
+            />
+
+            {/* Close Invoice Confirmation Modal */}
+            <ConfirmationModal
+                show={showCloseInvoiceModal}
+                onClose={() => { setShowCloseInvoiceModal(false); setInvoiceToClose(null); }}
+                onConfirm={confirmCloseInvoice}
+                title="Close Invoice"
+                message={`Are you sure you want to close invoice ${invoiceToClose?.number}? Once closed, this invoice will appear in the Closed Invoices page.`}
+                confirmButtonText="Close Invoice"
+                type="confirm"
             />
 
             {/* Delete Invoice Confirmation Modal */}

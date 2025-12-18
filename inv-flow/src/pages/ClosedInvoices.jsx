@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp, FileText, DollarSign, Receipt, Printer } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileText, DollarSign, Receipt, Printer, Mail, Check } from 'lucide-react';
 import { useInvoice } from '../contexts/InvoiceContext';
+import { usePermissions } from '../hooks/usePermissions';
+import ConfirmationModal from '../components/ConfirmationModal';
+import AlertModal from '../components/AlertModal';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import defaultLogoImg from '../assets/SiyyadKhanLogo.png';
 import { printInvoice, calculateInvoiceVAT } from '../utils/printInvoice';
@@ -22,9 +25,22 @@ const ClosedInvoices = () => {
         accounts,
         drivers,
         companySettings,
+        sendInvoiceEmail,
         loadClosedInvoices, loadAccounts, loadDrivers, loadCompanySettings,
         loadingStates
     } = useInvoice();
+
+    // Permissions
+    const { canWriteInvoices } = usePermissions();
+
+    // Email state
+    const [sendingEmail, setSendingEmail] = useState({}); // Track sending state per invoice
+    const [emailConfirmModal, setEmailConfirmModal] = useState({ show: false, invoice: null });
+    const [alertModal, setAlertModal] = useState({ show: false, message: '', type: 'info', title: '' });
+
+    const showAlert = (message, type = 'info', title = '') => {
+        setAlertModal({ show: true, message, type, title });
+    };
 
     // Load only needed data when component mounts
     useEffect(() => {
@@ -127,6 +143,37 @@ const ClosedInvoices = () => {
             drivers,
             defaultLogoSrc
         });
+    };
+
+    // Handle send email
+    const handleSendEmail = (invoice, e) => {
+        e && e.stopPropagation();
+        
+        if (!invoice.customerEmail) {
+            showAlert('Customer does not have an email address. Please update customer details first.', 'warning');
+            return;
+        }
+
+        setEmailConfirmModal({ show: true, invoice });
+    };
+
+    const confirmSendEmail = async () => {
+        const invoice = emailConfirmModal.invoice;
+        setEmailConfirmModal({ show: false, invoice: null });
+        
+        setSendingEmail(prev => ({ ...prev, [invoice.id]: true }));
+        
+        try {
+            await sendInvoiceEmail(invoice.id);
+            showAlert(`Invoice sent successfully to ${invoice.customerEmail}`, 'success');
+            // Reload closed invoices to update emailSentAt status
+            loadClosedInvoices(true);
+        } catch (error) {
+            console.error('Error sending email:', error);
+            showAlert('Failed to send email: ' + (error.message || 'Unknown error'), 'error');
+        } finally {
+            setSendingEmail(prev => ({ ...prev, [invoice.id]: false }));
+        }
     };
 
     return (
@@ -287,6 +334,35 @@ const ClosedInvoices = () => {
                                                                                 <span className="fw-bold text-primary">Driver:</span>{' '}
                                                                                 <span className="fw-bold">{invoice.driver || 'Not Assigned'}</span>
                                                                             </div>
+                                                                            {canWriteInvoices && (
+                                                                                <>
+                                                                                    {invoice.emailSentAt ? (
+                                                                                        <div className="d-flex flex-column align-items-center me-2">
+                                                                                            <span className="badge bg-success d-flex align-items-center gap-1">
+                                                                                                <Check size={12} />
+                                                                                                Sent
+                                                                                            </span>
+                                                                                            <small className="text-muted" style={{ fontSize: '10px' }}>
+                                                                                                {new Date(invoice.emailSentAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                                                                                            </small>
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <button
+                                                                                            onClick={(e) => handleSendEmail(invoice, e)}
+                                                                                            className={`btn btn-sm ${invoice.customerEmail ? 'btn-outline-info' : 'btn-outline-secondary'}`}
+                                                                                            disabled={sendingEmail[invoice.id] || !invoice.customerEmail}
+                                                                                            title={invoice.customerEmail ? `Send to ${invoice.customerEmail}` : 'No email address'}
+                                                                                            aria-label={invoice.customerEmail ? `Send invoice ${invoice.number} to ${invoice.customerEmail}` : 'No email address available'}
+                                                                                        >
+                                                                                            {sendingEmail[invoice.id] ? (
+                                                                                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                                                                                            ) : (
+                                                                                                <Mail size={14} aria-hidden="true" />
+                                                                                            )}
+                                                                                        </button>
+                                                                                    )}
+                                                                                </>
+                                                                            )}
                                                                             <button
                                                                                 onClick={(e) => handleDirectPrint(invoice, e)}
                                                                                 className="btn btn-sm btn-primary d-flex align-items-center gap-1"
@@ -485,6 +561,26 @@ const ClosedInvoices = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Email Confirmation Modal */}
+            <ConfirmationModal
+                show={emailConfirmModal.show}
+                onClose={() => setEmailConfirmModal({ show: false, invoice: null })}
+                onConfirm={confirmSendEmail}
+                title="Send Invoice Email"
+                message={`Send invoice ${emailConfirmModal.invoice?.number} to ${emailConfirmModal.invoice?.customerEmail}?`}
+                confirmButtonText="Send Email"
+                type="confirm"
+            />
+
+            {/* Alert Modal */}
+            <AlertModal
+                show={alertModal.show}
+                onClose={() => setAlertModal({ ...alertModal, show: false })}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+            />
         </>
     );
 };

@@ -15,14 +15,10 @@ const ServiceForm = ({ servicesList, onSave, onCancel, invoice, service, existin
         }
     }, [service]);
 
-    // Filter out already-used services (except the one being edited)
+    // Allow same service to be selected multiple times - show all services
     const availableServices = useMemo(() => {
-        const usedServiceNames = existingServices
-            .filter(s => !service || s.id !== service.id) // Exclude the service being edited
-            .map(s => s.service);
-        
-        return servicesList.filter(s => !usedServiceNames.includes(s.name));
-    }, [servicesList, existingServices, service]);
+        return servicesList;
+    }, [servicesList]);
     
     // Handle service selection
     const handleServiceChange = (e) => {
@@ -30,10 +26,11 @@ const ServiceForm = ({ servicesList, onSave, onCancel, invoice, service, existin
         setSelectedService(serviceName);
         
         // Only auto-fill rate if this is a new service (not editing)
+        // Use charge (without VAT) as services are stored and displayed without VAT
         if (serviceName && !service) {
             const serviceInfo = servicesList.find(s => s.name === serviceName);
             if (serviceInfo) {
-                setRate(serviceInfo.vatIncluded);
+                setRate(serviceInfo.charge || '');
             }
         }
     };
@@ -57,14 +54,9 @@ const ServiceForm = ({ servicesList, onSave, onCancel, invoice, service, existin
                     required
                     inModal={true}
                 />
-                {availableServices.length === 0 && !service && (
-                    <small className="text-warning d-block mt-1">
-                        All services have been added to this invoice.
-                    </small>
-                )}
             </div>
             <div className="mb-3">
-                <label className="form-label">Rate (AED with VAT)</label>
+                <label className="form-label">Rate (AED excl. VAT)</label>
                 <input
                     type="number"
                     value={rate}
@@ -76,7 +68,7 @@ const ServiceForm = ({ servicesList, onSave, onCancel, invoice, service, existin
                 />
                 {rate && (
                     <small className="text-muted">
-                        (Excl. VAT: AED {(parseFloat(rate) / 1.05).toFixed(2)})
+                        (With 5% VAT: AED {(parseFloat(rate) * 1.05).toFixed(2)})
                     </small>
                 )}
             </div>
