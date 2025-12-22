@@ -183,25 +183,8 @@ public class InvoiceService : IInvoiceService
         // Save to get expense IDs
         await _context.SaveChangesAsync();
 
-        // Now create transactions with the correct expense IDs
-        var cashAccount = await _context.Accounts.FirstOrDefaultAsync(a => a.AccountType == "cash");
-        if (cashAccount != null)
-        {
-            foreach (var (expense, expDto, expType) in expensesToAdd)
-            {
-                _context.Transactions.Add(new Transaction
-                {
-                    Date = expDto.Date,
-                    Description = $"{expType.Name} expense for {invoiceNumber}",
-                    InvoiceId = invoice.Id,
-                    InvoiceNumber = invoiceNumber,
-                    AccountId = cashAccount.Id,
-                    Debit = expDto.Amount,
-                    Reference = $"EXP-{expense.Id}",
-                    ExpenseType = expType.Name
-                });
-            }
-        }
+        // Note: Transactions for expenses are NOT created here
+        // Transactions are only created when expenses are marked as paid via MarkExpensePaidAsync
 
         // Add payments
         foreach (var paymentDto in dto.Payments)
@@ -362,22 +345,7 @@ public class InvoiceService : IInvoiceService
         // Save first to get the expense ID
         await _context.SaveChangesAsync();
 
-        // Create transaction for expense (debit) - now expense.Id is valid
-        if (account != null)
-        {
-            _context.Transactions.Add(new Transaction
-            {
-                Date = dto.Date,
-                Description = $"{expenseType.Name} expense for {invoice.Number}" + (vendor != null ? $" - {vendor.Name}" : ""),
-                InvoiceId = invoiceId,
-                InvoiceNumber = invoice.Number,
-                AccountId = account.Id,
-                Debit = dto.Amount,
-                Reference = $"EXP-{invoiceExpense.Id}",
-                ExpenseType = expenseType.Name
-            });
-            await _context.SaveChangesAsync();
-        }
+        // Removed the transaciton present from here.
 
         return await GetByIdAsync(invoiceId);
     }
